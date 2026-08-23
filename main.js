@@ -1,0 +1,1220 @@
+/* =========================================================
+   《begin again》主逻辑
+   - 所有文案 / 参数 / 颜色集中在 CONFIG 对象
+   - 进度保存在 localStorage（键 beginAgain.progress）
+   - 原生 HTML + CSS + JS，无框架 / 引擎 / 外部素材
+   ========================================================= */
+
+/* ==================== ① 全局配置区 ==================== */
+const CONFIG = {
+
+  // 主题（新野兽派主干 × 孟菲斯细节）。改这里即可整体换视觉。
+  THEME: {
+    bg: "#F4F0EA",          // 米卡其背景
+    ink: "#1A1A1A",         // 文字主色
+    note: "#FFF6D8",        // 便签黄
+    muted: "#8a8377",       // 次要文字（灰暖）
+    faint: "#b6afa3",       // 更淡的辅助文字
+    card: "#ffffff",        // 卡片底
+    chatBg: "#ededed",      // 聊天界面底（微信灰）
+    chatHeaderBg: "#f6f6f6",
+    selfBubble: "#95ec69",  // 微信「自己」气泡绿
+    accents: ["#FFDE59", "#38B2C8", "#FF5E97", "#22463A"], // 高能黄 / 深电光蓝 / 芭比粉 / 深墨绿
+    success: "#3DDC84",
+    danger: "#E45D54",
+    frame: "#26262b",       // 手机外框机身色
+    frameRadius: 44,
+    radiusSm: 12,
+    radiusLg: 18,
+    softShadow: "0 6px 20px rgba(26,26,26,0.08)",
+    liftShadow: "0 14px 34px rgba(26,26,26,0.16)",
+  },
+
+  password: [1, 1, 0, 8],   // 最终密码（按关卡顺序）
+  passwordText: "1108",
+  workDays: 1108,           // 在岗天数
+  workDates: { start: "2023.10.05", end: "2026.10.16" },
+  yearSpan: "2023 → 2026",  // 终页年份跨度
+
+  groupName: "中山大家庭(500)",
+  hallTitle: "🏰 记忆结界",
+  hallSubtitle: "找回 4 枚记忆碎片，修复时间线",
+  lockHint: "请按照正确的时间线获取碎片",
+  mysteryTarget: "🐘🐏",     // 作者代号（离职的我，开场用 👦 男孩头像）
+
+  cheat: { label: "😏 我要作弊" },
+  collectLabel: "收下碎片",
+  backLabel: "← 返回结界",
+
+  // 开场群聊脚本（定稿版）
+  openingChat: {
+    // 玩家（自己，绿色气泡）开场第一句，办公室女头像
+    player: { avatar: "👩‍💼", text: "国庆假期过得好快啊！想念！😢" },
+    // 时空乱流后的系统提示（参考 vivian 的粉色闪烁提示）
+    sysAlert: "⚠️系统提示：遭遇时空乱流",
+    // 穿越后看到的「过去」消息（白色气泡，别人发的）
+    messages: [
+      { avatar: "👨‍⚕️", text: "对啊！疫情过后的第一个国庆，居然哪儿也没去！🤷" },
+      { avatar: "🤵", text: "俺也一样！" },
+      { avatar: "👨‍🎓", text: "大家好，我是今天刚入职的🐘🐏，\n之后大家多多关照！🙏", likes: 3 },
+    ],
+    innerThought: ["咦？疫情？刚入职？这是哪一年？", { a:"难道……", b:"我<b class=\"hl\">穿越</b>了？⚡" }],
+    guide: "到底发生什么事了？\n勇敢智慧的你，请点击下方按钮，进入结界，\n找回 4 枚<b class=\"glow-word\">【碎片】</b>修复时间线！",
+    likeCount: "24人已点赞",
+    enterLabel: "🧙‍♂️ 进入结界 🧙‍♂️",
+    // 开场时序（毫秒）
+    timing: {
+      firstMsg: 1500,     // 打开后玩家第一句
+      glitch: 3500,       // 时空乱流（第一句后 2s）
+      sysAlert: 5500,     // 系统提示（乱流后 2s，慢一点）
+      othersStart: 7500,  // 第二句（每条间隔 2s）
+      othersGap: 2000,
+      likeGap: 420,       // 每个点赞间隔
+      likesDelay: 2000,   // 最后一句到点赞的间隔
+      thoughtDelay: 2000, // 点赞完成到内心 OS 第一句
+      thought2Delay: 2000,// 内心 OS 第一句到第二句
+      guideDelay: 2000,   // 内心 OS 到引导的间隔
+    },
+  },
+
+  // 大厅密码入口
+  hallPassword: {
+    lockedTitle: "终极密码",
+    lockedSub: "收集全部碎片后解锁",
+    readyTitle: "终极密码",
+    readySub: "碎片已集齐，点击进入",
+  },
+
+  // 页面 C 文案
+  passwordPage: {
+    title: "🔐 最后的密码",
+    desc: ["你已经收集齐了所有碎片。", "输入它们组成的密码。"],
+    unlockLabel: "解锁",
+    wrong: "密码不正确，看看碎片再想想",
+    retry: "再试一次",
+    correct: "密码正确。",
+  },
+
+  // 页面 D
+  finalPage: {
+    unit: "天",
+  },
+
+  // 四个关卡
+  levels: [
+    {
+      id: 1, year: 2023, emoji: "📞", title: "初来乍到",
+      fragment: 1, fragmentName: "入职碎片",
+      tagline: "入职第一天，先打个电话报个到。",
+      accentIndex: 0,
+      intro: ["👂 听说组织部来了个年轻人。", "📞 快打电话问问看是谁吧。"],
+      hint: "请拨通正确的电话号码",
+      correctNumber: "88374924",
+      numberDisplay: "8837-4924",
+      digitLength: 8,
+      digitHint: "🧠 号码记住了吗？提示：组织部办公室的电话是 8 位数。",
+      phonebookTitle: "☎️中山医院通讯录",
+      phonebookTimeout: 3, // 秒
+      phonebook: [
+        { dept: "书记", num: "8837-1234" },
+        { dept: "院长",     num: "8837-5678" },
+        { dept: "组织部",   num: "8837-4924" },
+        { dept: "宣传部",   num: "8837-1111" },
+        { dept: "医务部",   num: "8837-2222" },
+        { dept: "信息中心", num: "8837-8888" },
+      ],
+      wrongLines: [
+        "您好，这里不是组织部。",
+        "第一天上班就打错电话？",
+        "你这么一打，全院都听见了。",
+        "这号码……是纯纯的不对。",
+      ],
+      dialLines: ["☎️ 正在拨号……", "嘟……接通📞", "「您好，组织部。」", "「听说你们来了个年轻人？」"],
+      success: "<b class=\"glow-word\">🎉 联系成功！</b>",
+    },
+    {
+      id: 2, year: 2024, emoji: "💻", title: "好的，收到",
+      fragment: 1, fragmentName: "牛马碎片",
+      tagline: "那一年，你独当一面。",
+      accentIndex: 1,
+      intro: [
+        "一个风平浪静的下午。☁🍵",
+        "下班前一小时，领导叫住了你：",
+        "<b class=\"red-flash\">「这份材料，今天内交给我。」🧨</b>",
+        "既然如此，我和你拼了！💪",
+      ],
+      targetHits: 25,
+      countdownSeconds: 5,
+      blockChar: "█",
+      paperTitle: "████████████",
+      achievementName: "“先进个人”最速传说",
+      success: "🎉 任务完成，恭喜准点下班！",
+    },
+    {
+      id: 3, year: 2025, emoji: "🕺", title: "像你这样的朋友",
+      fragment: 0, fragmentName: "唱跳碎片",
+      tagline: "同事，有一天变成了朋友。",
+      accentIndex: 2,
+      awardName: "最受观众喜爱节目奖",
+      intro: [
+        "年会现场，「下一个表演，《像你这样的朋友》。」",
+        "😖 你站在后台，突然有点紧张。",
+        "🎵 音乐 ready，位置 check。",
+        "💓 IT'S SHOW TIME.",
+      ],
+      actions: ["🙋‍♂️", "💁‍♂️", "🙆‍♂️", "🙅‍♂️"],
+      hint: "按MUSIC开始表演\n在完美的时机点击圆圈做出动作",
+      musicBtn: "MUSIC!",
+      missText: ["哎呀，不小心忘记动作了。", "没关系，你永远可以从头来过。"],
+    },
+    {
+      id: 4, year: 2026, emoji: "🧳", title: "最终任务",
+      fragment: 8, fragmentName: "未来碎片",
+      tagline: "离开之前，最后的选择。",
+      accentIndex: 3,
+      intro: [
+        "终于走到这一天了。🌅",
+        "我即将离开这里。🚪",
+        "请从下面十件东西中，",
+        "选择我最重要的<b class=\"hl-word\">三样东西</b>带走吧。🤔",
+      ],
+      options: [
+        { e: "❤️", n: "热爱" },
+        { e: "👥", n: "朋友" },
+        { e: "💭", n: "回忆" },
+        { e: "🕊️", n: "自由" },
+        { e: "💰", n: "金钱" },
+        { e: "🧠", n: "经验" },
+        { e: "🏆", n: "成就" },
+        { e: "🚀", n: "执行力" },
+        { e: "🎨", n: "创造力" },
+        { e: "🛡️", n: "责任感" },
+      ],
+      maxSelect: 3,
+      startLabel: "开始",
+      confirmTitle: "确认带走？",
+      thanksPrefix: "💘谢谢你留给我",
+      thanksTail: "你的选择就是<b class=\"glow-word\">唯一的正确答案</b>。🎯",
+      dropText: "最后一个碎片缓缓掉落。",
+    },
+  ],
+
+  // 最终纪念文案（占位，作者替换 FINAL_MESSAGE 即可）
+  finalMessage: [
+    "这里是《begin again》的最终留言占位。作者把想对同事们说的话写在这里，逐段替换即可。",
+    "三年，一千一百零八天，我们从「好的，收到」写到了「像你这样的朋友」。",
+    "谢谢你陪我走过这 1108 天。",
+  ],
+};
+
+/* ==================== ② 主题注入 ==================== */
+const T = CONFIG.THEME;
+(function applyTheme(){
+  const r = document.documentElement.style;
+  r.setProperty("--bg", T.bg);
+  r.setProperty("--ink", T.ink);
+  r.setProperty("--note", T.note);
+  r.setProperty("--muted", T.muted);
+  r.setProperty("--faint", T.faint);
+  r.setProperty("--card", T.card);
+  r.setProperty("--chatbg", T.chatBg);
+  r.setProperty("--chatheader", T.chatHeaderBg);
+  r.setProperty("--self", T.selfBubble);
+  r.setProperty("--success", T.success);
+  r.setProperty("--danger", T.danger);
+  r.setProperty("--frame", T.frame);
+  r.setProperty("--frame-radius", T.frameRadius + "px");
+  r.setProperty("--radius-sm", T.radiusSm + "px");
+  r.setProperty("--radius-lg", T.radiusLg + "px");
+  r.setProperty("--soft-shadow", T.softShadow);
+  r.setProperty("--lift-shadow", T.liftShadow);
+  T.accents.forEach((c, i) => r.setProperty("--a" + (i + 1), c));
+})();
+
+/* 辅助 */
+const $ = (id) => document.getElementById(id);
+const randi = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+const levelById = (id) => CONFIG.levels.find(l => l.id === id);
+const accentOf = (lvl) => T.accents[lvl.accentIndex];
+
+/* ==================== ③ 进度存档 ==================== */
+const STORE_KEY = "beginAgain.progress";
+function defaultProgress(){
+  return { level1:{done:false,fragment:null}, level2:{done:false,fragment:null},
+           level3:{done:false,fragment:null}, level4:{done:false,fragment:null},
+           passwordUnlocked:false, finalVisited:false };
+}
+function loadProgress(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return defaultProgress();
+    const p = JSON.parse(raw);
+    return Object.assign(defaultProgress(), p);
+  }catch(e){ return defaultProgress(); }
+}
+function saveProgress(p){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(p)); }catch(e){}
+}
+const allDone = (p) => ["level1","level2","level3","level4"].every(k => p[k].done);
+const fragsCollected = (p) => CONFIG.levels.filter(l => p["level"+l.id].done).length;
+
+let progress = loadProgress();
+let failCounts = { 1:0, 2:0, 3:0 };  // 失败计数（内存，作弊后清零）
+let justCompleted = null;            // 刚通关的关卡，用于大厅闪灰动画
+
+/* ==================== ④ 视图切换 ==================== */
+const VIEWS = ["opening","hall","level1","level2","level3","level4","password","final"];
+let currentView = null;
+function showView(name){
+  VIEWS.forEach(v => $("view-" + v).classList.remove("active"));
+  const target = $("view-" + name);
+  target.classList.add("active");
+  target.scrollTop = 0;
+  currentView = name;
+}
+function backToHall(){ renderHall(); showView("hall"); }
+
+/* ==================== ⑤ 弹窗 ==================== */
+let modalTimer = null;
+function openModal(html){
+  const m = $("modal");
+  const o = $("overlay");
+  if(html !== undefined) m.innerHTML = html;
+  o.classList.add("show");
+}
+function closeModal(){
+  $("overlay").classList.remove("show");
+  $("modal").classList.remove("note-mode");
+  if(modalTimer){ clearTimeout(modalTimer); modalTimer = null; }
+}
+
+/* ==================== ⑥ 孟菲斯碎屑 ==================== */
+(function decor(){
+  const chars = ["〰","×","●","▲","◼","~","✦","·"];
+  const box = $("decor");
+  let html = "";
+  for(let i=0;i<16;i++){
+    const c = chars[randi(0,chars.length-1)];
+    const s = randi(14,34);
+    const x = randi(2,96);
+    const y = randi(2,96);
+    const rot = randi(-40,40);
+    html += `<i style="left:${x}%;top:${y}%;font-size:${s}px;transform:rotate(${rot}deg)">${c}</i>`;
+  }
+  box.innerHTML = html;
+})();
+
+/* ==================== ⑦ 穿越预示动画 ==================== */
+function playGlitch(){
+  const flash = $("flash");
+  const frame = document.querySelector(".phone-frame");
+  frame.classList.add("glitch");
+  flash.style.opacity = "1";
+  setTimeout(()=>{ flash.style.opacity = "0"; }, 220);
+  setTimeout(()=>{ frame.classList.remove("glitch"); }, 760);
+}
+
+/* ==================== ⑧ 页面 A：开场叙事 ==================== */
+function renderOpening(){
+  const c = CONFIG.openingChat;
+  const html = `
+    <div class="chat">
+      <div class="chat-head">
+        <span class="nav">‹</span>
+        <span class="gc">${CONFIG.groupName}</span>
+        <span class="more">···</span>
+      </div>
+      <div class="chat-body" id="chat-body"></div>
+    </div>`;
+  $("view-opening").innerHTML = html;
+  runOpening();
+}
+function runOpening(){
+  const c = CONFIG.openingChat;
+  const body = $("chat-body");
+  const t = c.timing;
+  const V = $("view-opening");
+  const add = (html) => { body.insertAdjacentHTML("beforeend", html); V.scrollTop = V.scrollHeight; };
+
+  // 1. 玩家（办公室女，绿色自己）第一句
+  setTimeout(()=> add(`
+    <div class="msg self pop">
+      <div class="avatar">${c.player.avatar}</div>
+      <div class="bubble">${c.player.text}</div>
+    </div>`), t.firstMsg);
+
+  // 2. 时空乱流：剧烈扭曲
+  setTimeout(()=> playGlitch(), t.glitch);
+
+  // 3. 系统提示（粉红闪烁）
+  setTimeout(()=> add(`
+    <div class="sys-alert"><span class="pill">${c.sysAlert}</span></div>`), t.sysAlert);
+
+  // 4. 穿越后的他人消息（白色气泡；点赞框不在渲染时占位）
+  c.messages.forEach((m, i) => {
+    setTimeout(()=> add(`
+      <div class="msg pop">
+        <div class="avatar">${m.avatar}</div>
+        <div class="bubble">${m.text}</div>
+      </div>`), t.othersStart + i * t.othersGap);
+  });
+
+  // 5. 点赞：随第一个赞一起出现气泡底部框（下一行），气泡自适应变宽
+  const last = c.messages[c.messages.length - 1];
+  if(last.likes){
+    const allMsg = document.querySelectorAll("#chat-body .msg");
+    const likesAt = t.othersStart + (c.messages.length - 1) * t.othersGap + t.likesDelay;
+    for(let k = 0; k < last.likes; k++){
+      setTimeout(()=>{
+        const bubbles = document.querySelectorAll("#chat-body .msg .bubble");
+        const lastBubble = bubbles[bubbles.length - 1];
+        if(!lastBubble) return;
+        let box = lastBubble.querySelector(".like-box");
+        if(!box){
+          lastBubble.insertAdjacentHTML("beforeend", `<div class="like-box"><span class="like-pop">👍</span><span class="like-count">${c.likeCount}</span></div>`);
+        } else {
+          const pop = document.createElement("span");
+          pop.className = "like-pop"; pop.textContent = "👍";
+          box.insertBefore(pop, box.querySelector(".like-count"));
+        }
+        lastBubble.classList.add("has-likes");
+        V.scrollTop = V.scrollHeight;
+      }, likesAt + k * t.likeGap);
+    }
+  }
+
+  // 6. 内心 OS（点赞完 → 2s → 第一句 → 2s → 第二句）
+  const th1 = c.innerThought[0];
+  const th2 = c.innerThought[1];
+  const lastAt = t.othersStart + (c.messages.length - 1) * t.othersGap;
+  const likesEnd = last.likes ? (lastAt + t.likesDelay + (last.likes - 1) * t.likeGap) : lastAt;
+  const th1At = likesEnd + t.thoughtDelay;
+  const th2At = th1At + t.thought2Delay;
+  const guideAt = th2At + t.guideDelay;
+
+  setTimeout(()=> add(`<div class="mono pop" id="mono-box"><p>${th1}</p></div>`), th1At);
+  setTimeout(()=>{
+    const box = $("mono-box");
+    if(box) box.insertAdjacentHTML("beforeend", `<p>${th2.a}<span class="mono-b fade-in">${th2.b}</span></p>`);
+  }, th2At);
+  setTimeout(()=>{
+    const el = document.querySelector(".mono-b"); if(el) el.classList.add("on");
+  }, th2At + 700);
+
+  // 7. 引导 + 按钮
+  setTimeout(()=>{
+    add(`
+    <div class="guide pop">
+      <div class="guide-box">
+        <div class="guide-text">${c.guide}</div>
+        <button class="btn btn-primary btn-block" id="btn-enter">${c.enterLabel}</button>
+      </div>
+    </div>`);
+    const b = $("btn-enter");
+    if(b) b.addEventListener("click", () => { renderHall(); showView("hall"); });
+  }, guideAt);
+}
+
+/* ==================== ⑨ 页面 B：回忆大厅 ==================== */
+function renderHall(){
+  const p = progress;
+  let html = `
+    <div class="hall">
+      <div class="hall-glow"></div>
+      <div class="hall-decor">${hallDecorDots()}</div>
+      <div class="hall-title t-h1">${CONFIG.hallTitle}</div>
+      <div class="hall-sub t-caption">${CONFIG.hallSubtitle}</div>
+      <div class="lvl-grid">`;
+
+  CONFIG.levels.forEach(lvl => {
+    const key = "level" + lvl.id;
+    const st = p[key];
+    const unlocked = lvl.id === 1 || p["level" + (lvl.id - 1)].done;
+    const done = st.done;
+
+    let cls = "level-card";
+    if(!unlocked) cls += " locked";
+    else if(done) cls += " done";
+    else cls += " open";
+
+    const emoji = unlocked ? lvl.emoji : "🔒";
+    const fragEl = done ? `<span class="lc-frag">🧩 ${lvl.fragmentName}：${lvl.fragment}</span>` : "";
+
+    html += `
+      <div class="${cls}" data-lv="${lvl.id}" style="--lv-accent:${accentOf(lvl)}">
+        <span class="lc-year">${lvl.year}</span>
+        <span class="lc-emoji">${emoji}</span>
+        <span class="lc-title">${lvl.title}</span>
+        ${fragEl}
+      </div>`;
+  });
+
+  const ready = allDone(p);
+  html += `</div>`;
+  html += `
+    <div class="hall-door ${ready ? "ready" : ""}" id="hall-pw" role="button" ${ready ? 'tabindex="0"' : ''}>
+      <div class="door-ico">${ready ? "🔓" : "🔐"}</div>
+      <div class="door-title">${ready ? CONFIG.hallPassword.readyTitle : CONFIG.hallPassword.lockedTitle}</div>
+      <div class="door-sub">${ready ? CONFIG.hallPassword.readySub : CONFIG.hallPassword.lockedSub}</div>
+    </div>
+  </div>`;
+
+  $("view-hall").innerHTML = html;
+
+  // 卡片点击
+  document.querySelectorAll(".level-card").forEach(card => {
+    const lvId = parseInt(card.dataset.lv, 10);
+    card.addEventListener("click", () => {
+      if(card.classList.contains("locked")){ showLockedHint(); return; }
+      enterLevel(lvId);
+    });
+  });
+  // 密码入口
+  const pw = $("hall-pw");
+  pw.addEventListener("click", () => { if(allDone(progress)) openPasswordModal(); });
+
+  // 刚通关的闪灰动画（一次性）
+  if(justCompleted){
+    const card = document.querySelector(`.level-card[data-lv="${justCompleted}"]`);
+    if(card){ card.classList.add("just-done"); setTimeout(()=>card.classList.remove("just-done"), 650); }
+    justCompleted = null;
+  }
+}
+
+/* 未解锁关卡点击提示 */
+function showLockedHint(){
+  openModal(`
+    <div class="popup-head">🔒</div>
+    <div class="popup-title">还没解锁</div>
+    <div class="popup-body">${CONFIG.lockHint}</div>
+    <div class="popup-actions"><button class="btn btn-primary btn-block" id="btn-lock-ok">好的</button></div>`);
+  $("btn-lock-ok").addEventListener("click", closeModal);
+}
+
+/* 大厅背景漂浮撞色圆点 */
+function hallDecorDots(){
+  const colors = T.accents;
+  let s = "";
+  for(let i = 0; i < 22; i++){
+    const c = colors[i % colors.length];
+    const size = randi(6, 18);
+    const x = randi(3, 90);
+    const y = randi(4, 94);
+    const delay = (Math.random() * 5).toFixed(2);
+    const dur = (4 + Math.random() * 4).toFixed(2);
+    s += `<i style="left:${x}%;top:${y}%;width:${size}px;height:${size}px;background:${c};animation-delay:${delay}s;animation-duration:${dur}s"></i>`;
+  }
+  return s;
+}
+
+/* 第三关：舞台星星灯光背景 */
+function stageStars(){
+  const colors = ["#FFDE59","#5CE1E6","#FF5E97","#A3FF73","#ffffff"];
+  let s = "";
+  for(let i = 0; i < 14; i++){
+    const c = colors[randi(0, colors.length - 1)];
+    const size = randi(3, 8);
+    const x = randi(2, 96);
+    const y = randi(2, 96);
+    const delay = (Math.random() * 4).toFixed(2);
+    const dur = (1.4 + Math.random() * 2.6).toFixed(2);
+    s += `<i style="left:${x}%;top:${y}%;width:${size}px;height:${size}px;background:${c};animation-delay:${delay}s;animation-duration:${dur}s"></i>`;
+  }
+  return s;
+}
+
+/* ==================== ⑩ 关卡渲染与进入 ==================== */
+function setLevelAccent(name, lvl){
+  $("view-" + name).style.setProperty("--lv-accent", accentOf(lvl));
+}
+function enterLevel(id){
+  const lvl = levelById(id);
+  switch(id){
+    case 1: renderLevel1(lvl); break;
+    case 2: renderLevel2(lvl); break;
+    case 3: renderLevel3(lvl); break;
+    case 4: renderLevel4(lvl); break;
+  }
+  showView("level" + id);
+}
+
+function levelHeader(lvl){
+  return `
+    <div class="view-head">
+      <button class="btn btn-sm btn-ghost" id="btn-back">${CONFIG.backLabel}</button>
+      <span class="spacer"></span>
+    </div>
+    <div class="level-head">
+      <div class="level-head-emoji">${lvl.emoji}</div>
+      <div class="level-head-title">${lvl.title}</div>
+      <div class="level-head-year">${lvl.year}</div>
+    </div>`;
+}
+
+/* ---------- 通用：结算结果 + 碎片 + 收下 ---------- */
+function playResult(lvl, lines){
+  const card = $("modal");
+  card.innerHTML = `<div id="result-lines"></div><div id="result-tail" style="display:none"></div>`;
+  const box = $("result-lines");
+  lines.forEach((ln, i) => {
+    setTimeout(()=>{
+      const d = document.createElement("div");
+      d.className = "result-line";
+      d.innerHTML = ln;
+      box.appendChild(d);
+      requestAnimationFrame(()=> d.classList.add("on"));
+    }, 350 + i * 600);
+  });
+  setTimeout(()=>{
+    $("result-tail").style.display = "block";
+    $("result-tail").innerHTML = `
+      <hr class="popup-divider">
+      <div class="frag-big">🧩 ${"获得"}${lvl.fragmentName}：${lvl.fragment}</div>
+      <button class="btn btn-accent btn-block" id="btn-collect">${CONFIG.collectLabel}</button>`;
+    $("btn-collect").addEventListener("click", ()=> collect(lvl.id));
+  }, 350 + lines.length * 600 + 300);
+}
+function collect(id){
+  const lvl = levelById(id);
+  const p = loadProgress();
+  p["level" + id] = { done:true, fragment: lvl.fragment };
+  if(allDone(p)) p.passwordUnlocked = true;
+  saveProgress(p);
+  progress = p;
+  justCompleted = id;
+  closeModal();
+  backToHall();
+}
+/* 作弊：直达成功结算 */
+function cheatToSuccess(id){
+  failCounts[id] = 0;
+  closeModal();
+  const lvl = levelById(id);
+  collectCall_skip(id, lvl);
+}
+function collectCall_skip(id, lvl){
+  // 直接进入成功结算（跳过中间游戏）
+  runLevelSuccess(lvl, { skipDial: true });
+}
+
+/* ==================== ⑪ 关卡 1：拨号 ==================== */
+let lv1 = { entered:"", viewed:false, dialJudging:false };
+function renderLevel1(lvl){
+  setLevelAccent("level1", lvl);
+  lv1 = { entered:"", viewed: lv1.viewed, dialJudging:false };
+  const keys = ["1","2","3","4","5","6","7","8","9","*","0","#"];
+  let keyHtml = keys.map(k => {
+    const ghost = (k === "*" || k === "#") ? " ghost" : (k === "0" ? "" : "");
+    return `<button class="key${ghost}" data-k="${k}">${k}</button>`;
+  }).join("");
+
+  $("view-level1").innerHTML = `
+    ${levelHeader(lvl)}
+    <div class="story-card">
+      ${lvl.intro.map(t => `<div class="t-body">${t}</div>`).join("")}
+    </div>
+    <div class="play-card">
+      <div class="play-title">${lvl.hint}</div>
+      <div class="digit-row" id="l1-digits"></div>
+      <div class="dial-hint" id="l1-hint"></div>
+      <div class="keypad">${keyHtml}</div>
+      <button class="btn btn-ghost btn-block" id="l1-del" style="margin-bottom:10px">⌫ 删除</button>
+      <button class="btn btn-accent btn-block" id="l1-pb">📖 查看电话簿</button>
+    </div>`;
+
+  const back = $("btn-back"); back.addEventListener("click", backToHall);
+
+  document.querySelectorAll(".key").forEach(k => {
+    k.addEventListener("click", () => pressKey(lvl, k.dataset.k));
+  });
+  $("l1-del").addEventListener("click", () => delfetKey(lvl));
+  $("l1-pb").addEventListener("click", () => openPhonebook(lvl));
+  renderL1Number(lvl);
+}
+function renderL1Number(lvl){
+  const row = $("l1-digits");
+  if(!row) return;
+  const n = lv1.entered;
+  let html = "";
+  for(let i = 0; i < 8; i++){
+    const ch = n[i] || "";
+    html += `<span class="digit-box${ch ? " filled" : ""}">${ch}</span>`;
+    if(i === 3) html += `<span class="digit-sep">-</span>`;
+  }
+  row.innerHTML = html;
+}
+function pressKey(lvl, k){
+  if(k === "*" || k === "#") return;   // 装饰键，有按压反馈但不输入
+  if(lv1.dialJudging) return;
+  if(lv1.entered.length >= lvl.digitLength) return;
+  lv1.entered += k;
+  renderL1Number(lvl);
+  if(lv1.entered.length === lvl.digitLength){
+    lv1.dialJudging = true;
+    setTimeout(()=> judgeL1(lvl), 360);
+  }
+}
+function delfetKey(lvl){
+  if(lv1.dialJudging) return;
+  lv1.entered = lv1.entered.slice(0, -1);
+  renderL1Number(lvl);
+}
+function judgeL1(lvl){
+  if(lv1.entered === lvl.correctNumber){
+    lv1.dialJudging = false;
+    runLevelSuccess(lvl, { skipDial: false });
+  } else {
+    lv1.dialJudging = false;
+    failCounts[1]++;
+    const funny = lvl.wrongLines[randi(0, lvl.wrongLines.length - 1)];
+    const cheatBtn = failCounts[1] >= 3 ? `<button class="btn btn-accent btn-block" id="btn-cheat" style="margin-top:10px">${CONFIG.cheat.label}</button>` : "";
+    openModal(`
+      <div class="popup-head">📞</div>
+      <div class="popup-title" style="color:var(--danger)">嘟…… ❌ 好像打错了。</div>
+      <div class="popup-body">${funny}</div>
+      <div class="popup-actions">
+        <button class="btn btn-primary btn-block" id="btn-again">好的，再试一次</button>
+        ${cheatBtn}
+      </div>`);
+    $("btn-again").addEventListener("click", ()=>{ closeModal(); lv1.entered = ""; renderL1Number(lvl); });
+    if(failCounts[1] >= 3){
+      $("btn-cheat").addEventListener("click", ()=> cheatToSuccess(1));
+    }
+  }
+}
+/* 电话簿浮窗（便签 + 3 秒限时） */
+let pbTimer = null;
+function openPhonebook(lvl){
+  const rows = lvl.phonebook.map(p => `<div class="nr"><span>${p.dept}</span><span>${p.num}</span></div>`).join("");
+  $("modal").innerHTML = `
+    <div class="note">
+      <span class="tape"></span>
+      <span class="pin">📌</span>
+      <button class="note-close" id="pb-close">×</button>
+      <div class="note-title">${lvl.phonebookTitle}</div>
+      <div class="note-timer" id="pb-timer">
+        <div class="timer-ring" id="timer-ring"></div>
+        <span class="timer-num" id="timer-num">${lvl.phonebookTimeout}</span>
+      </div>
+      <div class="note-list">${rows}</div>
+    </div>`;
+  $("modal").classList.add("note-mode");
+  openModal();
+  startPbTimer(lvl);
+  $("pb-close").addEventListener("click", closePhonebook);
+}
+function startPbTimer(lvl){
+  if(pbTimer) clearInterval(pbTimer);
+  const total = lvl.phonebookTimeout * 1000;
+  const start = performance.now();
+  const ring = $("timer-ring");
+  const num = $("timer-num");
+  pbTimer = setInterval(()=>{
+    const el = performance.now() - start;
+    const remain = Math.max(0, total - el);
+    const pct = remain / total * 100;
+    const sec = Math.ceil(remain / 1000);
+    if(ring) ring.style.background = `conic-gradient(var(--lv-accent) ${pct}%, rgba(0,0,0,.08) 0)`;
+    if(num) num.textContent = sec;
+    if(remain <= 0) closePhonebook();
+  }, 50);
+}
+function closePhonebook(){
+  if(pbTimer){ clearInterval(pbTimer); pbTimer = null; }
+  closeModal();
+}
+
+/* ==================== ⑫ 关卡 2：敲键盘 ==================== */
+let lv2 = {};
+function renderLevel2(lvl){
+  setLevelAccent("level2", lvl);
+  const cap = 280; // 稿纸约 12 行方块字符，长度翻倍
+  lv2 = { hits:0, running:false, t0:0, cd:lvl.countdownSeconds, cap, state:"ready" };
+  // 预生成一整份稿纸文本，敲击按进度逐段揭示，第 25 击恰好写满
+  lv2.full = genPaperText(lvl, cap);
+
+  $("view-level2").innerHTML = `
+    ${levelHeader(lvl)}
+    <div class="story-card" id="l2-intro"></div>
+    <div class="play-card">
+      <div class="paper" id="l2-paper">
+        <div class="paper-title">${lvl.paperTitle}</div>
+        <div class="paper-body" id="l2-body">${cursorHTML()}</div>
+      </div>
+      <div class="cd" id="l2-cd">⏰ 5.00秒</div>
+      <div class="pbar-wrap"><div class="pbar" id="l2-bar"></div></div>
+      <div class="l2-count" id="l2-count">0 / ${lvl.targetHits}</div>
+      <button class="btn btn-accent l2-keybtn" id="l2-key"><span class="kbd-emoji">⌨️</span> 敲一下键盘</button>
+    </div>`;
+
+  const back = $("btn-back"); back.addEventListener("click", stopL2AndBack);
+  // 导语直接显示（不再逐行）
+  $("l2-intro").innerHTML = lvl.intro.map(t => `<div class="t-body">${t}</div>`).join("");
+
+  const key = $("l2-key");
+  const hit = () => {
+    if(lv2.state === "done" || lv2.state === "fail") return;
+    if(lv2.state === "ready"){ lv2.state = "run"; lv2.t0 = performance.now(); startL2Cd(); }
+    lv2.hits++;
+    renderL2Paper();
+    pulseL2();
+    if(lv2.hits >= lvl.targetHits){ lv2Win(); }
+  };
+  key.addEventListener("click", hit);
+  key.addEventListener("pointerdown", ()=>{ key.style.transform = "translate(4px,4px); box-shadow:0 0 0 var(--ink)"; });
+  key.addEventListener("pointerup", ()=>{ key.style.transform = ""; });
+}
+function cursorHTML(){ return `<span class="cursor"></span>`; }
+function genPaperText(lvl, cap){
+  let s = "";
+  const b = lvl.blockChar;
+  // 用不同长度的 █ 段模拟真实段落（词长短不一，更自然）
+  while(s.length < cap){
+    for(let g = 0; g < randi(1,5); g++){
+      if(s.length >= cap) break;
+      if(g > 0) s += " ";
+      s += b.repeat(randi(1,6));
+    }
+    if(s.length < cap) s += " ";
+  }
+  return s.slice(0, cap);
+}
+function renderL2Paper(){
+  const lvl = levelById(2);
+  const fraction = Math.min(1, lv2.hits / lvl.targetHits);
+  const filled = Math.round(lv2.cap * fraction);
+  const txt = lv2.full.slice(0, filled);
+  const done = lv2.hits >= lvl.targetHits;
+  $("l2-body").innerHTML = done
+    ? txt + `<div class="done-stamp">已提交 ✔</div>`
+    : txt + cursorHTML();
+  $("l2-count").textContent = `${lv2.hits} / ${lvl.targetHits}`;
+  $("l2-bar").style.width = (fraction * 100) + "%";
+}
+function pulseL2(){
+  const paper = $("l2-paper");
+  paper.classList.remove("shake");
+  void paper.offsetWidth;
+  paper.classList.add("shake");
+}
+function startL2Cd(){
+  const lvl = levelById(2);
+  lv2.cdTimer = setInterval(()=>{
+    const el = (performance.now() - lv2.t0) / 1000;
+    const remain = Math.max(0, lvl.countdownSeconds - el);
+    const s = Math.floor(remain);
+    const cs = Math.floor((remain - s) * 100);
+    $("l2-cd").textContent = "⏰ " + s + "." + String(cs).padStart(2, "0") + "秒";
+    if(remain <= 0){ lv2Fail(); }
+  }, 30);
+}
+function lv2Win(){
+  clearInterval(lv2.cdTimer);
+  lv2.state = "done";
+  const lvl = levelById(2);
+  $("l2-cd").textContent = "🎉";
+  const lines = [
+    "🏆恭喜准点下班！",
+    "这一年，因为你的才华和努力，",
+    "成功解锁成就",
+    `<b class="glow-word">🏅【${lvl.achievementName}】🏅</b>`,
+  ];
+  openModal("");
+  playResult(lvl, lines);
+}
+function lv2Fail(){
+  clearInterval(lv2.cdTimer);
+  lv2.state = "fail";
+  failCounts[2]++;
+  $("l2-cd").textContent = "⏰ 0.00秒";
+  const cheatBtn = failCounts[2] >= 3 ? `<button class="btn btn-accent btn-block" id="btn-cheat" style="margin-top:10px">${CONFIG.cheat.label}</button>` : "";
+  openModal(`
+    <div class="popup-head">⏰</div>
+    <div class="popup-title" style="color:var(--danger)">时间到！</div>
+    <div class="popup-body">🥀 材料还没写完，今天要加班了。</div>
+    <div class="popup-actions">
+      <button class="btn btn-primary btn-block" id="btn-retry">再试一次</button>
+      ${cheatBtn}
+    </div>`);
+  $("btn-retry").addEventListener("click", ()=>{ closeModal(); resetLv2(); });
+  if(failCounts[2] >= 3) $("btn-cheat").addEventListener("click", ()=> cheatToSuccess(2));
+}
+function resetLv2(){
+  const lvl = levelById(2);
+  const cap = lv2.cap || 300;
+  lv2 = { hits:0, running:false, t0:0, cd:lvl.countdownSeconds, cap, state:"ready" };
+  lv2.full = genPaperText(lvl, cap);
+  if(lv2.cdTimer) clearInterval(lv2.cdTimer);
+  $("l2-body").innerHTML = cursorHTML();
+  $("l2-cd").textContent = "⏰ 5.00秒";
+  $("l2-bar").style.width = "0%";
+  $("l2-count").textContent = `0 / ${lvl.targetHits}`;
+}
+function stopL2AndBack(){
+  if(lv2.cdTimer) clearInterval(lv2.cdTimer);
+  backToHall();
+}
+
+/* ==================== ⑬ 关卡 3：节拍点击 ==================== */
+let lv3 = {};
+function renderLevel3(lvl){
+  setLevelAccent("level3", lvl);
+  lv3 = { phase:"intro", actionIdx:0, fails:0, raf:null, curP:0, running:false, results:[], started:false, token:0, timeout:null };
+  $("view-level3").innerHTML = `
+    ${levelHeader(lvl)}
+    <div class="stage-bg" id="l3-bg">${stageStars()}</div>
+    <div class="story-card" id="l3-intro"></div>
+    <div class="play-card lv3-play">
+      <div class="lv3-hint">${lvl.hint}</div>
+      <div class="stage" id="l3-stage">
+        <div class="bull" id="l3-bull"></div>
+        <div class="ring" id="l3-ring"></div>
+        <div class="action-emoji" id="l3-emoji">🕺</div>
+        <div class="verdict" id="l3-verdict"></div>
+      </div>
+      <div class="lv3-progress" id="l3-progress">准备</div>
+      <div class="lv3-actions">
+        <button class="btn btn-accent l3-music" id="l3-music">${lvl.musicBtn}</button>
+      </div>
+    </div>`;
+
+  const back = $("btn-back"); back.addEventListener("click", ()=>{ cancelL3(); backToHall(); });
+  // 导语直接显示（保留最后一句闪亮 showtime）
+  $("l3-intro").innerHTML = lvl.intro.map((t, i) => {
+    const isShow = i === lvl.intro.length - 1;
+    return `<div class="t-body${isShow ? " showtime" : ""}">${t}</div>`;
+  }).join("");
+
+  $("l3-music").addEventListener("click", l3Start);
+  $("l3-stage").addEventListener("click", l3Tap);
+}
+function l3Start(){
+  lv3.actionIdx = 0;
+  lv3.phase = "play";
+  lv3.results = [];
+  l3BeginAction();
+}
+function l3BeginAction(){
+  const lvl = levelById(3);
+  if(lv3.actionIdx >= lvl.actions.length){ l3Win(); return; }
+  const emoji = lvl.actions[lv3.actionIdx];
+  // 四个动作四种环色 + 四个角的气泡位置
+  const colors = ["#FFDE59","#5CE1E6","#FF5E97","#A3FF73"];
+  const corners = ["corner-tr","corner-tl","corner-br","corner-bl"];
+  const cur = colors[lv3.actionIdx % colors.length];
+  lv3.corner = corners[lv3.actionIdx % corners.length];
+  $("l3-stage").style.setProperty("--action-color", cur);
+  $("l3-emoji").textContent = emoji;
+  $("l3-emoji").classList.remove("dance");
+  void $("l3-emoji").offsetWidth;
+  $("l3-emoji").classList.add("dance");
+  $("l3-verdict").className = "verdict " + lv3.corner;
+  $("l3-progress").textContent = `动作 ${lv3.actionIdx + 1} / ${lvl.actions.length}`;
+  lv3.running = true;
+  lv3.startTime = performance.now();
+  if(lv3.timeout) clearTimeout(lv3.timeout);
+  cancelAnimationFrame(lv3.raf);
+  // 超时 = MISS（用 setTimeout 而不是依赖 rAF，无需头浏览器判定也可靠）
+  const myToken = ++lv3.token;
+  lv3.timeout = setTimeout(()=>{ if(lv3.running && lv3.token === myToken) l3Miss(); }, L3_DUR + 60);
+  lv3.raf = requestAnimationFrame(l3Tick);
+}
+const L3_DUR = 1500, L3_MIN = 0.38, L3_MAX = 0.90;
+function l3Tick(now){
+  if(!lv3.running) return;
+  const p = Math.min(1, (now - lv3.startTime) / L3_DUR);
+  const scale = 1.6 - 1.35 * p;
+  $("l3-ring").style.transform = `scale(${scale})`;
+  if(p < 1) lv3.raf = requestAnimationFrame(l3Tick);
+}
+function l3Tap(){
+  if(lv3.phase !== "play" || !lv3.running) return;
+  const p = (performance.now() - lv3.startTime) / L3_DUR;
+  if(p >= L3_MIN && p <= L3_MAX) l3Perfect();
+  else l3Miss();
+}
+function l3Perfect(){
+  lv3.running = false; cancelAnimationFrame(lv3.raf);
+  if(lv3.timeout){ clearTimeout(lv3.timeout); lv3.timeout = null; }
+  lv3.results.push("✓");
+  const v = $("l3-verdict");
+  v.className = "verdict " + (lv3.corner || "corner-tr") + " perfect"; v.textContent = "✨ PERFECT";
+  lv3.actionIdx++;
+  setTimeout(()=>{ if(lv3.phase !== "done") l3BeginAction(); }, 650);
+}
+function l3Miss(){
+  cancelAnimationFrame(lv3.raf);
+  if(lv3.timeout){ clearTimeout(lv3.timeout); lv3.timeout = null; }
+  lv3.running = false;
+  lv3.fails++;
+  lv3.results = [];       // 时光倒流：全部重来
+  lv3.actionIdx = 0;
+  const v = $("l3-verdict");
+  v.className = "verdict " + (lv3.corner || "corner-tr") + " miss"; v.textContent = "💥 MISS";
+
+  setTimeout(()=>{
+    const lvl = levelById(3);
+    const his = lvl.missText.map(t=>`<div class="popup-body-line">${t}</div>`).join("");
+    const cheatBtn = lv3.fails >= 3 ? `<button class="btn btn-accent btn-block" id="btn-cheat" style="margin-top:12px">${CONFIG.cheat.label}</button>` : "";
+    openModal(`
+      <div class="popup-head">🚷</div>
+      <div class="popup-body">${his}</div>
+      <div class="popup-actions">
+        <button class="btn btn-primary btn-block" id="btn-ok">时光倒流</button>
+        ${cheatBtn}
+      </div>`);
+    $("btn-ok").addEventListener("click", ()=>{ closeModal(); l3BeginAction(); });
+    if(lv3.fails >= 3){
+      $("btn-cheat").addEventListener("click", ()=> cheatToSuccess(3));
+    }
+  }, 650);
+}
+function l3Win(){
+  lv3.phase = "done";
+  $("l3-progress").textContent = "演出结束 👏";
+  cheerLevel3(levelById(3));
+}
+function cheerLevel3(lvl){
+  const lines = [
+    "🎉 完美的演出！",
+    `恭喜获得<b class="glow-word">「${lvl.awardName}」</b>`,
+    "实至名归！🏆",
+  ];
+  openModal("");
+  playResult(lvl, lines);
+}
+function cancelL3(){ cancelAnimationFrame(lv3.raf); if(lv3.timeout){ clearTimeout(lv3.timeout); lv3.timeout = null; } lv3.running = false; }
+
+/* ==================== ⑭ 关卡 4：打包 ==================== */
+let lv4 = {};
+function renderLevel4(lvl){
+  setLevelAccent("level4", lvl);
+  lv4 = { chosen:[], phase:"intro" };
+  $("view-level4").innerHTML = `
+    ${levelHeader(lvl)}
+    <div class="story-card">${lvl.intro.map(t=>`<div class="t-body">${t}</div>`).join("")}</div>
+    <div style="text-align:center;margin:2px 0 6px"><button class="btn btn-primary" id="l4-start">${lvl.startLabel}</button></div>
+    <div id="l4-game" style="display:none"></div>`;
+
+  const back = $("btn-back"); back.addEventListener("click", backToHall);
+  $("l4-start").addEventListener("click", ()=>{ lv4.phase = "play"; $("l4-game").style.display = "block"; $("l4-start").closest("div").style.display = "none"; buildLv4Game(lvl); });
+}
+function buildLv4Game(lvl){
+  // 三排：4 + 3 + 3，错落自由；十种不同底色
+  const rows = [[0,1,2,3],[4,5,6],[7,8,9]];
+  const PALETTE = ["#FFDE59","#5CE1E6","#FF5E97","#A3FF73","#FFB3C1","#B7A4FF","#8AD1FF","#FFD08A","#B5EAD7","#F0C2FF"];
+  const makeOpt = (i) => {
+    const o = lvl.options[i];
+    const rot = randi(-9,9);
+    const fd = (2.8 + Math.random()*2.2).toFixed(2);
+    const fdel = (Math.random()*1.5).toFixed(2);
+    const tint = PALETTE[i % PALETTE.length];
+    return `<button class="opt" data-i="${i}" style="--rot:${rot}deg;--fd:${fd}s;--fdel:${fdel}s;--tint:${tint}">
+      <span class="opt-e">${o.e}</span><span class="opt-n">${o.n}</span></button>`;
+  };
+  const rowsHtml = rows.map((row, ri) => `<div class="opt-row${ri === 1 ? " mid" : ""}">${row.map(makeOpt).join("")}</div>`).join("");
+
+  $("l4-game").innerHTML = `
+    <div class="lv4-options" id="l4-opts">${rowsHtml}</div>
+    <div class="pick-count" id="l4-count">已选择 0 / ${lvl.maxSelect}</div>
+    <div class="suitcase">
+      <div class="suitcase-handle"></div>
+      <div class="suitcase-label">💕 最重要的三样东西</div>
+      <div class="suitcase-items" id="l4-items"></div>
+    </div>
+    <div style="text-align:center;margin-top:14px"><button class="btn btn-accent btn-block l4-go-btn" id="l4-go" style="display:none">🙌 带走</button></div>`;
+
+  document.querySelectorAll("#l4-opts .opt").forEach(b => {
+    b.addEventListener("click", ()=> addChoice(lvl, parseInt(b.dataset.i,10)));
+  });
+  $("l4-go").addEventListener("click", ()=> confirmLv4(lvl));
+}
+function addChoice(lvl, i){
+  if(lv4.chosen.length >= lvl.maxSelect) return;
+  if(lv4.chosen.includes(i)) return;
+  lv4.chosen.push(i);
+  renderLv4(lvl);
+}
+function removeChoice(lvl, i){
+  lv4.chosen = lv4.chosen.filter(x => x !== i);
+  renderLv4(lvl);
+}
+function renderLv4(lvl){
+  document.querySelectorAll("#l4-opts .opt").forEach(b => {
+    const i = parseInt(b.dataset.i,10);
+    b.disabled = lv4.chosen.includes(i) || (lv4.chosen.length >= lvl.maxSelect);
+  });
+  const items = lv4.chosen.map(i => {
+    const o = lvl.options[i];
+    return `<span class="suit-item">${o.e} ${o.n}<span class="rm" data-i="${i}">×</span></span>`;
+  }).join("") || `<span class="suit-empty">还空着……</span>`;
+  $("l4-items").innerHTML = items;
+  document.querySelectorAll("#l4-items .rm").forEach(r => {
+    r.addEventListener("click", ()=> removeChoice(lvl, parseInt(r.dataset.i,10)));
+  });
+  $("l4-count").textContent = `已选择 ${lv4.chosen.length} / ${lvl.maxSelect}`;
+  $("l4-go").style.display = lv4.chosen.length === lvl.maxSelect ? "inline-flex" : "none";
+}
+function confirmLv4(lvl){
+  const names = lv4.chosen.map(i => lvl.options[i].n);
+  const nameStr = names.map(n => `<b class="hl-word">${n}</b>`).join("、");
+  openModal(`
+    <div class="popup-head">🧳</div>
+    <div class="popup-title">${lvl.confirmTitle}</div>
+    <div class="popup-body">你确定要带走：${nameStr}？</div>
+    <div class="popup-actions">
+      <button class="btn btn-deep btn-block" id="btn-yes">决定了！</button>
+      <button class="btn btn-ghost btn-block" id="btn-no">我再想想</button>
+    </div>`);
+  $("btn-yes").addEventListener("click", ()=> lv4Success(lvl));
+  $("btn-no").addEventListener("click", closeModal);
+}
+function lv4Success(lvl){
+  const names = lv4.chosen.map(i => lvl.options[i].n);
+  const nameStr = names.length === 3
+    ? `${names[0]}、${names[1]}和${names[2]}`
+    : names.join("、");
+  const lines = [ lvl.thanksPrefix, nameStr, lvl.thanksTail, lvl.dropText ];
+  openModal("");
+  playResult(lvl, lines);
+}
+
+/* ---------- 关卡成功统一入口 ---------- */
+function runLevelSuccess(lvl, opts){
+  openModal("");
+  if(lvl.id === 1){
+    const lines = (opts && opts.skipDial)
+      ? [lvl.success]
+      : [...lvl.dialLines, lvl.success];
+    playResult(lvl, lines);
+  } else if(lvl.id === 2){
+    const lines = [ "🏆恭喜准点下班！", "这一年，因为你的才华和努力，", "成功解锁成就", `<b class="glow-word">🏅【${lvl.achievementName}】🏅</b>` ];
+    playResult(lvl, lines);
+  } else if(lvl.id === 3){
+    const lines = [ "🎉 完美的演出！", `恭喜获得<b class="glow-word">「${lvl.awardName}」</b>`, "实至名归！🏆" ];
+    playResult(lvl, lines);
+  } else if(lvl.id === 4){
+    // 作弊不会出现在第 4 关（无失败机制），此分支仅供兜底
+    lv4Success(lvl);
+  }
+}
+
+/* ==================== ⑮ 页面 C：终极密码（弹窗） ==================== */
+function openPasswordModal(){
+  const c = CONFIG.passwordPage;
+  $("modal").innerHTML = `
+    <button class="modal-close" id="pw-close">×</button>
+    <div class="popup-head">🔐</div>
+    <div class="popup-title">${c.title}</div>
+    <div class="t-caption" style="text-align:center;margin-bottom:6px">${c.desc.join("<br>")}</div>
+    <div class="otp-row" id="otp-row">
+      <input class="otp" maxlength="1" inputmode="numeric" pattern="[0-9]*" />
+      <input class="otp" maxlength="1" inputmode="numeric" pattern="[0-9]*" />
+      <input class="otp" maxlength="1" inputmode="numeric" pattern="[0-9]*" />
+      <input class="otp" maxlength="1" inputmode="numeric" pattern="[0-9]*" />
+    </div>
+    <button class="btn btn-primary btn-block" id="btn-unlock" disabled>${c.unlockLabel}</button>
+    <div class="pw-msg" id="pw-msg"></div>`;
+  openModal();
+  bindOTP();
+  $("pw-close").addEventListener("click", closeModal);
+  $("btn-unlock").addEventListener("click", checkPassword);
+}
+function bindOTP(){
+  const boxes = [...document.querySelectorAll("#otp-row .otp")];
+  boxes[0].focus();
+  boxes.forEach((b, i) => {
+    b.addEventListener("input", (e)=>{
+      b.value = b.value.replace(/\D/g, "").slice(0,1);
+      if(b.value && i < boxes.length - 1) boxes[i + 1].focus();
+      syncUnlockBtn();
+    });
+    b.addEventListener("keydown", (e)=>{
+      if(e.key === "Backspace" && !b.value && i > 0){
+        boxes[i - 1].focus();
+        boxes[i - 1].value = "";
+        syncUnlockBtn();
+      }
+    });
+    b.addEventListener("focus", ()=> b.select());
+  });
+}
+function syncUnlockBtn(){
+  const boxes = [...document.querySelectorAll("#otp-row .otp")];
+  const full = boxes.every(b => b.value.length === 1);
+  $("btn-unlock").disabled = !full;
+}
+function checkPassword(){
+  const boxes = [...document.querySelectorAll("#otp-row .otp")];
+  const guess = boxes.map(b => b.value).join("");
+  const c = CONFIG.passwordPage;
+  if(guess === CONFIG.password.join("")){
+    $("pw-msg").textContent = c.correct;
+    const p = loadProgress();
+    p.finalVisited = true;
+    saveProgress(p); progress = p;
+    setTimeout(()=>{ closeModal(); renderFinal(); }, 1000);
+  } else {
+    $("pw-msg").textContent = c.wrong;
+  }
+}
+
+/* ==================== ⑯ 页面 D：最终纪念 ==================== */
+function renderFinal(){
+  const c = CONFIG.finalPage;
+  const lines = CONFIG.finalMessage;
+  $("view-final").innerHTML = `
+    <div class="final-decor">${finalDecor()}</div>
+    <div class="final-num">${CONFIG.workDays}</div>
+    <div class="final-unit">${c.unit}</div>
+    <div class="final-date">${CONFIG.workDates.start} → ${CONFIG.workDates.end}</div>
+    <hr class="rule">
+    <div class="final-msg">
+      ${lines.map((l,i)=>`<p class="fade-in" data-i="${i}">${l}</p>`).join("")}
+    </div>
+    <div class="final-replay" id="final-replay" style="display:none">
+      <button class="btn btn-ghost" id="btn-replay">↺ 再玩一次</button>
+    </div>`;
+  showView("final");
+  // 逐段淡入，全部出现完再显示「再玩一次」
+  setTimeout(()=>{
+    const ps = document.querySelectorAll(".final-msg .fade-in");
+    ps.forEach((p,i)=>{
+      setTimeout(()=>{
+        p.classList.add("on");
+        if(i === ps.length - 1){
+          setTimeout(()=>{ $("final-replay").style.display = "block"; }, 700);
+        }
+      }, i * 1600);
+    });
+  }, 350);
+  $("btn-replay").addEventListener("click", ()=>{
+    try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+    progress = defaultProgress();
+    renderOpening();
+    showView("opening");
+  });
+}
+
+/* 终页庆祝漂浮 emoji */
+function finalDecor(){
+  const emojis = ["🎉","🎊","✨","🎈","💐","🥂","🎂","🌟","🌸","🎇","🎁","💫","💖","🌈"];
+  let s = "";
+  for(let i = 0; i < 28; i++){
+    const e = emojis[i % emojis.length];
+    const size = randi(14, 32);
+    const x = randi(2, 92);
+    const y = randi(2, 96);
+    const delay = (Math.random() * 4).toFixed(2);
+    const dur = (3 + Math.random() * 4).toFixed(2);
+    s += `<i style="left:${x}%;top:${y}%;font-size:${size}px;animation-delay:${delay}s;animation-duration:${dur}s">${e}</i>`;
+  }
+  return s;
+}
+
+/* ==================== ⑰ 启动 ==================== */
+function init(){
+  renderOpening();
+  showView("opening");
+}
+document.addEventListener("DOMContentLoaded", init);

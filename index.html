@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Begin Again</title>
+<meta name="description" content="一只送给同事们的离职纪念网页小游戏。" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- 外框外的孟菲斯几何碎屑（纯装饰，不参与交互） -->
+  <div class="decor" id="decor" aria-hidden="true"></div>
+
+  <!-- 穿越预示：短促闪白 -->
+  <div class="flash" id="flash" aria-hidden="true"></div>
+
+  <div class="frame-wrap">
+    <div class="phone-frame">
+      <div class="frame-notch" aria-hidden="true"></div>
+
+      <div class="screen" id="screen">
+        <div class="scroll" id="scroll">
+          <!-- 各视图由 main.js 从 CONFIG 渲染 -->
+          <section class="view bleed" id="view-opening"></section>
+          <section class="view" id="view-hall"></section>
+          <section class="view" id="view-level1"></section>
+          <section class="view" id="view-level2"></section>
+          <section class="view" id="view-level3"></section>
+          <section class="view" id="view-level4"></section>
+          <section class="view" id="view-password"></section>
+          <section class="view" id="view-final"></section>
+        </div>
+
+        <!-- 全局弹窗层（浮窗 / 结果 / 确认框，不算页面跳转） -->
+        <div class="overlay" id="overlay">
+          <div class="modal-card" id="modal"></div>
+        </div>
+      </div>
+
+      <div class="frame-homebar" aria-hidden="true"></div>
+    </div>
+  </div>
+
+<script src="main.js"></script>
+</body>
+</html>
