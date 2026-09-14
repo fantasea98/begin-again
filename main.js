@@ -91,7 +91,7 @@ const CONFIG = {
 
   // 页面 C 文案
   passwordPage: {
-    title: "🔐 最后的密码",
+    title: "最后的密码",
     desc: ["你已经收集齐了所有碎片。", "输入它们组成的密码。"],
     unlockLabel: "解锁",
     wrong: "密码不正确，看看碎片再想想",
@@ -167,8 +167,8 @@ const CONFIG = {
       accentIndex: 2,
       awardName: "最受观众喜爱节目奖",
       intro: [
-        "年会现场，「下一个表演，《像你这样的朋友》。」",
-        "😖 你站在后台，突然有点紧张。",
+        "「下一个表演，《像你这样的朋友》。」",
+        "😖 你站在年会后台，突然有点紧张。",
         "🎵 音乐 ready，站位 check。",
         "💓 IT'S SHOW TIME.",
       ],
@@ -305,7 +305,14 @@ function openModal(html){
 }
 function closeModal(){
   $("overlay").classList.remove("show");
-  $("modal").classList.remove("note-mode");
+  $("modal").classList.remove("note-mode","otp-mode");
+  $("modal").style.maxHeight = "";
+  // 清理键盘监听
+  if(_vvHandler && window.visualViewport){
+    window.visualViewport.removeEventListener("resize", _vvHandler);
+    window.visualViewport.removeEventListener("scroll", _vvHandler);
+    _vvHandler = null;
+  }
 }
 
 /* ==================== ⑥ 孟菲斯碎屑 ==================== */
@@ -444,6 +451,8 @@ function renderHall(){
   let html = `
     <div class="hall">
       <div class="hall-glow"></div>
+      <div class="hall-glow g2"></div>
+      <div class="hall-glow g3"></div>
       <div class="hall-decor">${hallDecorDots()}</div>
       <div class="hall-title t-h1">${CONFIG.hallTitle}</div>
       <div class="hall-sub t-caption">${CONFIG.hallSubtitle}</div>
@@ -1351,9 +1360,28 @@ function openPasswordModal(){
     <button class="btn btn-primary btn-block" id="btn-unlock" disabled>${c.unlockLabel}</button>
     <div class="pw-msg" id="pw-msg"></div>`;
   openModal();
+  $("modal").classList.add("otp-mode");
   bindOTP();
   $("pw-close").addEventListener("click", closeModal);
   $("btn-unlock").addEventListener("click", checkPassword);
+}
+let _vvHandler = null;
+function adjustOtpForKeyboard(){
+  if(!window.visualViewport) return;
+  if(_vvHandler) window.visualViewport.removeEventListener("resize", _vvHandler);
+  _vvHandler = () => {
+    const card = $("modal");
+    if(!card || !$("overlay").classList.contains("show")) return;
+    const vv = window.visualViewport;
+    const keyboardH = window.innerHeight - vv.height;
+    if(keyboardH > 50){
+      card.style.maxHeight = vv.height * 0.9 + "px";
+    } else {
+      card.style.maxHeight = "";
+    }
+  };
+  window.visualViewport.addEventListener("resize", _vvHandler);
+  window.visualViewport.addEventListener("scroll", _vvHandler);
 }
 function bindOTP(){
   const boxes = [...document.querySelectorAll("#otp-row .otp")];
