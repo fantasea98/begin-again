@@ -26,7 +26,7 @@ const CONFIG = {
     cyan: "#5CE1E6",
     neon: "#A3FF73",
     purple: "#C77DFF",
-    optionPalette: ["#FFDE59","#5CE1E6","#FF5E97","#A3FF73","#FFB3C1","#B7A4FF","#8AD1FF","#FFD08A","#B5EAD7","#F0C2FF"],
+    optionPalette: ["#E0A800","#0E8FA3","#D52E68","#2E9E4F","#DC5F7E","#6F52D6","#2775C9","#E5842A","#259E7B","#A449CC"],
     success: "#3DDC84",
     danger: "#E45D54",
     frame: "#26262b",       // 手机外框机身色
@@ -148,7 +148,7 @@ const CONFIG = {
       tagline: "那一年，你独当一面。",
       accentIndex: 1,
       intro: [
-        "一个风平浪静的下午。☁🍵",
+        "一个风平浪静的下午。🍵",
         "下班前一小时，领导叫住了你：",
         "<b class=\"red-flash\">「这份材料，今天内交给我。」🧨</b>",
         "既然如此，我和你拼了！💪",
@@ -383,18 +383,22 @@ function runOpening(){
   const last = c.messages[c.messages.length - 1];
   if(last.likes){
     const likesAt = t.othersStart + (c.messages.length - 1) * t.othersGap + t.likesDelay;
+    const totalLikes = parseInt(c.likeCount, 10) || last.likes;  // 24
     for(let k = 0; k < last.likes; k++){
       setTimeout(()=>{
         const bubbles = document.querySelectorAll("#chat-body .msg .bubble");
         const lastBubble = bubbles[bubbles.length - 1];
         if(!lastBubble) return;
+        // 每蹦出一个👍，人数 +1：22 → 23 → 24
+        const countNow = totalLikes - last.likes + 1 + k;
         let box = lastBubble.querySelector(".like-box");
         if(!box){
-          lastBubble.insertAdjacentHTML("beforeend", `<div class="like-box"><span class="like-pop">👍</span><span class="like-count">${c.likeCount}</span></div>`);
+          lastBubble.insertAdjacentHTML("beforeend", `<div class="like-box"><span class="like-pop">👍</span><span class="like-count">${countNow}人已点赞</span></div>`);
         } else {
           const pop = document.createElement("span");
           pop.className = "like-pop"; pop.textContent = "👍";
           box.insertBefore(pop, box.querySelector(".like-count"));
+          box.querySelector(".like-count").textContent = countNow + "人已点赞";
         }
         lastBubble.classList.add("has-likes");
         V.scrollTop = V.scrollHeight;
@@ -483,9 +487,9 @@ function renderHall(){
   // 卡片点击
   document.querySelectorAll(".level-card").forEach(card => {
     const lvId = parseInt(card.dataset.lv, 10);
-    card.addEventListener("click", () => {
+    card.addEventListener("click", (e) => {
       if(card.classList.contains("locked")){ showLockedHint(); return; }
-      enterLevel(lvId);
+      enterLevel(lvId, e.clientX, e.clientY);
     });
   });
   // 密码入口
@@ -531,37 +535,161 @@ function hallDecorDots(){
   return s;
 }
 
-/* 第三关：舞台星星灯光背景 */
-function stageStars(){
-  const colors = [T.accents[0], T.cyan, T.accents[2], T.neon, "#ffffff"];
+/* ==================== 关卡专属背景 ==================== */
+
+/* 第 1 关：百叶窗晨光 + 缓慢漂浮的办公用品 + 阳光金色尘埃 */
+function dustHTML(){
   let s = "";
-  for(let i = 0; i < 14; i++){
-    const c = colors[randi(0, colors.length - 1)];
-    const size = randi(3, 8);
-    const x = randi(2, 96);
-    const y = randi(2, 96);
-    const delay = (Math.random() * 4).toFixed(2);
-    const dur = (1.4 + Math.random() * 2.6).toFixed(2);
-    s += `<i style="left:${x}%;top:${y}%;width:${size}px;height:${size}px;background:${c};animation-delay:${delay}s;animation-duration:${dur}s"></i>`;
+  for(let i = 0; i < 30; i++){
+    const x = (Math.random() * 100).toFixed(1);
+    const y0 = (60 + Math.random() * 40).toFixed(1);   // 从下方生成
+    const rise = Math.round(200 + Math.random() * 200); // 上升 200~400px
+    const dur = (4 + Math.random() * 5).toFixed(1);    // 4~9 秒
+    const delay = (Math.random() * 6).toFixed(1);
+    const size = (1.5 + Math.random() * 2).toFixed(1);  // 1.5~3.5px
+    s += `<i class="dust" style="left:${x}%;bottom:${y0}%;width:${size}px;height:${size}px;--rise:${rise}px;animation-duration:${dur}s;animation-delay:${delay}s"></i>`;
   }
   return s;
+}
+function bgLevel1(){
+  const items = [
+    { e:"☕", x:8,  y:34, s:24, d:0,   dur:9 },
+    { e:"🖊️", x:78, y:12, s:28, d:1.5, dur:11 },
+    { e:"📎", x:86, y:30, s:20, d:3,   dur:8 },
+    { e:"📝", x:12, y:14, s:22, d:2,   dur:10 },
+    { e:"💻", x:34, y:7,  s:24, d:4,   dur:12 },
+    { e:"📓", x:58, y:30, s:22, d:2.5, dur:9.5 },
+    { e:"📁", x:24, y:28, s:22, d:1,   dur:10.5 },
+    { e:"✏️", x:48, y:18, s:20, d:3.5, dur:8.5 },
+    { e:"📏", x:70, y:6,  s:22, d:2,   dur:11.5 },
+    { e:"🖇️", x:6,  y:8,  s:19, d:4.5, dur:9 },
+    { e:"📮", x:90, y:16, s:21, d:.8,  dur:10 },
+    { e:"🗂️", x:40, y:36, s:21, d:2.8, dur:12.5 },
+  ];
+  const floats = items.map(it =>
+    `<i class="float-item" style="left:${it.x}%;top:${it.y}%;font-size:${it.s}px;animation-delay:${it.d}s;animation-duration:${it.dur}s">${it.e}</i>`
+  ).join("");
+  return `<div class="level-bg bg-1"><div class="blinds"></div><div class="dust-field">${dustHTML()}</div>${floats}</div>`;
+}
+
+/* 第 2 关：午后天空——整屏天色从午后蓝转到五点金，太阳下沉、云朵飘过（--warm 0→1） */
+function bgLevel2(){
+  return `<div class="level-bg bg-2" id="l2-bg">
+    <div class="sky sky-day"></div>
+    <div class="sky sky-dusk"></div>
+    <div class="win-sun"></div>
+    <span class="cloud c1">☁️</span>
+    <span class="cloud c2">☁️</span>
+    <span class="cloud c3">☁️</span>
+  </div>`;
+}
+
+/* 第 3 关：舞台幕布 + 三束摇摆追光 + 镜面地板 + 观众手机星光 */
+function bgLevel3(){
+  let aud = "";
+  for(let i = 0; i < 22; i++){
+    const size = randi(2, 4);
+    const x = randi(2, 96), y = randi(84, 97);
+    const delay = (Math.random() * 3).toFixed(2);
+    const dur = (2.2 + Math.random() * 2.5).toFixed(2);
+    aud += `<i class="aud-star" style="left:${x}%;top:${y}%;width:${size}px;height:${size}px;animation-delay:${delay}s;animation-duration:${dur}s"></i>`;
+  }
+  return `<div class="level-bg bg-3" id="l3-bg">
+    <div class="curtain"></div>
+    <div class="spots" id="l3-spots">
+      <div class="spot spot-l"></div>
+      <div class="spot spot-c"></div>
+      <div class="spot spot-r"></div>
+    </div>
+    <div class="floor-glow g1"></div>
+    <div class="floor-glow g2"></div>
+    <div class="floor-glow g3"></div>
+    <div class="stage-floor"></div>
+    ${aud}
+  </div>`;
+}
+
+/* 第 4 关：暖橙夕阳 + 极透明的前三关回忆（透明度 .08~.12） */
+function bgLevel4(){
+  const memos = ["📞","💻","🕺","🏆","🎤","☎️","⌨️","🎵","💃","🧳","📎","☕"];
+  let s = "";
+  for(let i = 0; i < 10; i++){
+    const e = memos[i % memos.length];
+    const x = randi(4, 90), size = randi(15, 22);
+    const dur = (20 + Math.random() * 12).toFixed(1);
+    const delay = (-Math.random() * dur).toFixed(1); // 负延迟：进场时画面里已有回忆在飘
+    const op = (0.07 + Math.random() * 0.05).toFixed(2);
+    s += `<i class="memo" style="left:${x}%;font-size:${size}px;animation-duration:${dur}s;animation-delay:${delay}s;opacity:${op}">${e}</i>`;
+  }
+  let dust = "";
+  for(let i = 0; i < 12; i++){
+    const size = randi(2, 4);
+    dust += `<i class="dust" style="left:${randi(4,94)}%;top:${randi(15,90)}%;width:${size}px;height:${size}px;animation-delay:${(Math.random()*6).toFixed(1)}s"></i>`;
+  }
+  return `<div class="level-bg bg-4"><div class="sun"></div><div class="rays"></div>${s}${dust}</div>`;
+}
+
+/* 通用：在指定元素位置生成一次性特效（挂在 screen 上，不受滚动影响） */
+function spawnEffectAt(el, cls, html){
+  const screen = $("screen");
+  const sr = screen.getBoundingClientRect(), er = el.getBoundingClientRect();
+  const fx = document.createElement("div");
+  fx.className = cls;
+  if(html) fx.innerHTML = html;
+  fx.style.left = (er.left - sr.left + er.width / 2) + "px";
+  fx.style.top = (er.top - sr.top + er.height / 2) + "px";
+  screen.appendChild(fx);
+  setTimeout(()=> fx.remove(), 1200);
+  return fx;
 }
 
 /* ==================== ⑩ 关卡渲染与进入 ==================== */
 function setLevelAccent(name, lvl){
   $("view-" + name).style.setProperty("--lv-accent", accentOf(lvl));
 }
-function enterLevel(id){
+function enterLevel(id, clickX, clickY){
   const lvl = levelById(id);
-  // 清空其他关卡视图，避免重复 id（如 #btn-back）导致事件绑到隐藏关卡上
-  [1,2,3,4].forEach(i => { if(i !== id) $("view-level" + i).innerHTML = ""; });
-  switch(id){
-    case 1: renderLevel1(lvl); break;
-    case 2: renderLevel2(lvl); break;
-    case 3: renderLevel3(lvl); break;
-    case 4: renderLevel4(lvl); break;
+  const accent = accentOf(lvl);
+  // 涟漪穿越效果
+  const screen = $("screen");
+  const rect = screen.getBoundingClientRect();
+  const cx = clickX !== undefined ? clickX - rect.left : rect.width / 2;
+  const cy = clickY !== undefined ? clickY - rect.top : rect.height / 2;
+  // 直径取「点击点到最远角」和「屏幕对角线」两者的大值，两个圆心位置都能完全盖满
+  const fromClick = Math.hypot(Math.max(cx, rect.width - cx), Math.max(cy, rect.height - cy)) * 2;
+  const maxR = Math.max(fromClick, Math.hypot(rect.width, rect.height));
+
+  const overlay = document.createElement("div");
+  overlay.className = "ripple-overlay";
+  // 两圈水波装饰环（在下层）
+  for(let i = 1; i <= 2; i++){
+    const w = document.createElement("div");
+    w.className = "ripple-circle w" + i;
+    w.style.cssText = `left:${cx}px;top:${cy}px;width:${maxR}px;height:${maxR}px;`;
+    overlay.appendChild(w);
   }
-  showView("level" + id);
+  // 实心光圈（在上层，负责转场遮挡），起点圆心通过 --sx/--sy 交给 CSS 动画
+  const iris = document.createElement("div");
+  iris.className = "ripple-circle iris";
+  iris.style.cssText = `left:50%;top:50%;width:${maxR}px;height:${maxR}px;background:${accent};--sx:${cx}px;--sy:${cy}px;`;
+  overlay.appendChild(iris);
+  screen.appendChild(overlay);
+
+  // 光圈铺满的停顿阶段（约 450ms）：此时 CSS 动画已把圆心带到屏幕正中，切换视图
+  setTimeout(()=>{
+    // 清空其他关卡视图
+    [1,2,3,4].forEach(i => { if(i !== id) $("view-level" + i).innerHTML = ""; });
+    switch(id){
+      case 1: renderLevel1(lvl); break;
+      case 2: renderLevel2(lvl); break;
+      case 3: renderLevel3(lvl); break;
+      case 4: renderLevel4(lvl); break;
+    }
+    showView("level" + id);
+  }, 450);
+
+  // 光圈向中心收缩消失后移除遮罩，新页面完整呈现
+  setTimeout(()=>{ overlay.remove(); }, 960);
 }
 
 function levelHeader(lvl){
@@ -628,23 +756,26 @@ function renderLevel1(lvl){
   ).join("");
 
   $("view-level1").innerHTML = `
-    ${levelHeader(lvl)}
-    <div class="story-card">
-      ${lvl.intro.map(t => `<div class="t-body">${t}</div>`).join("")}
-    </div>
-    <div class="play-card">
-      <div class="play-title">${lvl.hint}</div>
-      <div class="digit-row" id="l1-digits"></div>
-      <div class="dial-hint" id="l1-hint"></div>
-      <div class="keypad">${keyHtml}</div>
-      <button class="btn btn-ghost btn-block" id="l1-del" style="margin-bottom:10px">⌫ 删除</button>
-      <button class="btn btn-accent btn-block" id="l1-pb">📖 查看电话簿</button>
+    ${bgLevel1()}
+    <div class="view-scroll">
+      ${levelHeader(lvl)}
+      <div class="story-card">
+        ${lvl.intro.map(t => `<div class="t-body">${t}</div>`).join("")}
+      </div>
+      <div class="play-card">
+        <div class="play-title">${lvl.hint}</div>
+        <div class="digit-row" id="l1-digits"></div>
+        <div class="dial-hint" id="l1-hint"></div>
+        <div class="keypad">${keyHtml}</div>
+        <button class="btn btn-ghost btn-block" id="l1-del" style="margin-bottom:10px">⌫ 删除</button>
+        <button class="btn btn-accent btn-block" id="l1-pb">📖 查看电话簿</button>
+      </div>
     </div>`;
 
   const back = $("btn-back"); back.addEventListener("click", stopLv1AndBack);
 
   document.querySelectorAll(".key").forEach(k => {
-    k.addEventListener("click", () => pressKey(lvl, k.dataset.k));
+    k.addEventListener("click", () => pressKey(lvl, k.dataset.k, k));
   });
   $("l1-del").addEventListener("click", () => deleteKey(lvl));
   $("l1-pb").addEventListener("click", () => openPhonebook(lvl));
@@ -662,12 +793,13 @@ function renderL1Number(lvl){
   }
   row.innerHTML = html;
 }
-function pressKey(lvl, k){
+function pressKey(lvl, k, keyEl){
   if(k === "*" || k === "#"){ vibrate(8); return; }
   if(lv1.dialJudging) return;
   if(lv1.entered.length >= lvl.digitLength) return;
   lv1.entered += k;
   vibrate(15);
+  if(keyEl) spawnEffectAt(keyEl, "tap-wave");  // 拨号声波反馈
   renderL1Number(lvl);
   if(lv1.entered.length === lvl.digitLength){
     lv1.dialJudging = true;
@@ -762,7 +894,7 @@ function closePhonebook(){
 }
 
 /* ==================== ⑫ 关卡 2：敲键盘 ==================== */
-const LV2_CAP = 280; // 稿纸约 12 行方块字符，长度翻倍
+const LV2_CAP = 168; // 稿纸约 6 行方块字符（标题 1 行 + 正文 6 行 = 7 行）
 const fmtCd = (sec) => "⏰ " + sec.toFixed(2) + "秒";
 let lv2 = {};
 function renderLevel2(lvl){
@@ -772,17 +904,20 @@ function renderLevel2(lvl){
   lv2.full = genPaperText(lvl, LV2_CAP);
 
   $("view-level2").innerHTML = `
-    ${levelHeader(lvl)}
-    <div class="story-card" id="l2-intro"></div>
-    <div class="play-card">
-      <div class="paper" id="l2-paper">
-        <div class="paper-title">${lvl.paperTitle}</div>
-        <div class="paper-body" id="l2-body">${cursorHTML()}</div>
+    ${bgLevel2()}
+    <div class="view-scroll">
+      ${levelHeader(lvl)}
+      <div class="story-card" id="l2-intro"></div>
+      <div class="play-card">
+        <div class="paper" id="l2-paper">
+          <div class="paper-title">${lvl.paperTitle}</div>
+          <div class="paper-body" id="l2-body">${cursorHTML()}</div>
+        </div>
+        <div class="cd" id="l2-cd">${fmtCd(lvl.countdownSeconds)}</div>
+        <div class="pbar-wrap"><div class="pbar" id="l2-bar"></div></div>
+        <div class="l2-count" id="l2-count">0 / ${lvl.targetHits}</div>
+        <button class="btn btn-accent l2-keybtn" id="l2-key"><span class="kbd-emoji">⌨️</span> 敲一下键盘</button>
       </div>
-      <div class="cd" id="l2-cd">${fmtCd(lvl.countdownSeconds)}</div>
-      <div class="pbar-wrap"><div class="pbar" id="l2-bar"></div></div>
-      <div class="l2-count" id="l2-count">0 / ${lvl.targetHits}</div>
-      <button class="btn btn-accent l2-keybtn" id="l2-key"><span class="kbd-emoji">⌨️</span> 敲一下键盘</button>
     </div>`;
 
   const back = $("btn-back"); back.addEventListener("click", stopL2AndBack);
@@ -796,6 +931,7 @@ function renderLevel2(lvl){
     lv2.hits++;
     renderL2Paper();
     pulseL2();
+    spawnL2Sparks(key);  // 敲键迸出字符火星
     if(lv2.hits >= lvl.targetHits){ lv2Win(); }
   };
   key.addEventListener("click", hit);
@@ -835,12 +971,38 @@ function pulseL2(){
   void paper.offsetWidth;
   paper.classList.add("shake");
 }
+/* 敲键迸溅：字符碎片向四周飞出 */
+function spawnL2Sparks(el){
+  const screen = $("screen");
+  const sr = screen.getBoundingClientRect(), er = el.getBoundingClientRect();
+  const box = document.createElement("div");
+  box.style.cssText = `position:absolute;z-index:60;pointer-events:none;left:${er.left - sr.left + er.width/2}px;top:${er.top - sr.top + er.height/2}px`;
+  const chars = ["█","█","·","*","✦","✚"];
+  for(let i = 0; i < 6; i++){
+    const s = document.createElement("span");
+    s.className = "spark";
+    s.textContent = chars[randi(0, chars.length - 1)];
+    const ang = -Math.PI/2 + (Math.random() - .5) * Math.PI * 1.3; // 向上半圆方向
+    const dist = randi(38, 90);
+    s.style.setProperty("--dx", Math.cos(ang) * dist + "px");
+    s.style.setProperty("--dy", Math.sin(ang) * dist + "px");
+    box.appendChild(s);
+  }
+  screen.appendChild(box);
+  setTimeout(()=> box.remove(), 700);
+}
 function startL2Cd(){
   const lvl = levelById(2);
+  const bg = $("l2-bg");
+  // 太阳开始沿弧线落山（动画时长与倒计时一致）
+  if(bg){ bg.style.setProperty("--cd", lvl.countdownSeconds + "s"); bg.classList.add("sun-run"); }
   lv2.cdTimer = setInterval(()=>{
     const el = (performance.now() - lv2.t0) / 1000;
     const remain = Math.max(0, lvl.countdownSeconds - el);
     $("l2-cd").textContent = fmtCd(remain);
+    // 天色随倒计时从午后蓝转向五点金
+    if(bg) bg.style.setProperty("--warm", Math.min(1, el / lvl.countdownSeconds).toFixed(3));
+    if(remain <= 1 && bg) bg.classList.add("danger");
     if(remain <= 0){ lv2Fail(); }
   }, 30);
 }
@@ -848,6 +1010,9 @@ function lv2Win(){
   clearInterval(lv2.cdTimer);
   lv2.state = "done";
   $("l2-cd").textContent = "🎉";
+  // 准点下班：太阳正好沉底、满屏金色
+  const bg = $("l2-bg");
+  if(bg){ bg.classList.remove("danger"); bg.classList.add("dawn"); bg.style.setProperty("--warm","1"); }
   // "已提交"出现后等 1.4s 再弹成功结算
   setTimeout(()=> runLevelSuccess(levelById(2), {}), 1400);
 }
@@ -856,6 +1021,9 @@ function lv2Fail(){
   lv2.state = "fail";
   failCounts[2]++;
   $("l2-cd").textContent = fmtCd(0);
+  // 错过五点：天色一沉，暗示要加班
+  const bg0 = $("l2-bg");
+  if(bg0){ bg0.classList.remove("danger"); bg0.classList.add("overtime","sun-freeze"); }
   const cheatBtn = failCounts[2] >= 3 ? `<button class="btn btn-accent btn-block" id="btn-cheat" style="margin-top:10px">${CONFIG.cheat.label}</button>` : "";
   openModal(`
     <div class="popup-head">⏰</div>
@@ -873,6 +1041,12 @@ function resetLv2(){
   lv2 = { hits:0, running:false, t0:0, cd:lvl.countdownSeconds, cap:LV2_CAP, state:"ready" };
   lv2.full = genPaperText(lvl, LV2_CAP);
   if(lv2.cdTimer) clearInterval(lv2.cdTimer);
+  const bg = $("l2-bg");
+  if(bg){
+    bg.classList.remove("danger","dawn","overtime","sun-run","sun-freeze");
+    bg.style.setProperty("--warm","0");
+    void bg.offsetWidth;  // 强制回流，让太阳动画回到起点
+  }
   $("l2-body").innerHTML = cursorHTML();
   $("l2-cd").textContent = fmtCd(lvl.countdownSeconds);
   $("l2-bar").style.width = "0%";
@@ -889,20 +1063,22 @@ function renderLevel3(lvl){
   setLevelAccent("level3", lvl);
   lv3 = { phase:"intro", actionIdx:0, fails:0, raf:null, running:false, results:[], token:0, timeout:null, stepTimer:null };
   $("view-level3").innerHTML = `
-    ${levelHeader(lvl)}
-    <div class="stage-bg" id="l3-bg">${stageStars()}</div>
-    <div class="story-card" id="l3-intro"></div>
-    <div class="play-card lv3-play">
-      <div class="lv3-hint">${lvl.hint}</div>
-      <div class="stage" id="l3-stage">
-        <div class="bull" id="l3-bull"></div>
-        <div class="ring" id="l3-ring"></div>
-        <div class="action-emoji" id="l3-emoji">🕺</div>
-        <div class="verdict" id="l3-verdict"></div>
-      </div>
-      <div class="lv3-progress" id="l3-progress">准备</div>
-      <div class="lv3-actions">
-        <button class="btn btn-accent l3-music" id="l3-music">${lvl.musicBtn}</button>
+    ${bgLevel3()}
+    <div class="view-scroll">
+      ${levelHeader(lvl)}
+      <div class="story-card" id="l3-intro"></div>
+      <div class="play-card lv3-play">
+        <div class="lv3-hint">${lvl.hint}</div>
+        <div class="stage" id="l3-stage">
+          <div class="bull" id="l3-bull"></div>
+          <div class="ring" id="l3-ring"></div>
+          <div class="action-emoji" id="l3-emoji">🕺</div>
+          <div class="verdict" id="l3-verdict"></div>
+        </div>
+        <div class="lv3-progress" id="l3-progress">准备</div>
+        <div class="lv3-actions">
+          <button class="btn btn-accent l3-music" id="l3-music">${lvl.musicBtn}</button>
+        </div>
       </div>
     </div>`;
 
@@ -920,6 +1096,8 @@ function l3Start(){
   lv3.actionIdx = 0;
   lv3.phase = "play";
   lv3.results = [];
+  const bg = $("l3-bg");
+  if(bg) bg.classList.add("live");  // 灯光进入节拍模式
   l3BeginAction();
 }
 function l3BeginAction(){
@@ -965,6 +1143,7 @@ function l3Perfect(){
   lv3.running = false; cancelAnimationFrame(lv3.raf);
   if(lv3.timeout){ clearTimeout(lv3.timeout); lv3.timeout = null; }
   lv3.results.push("✓");
+  l3PerfectFx();  // 舞台光波 + 音符飞起
   const v = $("l3-verdict");
   v.className = "verdict " + (lv3.corner || "corner-tr") + " perfect"; v.textContent = "✨ PERFECT";
   lv3.actionIdx++;
@@ -973,6 +1152,24 @@ function l3Perfect(){
     lv3.stepTimer = null;
     if(lv3.phase !== "done") l3BeginAction();
   }, 650);
+}
+/* PERFECT 特效：舞台中心白色光波扩散 + 音符斜飞 */
+function l3PerfectFx(){
+  const stage = $("l3-stage");
+  if(!stage) return;
+  const wave = document.createElement("div");
+  wave.className = "stage-wave";
+  stage.appendChild(wave);
+  setTimeout(()=> wave.remove(), 750);
+  ["🎵","✨","🎶"].forEach((n, i) => {
+    const s = document.createElement("span");
+    s.className = "note-fly";
+    s.textContent = n;
+    s.style.setProperty("--nx", ((i - 1) * 40) + "px");
+    s.style.animationDelay = (i * .08) + "s";
+    stage.appendChild(s);
+    setTimeout(()=> s.remove(), 1200);
+  });
 }
 function l3Miss(){
   cancelAnimationFrame(lv3.raf);
@@ -1025,10 +1222,13 @@ function renderLevel4(lvl){
   setLevelAccent("level4", lvl);
   lv4 = { chosen:[], phase:"intro" };
   $("view-level4").innerHTML = `
-    ${levelHeader(lvl)}
-    <div class="story-card">${lvl.intro.map(t=>`<div class="t-body">${t}</div>`).join("")}</div>
-    <div style="text-align:center;margin:2px 0 6px"><button class="btn btn-primary" id="l4-start">${lvl.startLabel}</button></div>
-    <div id="l4-game" style="display:none"></div>`;
+    ${bgLevel4()}
+    <div class="view-scroll">
+      ${levelHeader(lvl)}
+      <div class="story-card">${lvl.intro.map(t=>`<div class="t-body">${t}</div>`).join("")}</div>
+      <div style="text-align:center;margin:2px 0 6px;position:relative;z-index:1"><button class="btn btn-primary" id="l4-start">${lvl.startLabel}</button></div>
+      <div id="l4-game" style="display:none"></div>
+    </div>`;
 
   const back = $("btn-back"); back.addEventListener("click", backToHall);
   $("l4-start").addEventListener("click", ()=>{ lv4.phase = "play"; $("l4-game").style.display = "block"; $("l4-start").closest("div").style.display = "none"; buildLv4Game(lvl); });
@@ -1038,7 +1238,7 @@ function buildLv4Game(lvl){
   const rows = [[0,1,2,3],[4,5,6],[7,8,9]];
   const PALETTE = T.optionPalette;
   // 每张卡片的文字色：浅色调，与深色底色高对比
-  const TEXT_COLORS = ["#FFF8E1","#E0F7FA","#FCE4EC","#F1F8E9","#FFF3E0","#F3E5F5","#E1F5FE","#FFFDE7","#F1F8E9","#F3E5F5"];
+  const TEXT_COLORS = ["#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF"];
   const makeOpt = (i) => {
     const o = lvl.options[i];
     const rot = randi(-9,9);
@@ -1208,7 +1408,7 @@ function confettiBurst(){
   const colors = [T.accents[0], T.cyan, T.accents[2], T.neon, T.purple, "#FFD08A", "#FFB3C1", "#B5EAD7", "#8AD1FF", "#F0C2FF"];
   const container = document.createElement("div");
   container.className = "confetti-container";
-  for(let i = 0; i < 60; i++){
+  for(let i = 0; i < 240; i++){
     const piece = document.createElement("div");
     piece.className = "confetti-piece";
     const size = randi(6, 13);
@@ -1221,7 +1421,7 @@ function confettiBurst(){
     container.appendChild(piece);
   }
   $("screen").appendChild(container);
-  setTimeout(() => container.remove(), 3800);
+  setTimeout(() => container.remove(), 4300);
 }
 
 /* ==================== ⑯ 页面 D：最终纪念 ==================== */
@@ -1238,21 +1438,24 @@ function renderFinal(){
       ${lines.map((l,i)=>`<p class="fade-in" data-i="${i}">${l}</p>`).join("")}
     </div>
     <div class="final-replay" id="final-replay" style="display:none">
+      <button class="btn btn-ghost" id="btn-back-lobby">← 返回结界</button>
       <button class="btn btn-ghost" id="btn-replay">↺ 再玩一次</button>
     </div>`;
   showView("final");
-  // 逐段淡入，全部出现完再显示「再玩一次」
+  // 逐段淡入，全部出现完再显示按钮组
   setTimeout(()=>{
     const ps = document.querySelectorAll(".final-msg .fade-in");
     ps.forEach((p,i)=>{
       setTimeout(()=>{
         p.classList.add("on");
         if(i === ps.length - 1){
-          setTimeout(()=>{ $("final-replay").style.display = "block"; }, 1000);
+          setTimeout(()=>{ $("final-replay").style.display = "flex"; }, 1000);
         }
       }, i * 2000);
     });
   }, 350);
+  // 返回大厅：进度保留
+  $("btn-back-lobby").addEventListener("click", backToHall);
   $("btn-replay").addEventListener("click", ()=>{
     try{ localStorage.removeItem(STORE_KEY); }catch(e){}
     progress = defaultProgress();
