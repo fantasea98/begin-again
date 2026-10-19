@@ -172,7 +172,7 @@ const CONFIG = {
         "🎵 音乐 ready，站位 check。",
         "💓 IT'S SHOW TIME.",
       ],
-      actions: ["🙋‍♂️", "💁‍♂️", "🙆‍♂️", "🙅‍♂️"],
+      actions: ["🙋‍♂️", "💁‍♂️", "🙆‍♂️", "🙅‍♂️", "🧏‍♂️", "🤷‍♂️", "👫", "🙇"],
       hint: "按MUSIC开始表演\n在完美的时机点击圆圈做出动作",
       musicBtn: "MUSIC!",
       missText: ["哎呀，不小心忘记动作了。", "没关系，你永远可以从头来过。"],
@@ -266,16 +266,48 @@ function defaultProgress(){
            level3:{done:false,fragment:null}, level4:{done:false,fragment:null},
            finalVisited:false };
 }
-function loadProgress(){
+/* localStorage 可能被环境禁用（沙箱 iframe / file:// 限制 / 隐私模式）。
+   原实现一旦 getItem 抛错就返回空白默认，于是「通关下一关时会把上一关的进度冲掉」。
+   现在改成本地存储优先、内存兜底：存储不可用时至少同一会话内进度不丢。 */
+let _memRaw = null, _storeOK = true;
+function readRaw(){
   try{
-    const raw = localStorage.getItem(STORE_KEY);
-    if(!raw) return defaultProgress();
-    const p = JSON.parse(raw);
-    return Object.assign(defaultProgress(), p);
+    const v = localStorage.getItem(STORE_KEY);
+    if(v !== null) return v;
+  }catch(e){ _storeOK = false; }
+  return _memRaw;
+}
+function writeRaw(v){
+  _memRaw = v;                       // 先写内存，保证本会话一定在
+  try{ localStorage.setItem(STORE_KEY, v); _storeOK = true; }
+  catch(e){
+    if(_storeOK){
+      _storeOK = false;
+      console.warn("[begin again] localStorage 不可用，进度只保存在当前会话（刷新会丢）。建议用本地 http 服务打开页面。");
+    }
+  }
+}
+function clearRaw(){
+  _memRaw = null;
+  try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+}
+function loadProgress(){
+  const raw = readRaw();
+  if(!raw) return defaultProgress();
+  try{
+    return Object.assign(defaultProgress(), JSON.parse(raw));
   }catch(e){ return defaultProgress(); }
 }
 function saveProgress(p){
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify(p)); }catch(e){}
+  writeRaw(JSON.stringify(p));
+}
+/* 以当前内存进度为底本，绝不重新读存储，避免存储异常时丢进度 */
+function commitProgress(mut){
+  const p = Object.assign({}, progress);
+  mut(p);
+  saveProgress(p);
+  progress = p;
+  return p;
 }
 const allDone = (p) => ["level1","level2","level3","level4"].every(k => p[k].done);
 const fragsCollected = (p) => CONFIG.levels.filter(l => p["level"+l.id].done).length;
@@ -293,6 +325,9 @@ function showView(name){
   target.classList.add("active");
   target.scrollTop = 0;
   currentView = name;
+  // 音效开关只在非开场页出现（开场页右上角是群聊「…」）
+  const sc = $("screen");
+  if(sc) sc.classList.toggle("sfx-show", name !== "opening");
 }
 function backToHall(){ renderHall(); showView("hall"); }
 
@@ -441,7 +476,11 @@ function runOpening(){
       </div>
     </div>`);
     const b = $("btn-enter");
-    if(b) b.addEventListener("click", () => { renderHall(); showView("hall"); });
+    if(b) b.addEventListener("click", () => {
+      SFX.init();               // 必须在用户手势里初始化（浏览器自动播放策略）
+      SFX.tap();
+      renderHall(); showView("hall");
+    });
   }, guideAt);
 }
 
@@ -461,12 +500,14 @@ function renderHall(){
   CONFIG.levels.forEach(lvl => {
     const key = "level" + lvl.id;
     const st = p[key];
-    const unlocked = lvl.id === 1 || p["level" + (lvl.id - 1)].done;
     const done = st.done;
+    // 已通关的关永远视为已解锁并按 done 渲染，
+    // 否则「后面通了、前面没通」的旧存档会出现带碎片徽章却显示上锁的矛盾卡片
+    const unlocked = done || lvl.id === 1 || p["level" + (lvl.id - 1)].done;
 
     let cls = "level-card";
-    if(!unlocked) cls += " locked";
-    else if(done) cls += " done";
+    if(done) cls += " done";
+    else if(!unlocked) cls += " locked";
     else cls += " open";
 
     const emoji = unlocked ? lvl.emoji : "🔒";
@@ -628,7 +669,7 @@ function bgLevel4(){
     const dur = (20 + Math.random() * 12).toFixed(1);
     const delay = (-Math.random() * dur).toFixed(1); // 负延迟：进场时画面里已有回忆在飘
     const op = (0.07 + Math.random() * 0.05).toFixed(2);
-    s += `<i class="memo" style="left:${x}%;font-size:${size}px;animation-duration:${dur}s;animation-delay:${delay}s;opacity:${op}">${e}</i>`;
+    s += `<i class="memo" style="left:${x}%;top:${randi(4, 88)}%;font-size:${size}px;animation-duration:${dur}s;animation-delay:${delay}s;opacity:${op}">${e}</i>`;
   }
   let dust = "";
   for(let i = 0; i < 12; i++){
@@ -739,10 +780,7 @@ function playResult(lvl, lines){
 }
 function collect(id){
   const lvl = levelById(id);
-  const p = loadProgress();
-  p["level" + id] = { done:true, fragment: lvl.fragment };
-  saveProgress(p);
-  progress = p;
+  commitProgress(p => { p["level" + id] = { done:true, fragment: lvl.fragment }; });
   justCompleted = id;
   closeModal();
   backToHall();
@@ -758,7 +796,7 @@ function cheatToSuccess(id){
 let lv1 = { entered:"", dialJudging:false, judgeTimer:null, wrongTimer:null };
 function renderLevel1(lvl){
   setLevelAccent("level1", lvl);
-  lv1 = { entered:"", dialJudging:false, judgeTimer:null, wrongTimer:null };
+  lv1 = { entered:"", dialJudging:false, judgeTimer:null, wrongTimer:null, pbOpens:0 };
   const keys = ["1","2","3","4","5","6","7","8","9","*","0","#"];
   const keyHtml = keys.map(k =>
     `<button class="key${(k === "*" || k === "#") ? " ghost" : ""}" data-k="${k}">${k}</button>`
@@ -773,7 +811,10 @@ function renderLevel1(lvl){
       </div>
       <div class="play-card">
         <div class="play-title">${lvl.hint}</div>
-        <div class="digit-row" id="l1-digits"></div>
+        <div class="l1-screen">
+          <div class="l1-screen-bar"><span>☎</span><span>中山医院 · 内线</span></div>
+          <div class="digit-row" id="l1-digits"></div>
+        </div>
         <div class="dial-hint" id="l1-hint"></div>
         <div class="keypad">${keyHtml}</div>
         <button class="btn btn-ghost btn-block" id="l1-del" style="margin-bottom:10px">⌫ 删除</button>
@@ -808,6 +849,7 @@ function pressKey(lvl, k, keyEl){
   if(lv1.entered.length >= lvl.digitLength) return;
   lv1.entered += k;
   vibrate(15);
+  SFX.dial(k);   // 双音多频拨号音
   if(keyEl) spawnEffectAt(keyEl, "tap-wave");  // 拨号声波反馈
   renderL1Number(lvl);
   if(lv1.entered.length === lvl.digitLength){
@@ -831,6 +873,7 @@ function judgeL1(lvl){
   if(lv1.entered === lvl.correctNumber){
     lv1.dialJudging = false;
     $("l1-hint").textContent = "嘟……接通 ✓";
+    SFX.connected();
     // 显示接通提示后等 1s 再弹成功窗
     lv1.judgeTimer = setTimeout(()=>{ lv1.judgeTimer = null; runLevelSuccess(lvl, {}); }, 1000);
   } else {
@@ -838,6 +881,7 @@ function judgeL1(lvl){
     failCounts[1]++;
     $("l1-hint").textContent = "嘟……嘟……";
     vibrate(40);
+    SFX.wrong();
     lv1.wrongTimer = setTimeout(()=>{
       lv1.wrongTimer = null;
       if(currentView !== "level1") return;
@@ -864,6 +908,10 @@ function openPhonebook(lvl){
   // 每次打开随机打乱顺序，增加记忆难度
   const entries = shuffle(lvl.phonebook);
   const rows = entries.map(p => `<div class="nr"><span>${p.dept}</span><span>${p.num}</span></div>`).join("");
+  // 第一次看 3 秒，第二次起只剩 2 秒（越看越记不住）
+  lv1.pbOpens = (lv1.pbOpens | 0) + 1;
+  const limit = lv1.pbOpens === 1 ? lvl.phonebookTimeout : 2;
+  const tip = lv1.pbOpens === 1 ? "记住它，只有一次机会" : "这次只有 2 秒！";
   $("modal").innerHTML = `
     <div class="note">
       <span class="tape"></span>
@@ -872,18 +920,19 @@ function openPhonebook(lvl){
       <div class="note-title">${lvl.phonebookTitle}</div>
       <div class="note-timer" id="pb-timer">
         <div class="timer-ring" id="timer-ring"></div>
-        <span class="timer-num" id="timer-num">${lvl.phonebookTimeout}</span>
+        <span class="timer-num" id="timer-num">${limit}</span>
       </div>
+      <div class="t-caption" style="text-align:center;margin:0 0 6px">${tip}</div>
       <div class="note-list">${rows}</div>
     </div>`;
   $("modal").classList.add("note-mode");
   openModal();
-  startPbTimer(lvl);
+  startPbTimer(limit);
   $("pb-close").addEventListener("click", closePhonebook);
 }
-function startPbTimer(lvl){
+function startPbTimer(seconds){
   if(pbTimer) clearInterval(pbTimer);
-  const total = lvl.phonebookTimeout * 1000;
+  const total = seconds * 1000;
   const start = performance.now();
   const ring = $("timer-ring");
   const num = $("timer-num");
@@ -917,12 +966,21 @@ function renderLevel2(lvl){
     <div class="view-scroll">
       ${levelHeader(lvl)}
       <div class="story-card" id="l2-intro"></div>
-      <div class="play-card">
-        <div class="paper" id="l2-paper">
-          <div class="paper-title">${lvl.paperTitle}</div>
-          <div class="paper-body" id="l2-body">${cursorHTML()}</div>
+      <div class="play-card pc-crt">
+        <div class="crt-frame" id="l2-crt">
+          <div class="crt-bar">
+            <span class="crt-dots"><i></i><i></i><i></i></span>
+            <span class="crt-name">【初稿】240902申报材料.docx</span>
+            <span id="l2-cd">${fmtCd(lvl.countdownSeconds)}</span>
+          </div>
+          <div class="crt-screen">
+            <div class="paper" id="l2-paper">
+              <div class="paper-title">${lvl.paperTitle}</div>
+              <div class="paper-body" id="l2-body">${cursorHTML()}</div>
+            </div>
+          </div>
+          <div class="crt-timebar"><div class="crt-timebar-fill" id="l2-timebar"></div></div>
         </div>
-        <div class="cd" id="l2-cd">${fmtCd(lvl.countdownSeconds)}</div>
         <div class="pbar-wrap"><div class="pbar" id="l2-bar"></div></div>
         <div class="l2-count" id="l2-count">0 / ${lvl.targetHits}</div>
         <button class="btn btn-accent l2-keybtn" id="l2-key"><span class="kbd-emoji">⌨️</span> 敲一下键盘</button>
@@ -940,6 +998,7 @@ function renderLevel2(lvl){
     lv2.hits++;
     renderL2Paper();
     pulseL2();
+    SFX.key();           // 敲键声（自带节流，连点不爆音）
     spawnL2Sparks(key);  // 敲键迸出字符火星
     if(lv2.hits >= lvl.targetHits){ lv2Win(); }
   };
@@ -1005,13 +1064,23 @@ function startL2Cd(){
   const bg = $("l2-bg");
   // 太阳开始沿弧线落山（动画时长与倒计时一致）
   if(bg){ bg.style.setProperty("--cd", lvl.countdownSeconds + "s"); bg.classList.add("sun-run"); }
+  let lastSec = null;
   lv2.cdTimer = setInterval(()=>{
     const el = (performance.now() - lv2.t0) / 1000;
     const remain = Math.max(0, lvl.countdownSeconds - el);
     $("l2-cd").textContent = fmtCd(remain);
-    // 天色随倒计时从午后蓝转向五点金
+    // 天色随倒计时从午后蓝转向五点金（夕阳元素保留，显示器只是叠在上面）
     if(bg) bg.style.setProperty("--warm", Math.min(1, el / lvl.countdownSeconds).toFixed(3));
+    // 屏幕下沿的时间条：倒计时是时间在消失，条从满到空
+    const tf = $("l2-timebar");
+    if(tf) tf.style.width = (remain / lvl.countdownSeconds * 100) + "%";
+    // 最后 3 秒画面开始撕裂
+    const cf = $("l2-crt");
+    if(cf) cf.classList.toggle("tear", remain > 0 && remain <= 3);
     if(remain <= 1 && bg) bg.classList.add("danger");
+    // 每秒一次滴答，最后 3 秒变调加速
+    const sec = Math.ceil(remain);
+    if(sec !== lastSec && remain > 0){ lastSec = sec; SFX.tick(sec <= 3); }
     if(remain <= 0){ lv2Fail(); }
   }, 30);
 }
@@ -1022,6 +1091,7 @@ function lv2Win(){
   // 准点下班：太阳正好沉底、满屏金色
   const bg = $("l2-bg");
   if(bg){ bg.classList.remove("danger"); bg.classList.add("dawn"); bg.style.setProperty("--warm","1"); }
+  const crt = $("l2-crt"); if(crt) crt.classList.remove("tear");
   // "已提交"出现后等 1.4s 再弹成功结算
   setTimeout(()=> runLevelSuccess(levelById(2), {}), 1400);
 }
@@ -1033,6 +1103,7 @@ function lv2Fail(){
   // 错过五点：天色一沉，暗示要加班
   const bg0 = $("l2-bg");
   if(bg0){ bg0.classList.remove("danger"); bg0.classList.add("overtime","sun-freeze"); }
+  const crt0 = $("l2-crt"); if(crt0) crt0.classList.remove("tear");
   const cheatBtn = failCounts[2] >= 3 ? `<button class="btn btn-accent btn-block" id="btn-cheat" style="margin-top:10px">${CONFIG.cheat.label}</button>` : "";
   openModal(`
     <div class="popup-head">⏰</div>
@@ -1070,24 +1141,28 @@ function stopL2AndBack(){
 let lv3 = {};
 function renderLevel3(lvl){
   setLevelAccent("level3", lvl);
-  lv3 = { phase:"intro", actionIdx:0, fails:0, raf:null, running:false, results:[], token:0, timeout:null, stepTimer:null };
+  lv3 = { phase:"intro", actionIdx:0, fails:0, raf:null, running:false, results:[], token:0, timeout:null, stepTimer:null, startTimer:null, combo:0 };
   $("view-level3").innerHTML = `
     ${bgLevel3()}
     <div class="view-scroll">
       ${levelHeader(lvl)}
       <div class="story-card" id="l3-intro"></div>
-      <div class="play-card lv3-play">
-        <div class="lv3-hint">${lvl.hint}</div>
-        <div class="stage" id="l3-stage">
-          <div class="bull" id="l3-bull"></div>
-          <div class="ring" id="l3-ring"></div>
-          <div class="action-emoji" id="l3-emoji">🕺</div>
-          <div class="verdict" id="l3-verdict"></div>
-        </div>
-        <div class="lv3-progress" id="l3-progress">准备</div>
-        <div class="lv3-actions">
-          <button class="btn btn-accent l3-music" id="l3-music">${lvl.musicBtn}</button>
-        </div>
+      <div class="l3-hud">
+        <div class="l3-hud-item"><span class="l3-hud-k">COMBO</span><span class="l3-hud-v" id="l3-combo">0</span></div>
+        <div class="l3-hud-item"><span class="l3-hud-k">RANK</span><span class="l3-hud-v" id="l3-rank">S</span></div>
+        <div class="l3-hud-item"><span class="l3-hud-k">MISS</span><span class="l3-hud-v" id="l3-miss">0</span></div>
+      </div>
+      <div class="lv3-hint">${lvl.hint}</div>
+      <div class="stage" id="l3-stage">
+        <div class="bull" id="l3-bull"></div>
+        <div class="ring" id="l3-ring"></div>
+        <div class="action-emoji" id="l3-emoji">🕺</div>
+        <div class="verdict" id="l3-verdict"></div>
+        <div class="velvet-wrap"><div class="velvet vl"></div><div class="velvet vr"></div></div>
+      </div>
+      <div class="lv3-progress" id="l3-progress">准备</div>
+      <div class="lv3-actions">
+        <button class="btn btn-accent l3-music" id="l3-music">${lvl.musicBtn}</button>
       </div>
     </div>`;
 
@@ -1105,16 +1180,37 @@ function l3Start(){
   lv3.actionIdx = 0;
   lv3.phase = "play";
   lv3.results = [];
+  lv3.combo = 0;
   const bg = $("l3-bg");
-  if(bg) bg.classList.add("live");  // 灯光进入节拍模式
-  l3BeginAction();
+  if(bg) bg.classList.add("live");   // 灯光进入节拍模式
+  $("l3-stage").classList.add("opened");  // 幕布向两侧拉开，演出开始
+  updateL3Hud();
+  $("l3-progress").textContent = "数拍……";
+  SFX.l3CountIn();                       // 4 个 hihat 数拍（走 ctx 时钟，不受主线程抖动影响）
+  if(lv3.startTimer) clearTimeout(lv3.startTimer);
+  lv3.startTimer = setTimeout(()=>{
+    lv3.startTimer = null;
+    if(lv3.phase === "play") l3BeginAction();
+  }, 900);
+}
+function updateL3Hud(bump){
+  const c = $("l3-combo"), r = $("l3-rank"), m = $("l3-miss");
+  if(!c || !r || !m) return;
+  c.textContent = lv3.combo || 0;
+  m.textContent = lv3.fails || 0;
+  const rank = (lv3.fails | 0) === 0 ? "S" : lv3.fails === 1 ? "A" : lv3.fails === 2 ? "B" : "C";
+  r.textContent = rank;
+  r.className = "l3-hud-v rank-" + rank;
+  if(bump){
+    [c, m].forEach(el => { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); });
+  }
 }
 function l3BeginAction(){
   const lvl = levelById(3);
   if(lv3.actionIdx >= lvl.actions.length){ l3Win(); return; }
   const emoji = lvl.actions[lv3.actionIdx];
-  // 四个动作四种环色 + 四个角的气泡位置（颜色走 THEME，换肤同步）
-  const colors = [T.accents[0], T.cyan, T.accents[2], T.neon];
+  // 八个动作八种环色（色表走 THEME，换肤同步）；四个角的气泡位置循环复用
+  const colors = [T.accents[0], T.cyan, T.accents[2], T.neon, T.purple, T.accents[3], "#FF9BB5", "#FFD08A"];
   const corners = ["corner-tr","corner-tl","corner-br","corner-bl"];
   const cur = colors[lv3.actionIdx % colors.length];
   lv3.corner = corners[lv3.actionIdx % corners.length];
@@ -1133,8 +1229,27 @@ function l3BeginAction(){
   const myToken = ++lv3.token;
   lv3.timeout = setTimeout(()=>{ if(lv3.running && lv3.token === myToken) l3Miss(); }, L3_DUR + 60);
   lv3.raf = requestAnimationFrame(l3Tick);
+  // 伴奏：底鼓起拍 + 三下 hihat + 军鼓正好落在完美判定中心（ctx 时钟调度）
+  SFX.l3Action(L3_DUR, (L3_MIN + L3_MAX) / 2 * L3_DUR);
 }
-const L3_DUR = 1500, L3_MIN = 0.51, L3_MAX = 0.77;
+const L3_DUR = 1500;
+/* 判定窗口：虚线圈 124px、收缩圈 150px，两者刚好重合在 p≈0.573。
+   窗口围绕这个重合点基本对称（0.48~0.67），
+   圈缩到虚线圈约 85% 时窗口即关闭——「圈明显更小」就一定判 MISS */
+const L3_MIN = 0.48, L3_MAX = 0.67;
+/* 命中时的随机喝彩（每次不同，避免八拍下来一直同一个词） */
+const L3_PRAISE = [
+  { e:"✨", t:"PERFECT"   },
+  { e:"🌟", t:"EXCELLENT" },
+  { e:"🎯", t:"GREAT"     },
+  { e:"🔥", t:"AMAZING"   },
+  { e:"👏", t:"BRAVO"     },
+  { e:"💯", t:"NICE"      },
+];
+const L3_MISS_WORD = ["MISS", "哎呀", "乱了"];
+function pickPraise(){
+  return L3_PRAISE[randi(0, L3_PRAISE.length - 1)];
+}
 function l3Tick(now){
   if(!lv3.running) return;
   const p = Math.min(1, (now - lv3.startTime) / L3_DUR);
@@ -1152,15 +1267,29 @@ function l3Perfect(){
   lv3.running = false; cancelAnimationFrame(lv3.raf);
   if(lv3.timeout){ clearTimeout(lv3.timeout); lv3.timeout = null; }
   lv3.results.push("✓");
+  lv3.combo = (lv3.combo || 0) + 1;
   l3PerfectFx();  // 舞台光波 + 音符飞起
+  SFX.perfect();
+  l3Beam();       // 地板光柱拔高
+  updateL3Hud(true);
+  const pr = pickPraise();
   const v = $("l3-verdict");
-  v.className = "verdict " + (lv3.corner || "corner-tr") + " perfect"; v.textContent = "✨ PERFECT";
+  v.className = "verdict " + (lv3.corner || "corner-tr") + " perfect";
+  v.textContent = pr.e + " " + pr.t;
+  v.dataset.len = pr.t.length;   // 长词自动缩一点，保证小屏放得下
   lv3.actionIdx++;
   if(lv3.stepTimer) clearTimeout(lv3.stepTimer);
   lv3.stepTimer = setTimeout(()=>{
     lv3.stepTimer = null;
     if(lv3.phase !== "done") l3BeginAction();
   }, 650);
+}
+/* PERFECT 特效 2：地板三束光柱瞬间拔高爆闪 */
+function l3Beam(){
+  const bg = $("l3-bg");
+  if(!bg) return;
+  bg.classList.add("beam");
+  setTimeout(()=> bg.classList.remove("beam"), 380);
 }
 /* PERFECT 特效：舞台中心白色光波扩散 + 音符斜飞 */
 function l3PerfectFx(){
@@ -1187,8 +1316,12 @@ function l3Miss(){
   lv3.fails++;
   lv3.results = [];       // 时光倒流：全部重来
   lv3.actionIdx = 0;
+  lv3.combo = 0;
+  SFX.miss();
+  updateL3Hud(true);
   const v = $("l3-verdict");
-  v.className = "verdict " + (lv3.corner || "corner-tr") + " miss"; v.textContent = "💥 MISS";
+  v.className = "verdict " + (lv3.corner || "corner-tr") + " miss";
+  v.textContent = "💥 " + L3_MISS_WORD[randi(0, L3_MISS_WORD.length - 1)];
 
   if(lv3.stepTimer) clearTimeout(lv3.stepTimer);
   lv3.stepTimer = setTimeout(()=>{
@@ -1222,7 +1355,10 @@ function cancelL3(){
   cancelAnimationFrame(lv3.raf);
   if(lv3.timeout){ clearTimeout(lv3.timeout); lv3.timeout = null; }
   if(lv3.stepTimer){ clearTimeout(lv3.stepTimer); lv3.stepTimer = null; }
+  if(lv3.startTimer){ clearTimeout(lv3.startTimer); lv3.startTimer = null; }
   lv3.running = false;
+  const bg = $("l3-bg");
+  if(bg) bg.classList.remove("beam");
 }
 
 /* ==================== ⑭ 关卡 4：打包 ==================== */
@@ -1292,7 +1428,8 @@ function renderLv4(lvl){
   });
   const items = lv4.chosen.map(i => {
     const o = lvl.options[i];
-    return `<span class="suit-item">${o.e} ${o.n}<span class="rm" data-i="${i}">×</span></span>`;
+    const rot = randi(-7, 7);   // 贴纸歪粘进箱子
+    return `<span class="suit-item" style="--rot:${rot}deg">${o.e} ${o.n}<span class="rm" data-i="${i}">×</span></span>`;
   }).join("") || `<span class="suit-empty">还空着……</span>`;
   $("l4-items").innerHTML = items;
   document.querySelectorAll("#l4-items .rm").forEach(r => {
@@ -1327,6 +1464,7 @@ function lv4Success(lvl){
 
 /* ---------- 关卡成功统一入口 ---------- */
 function runLevelSuccess(lvl, opts){
+  SFX.fragment();       // 碎片到手：上行琶音
   openModal("");
   if(lvl.id === 1){
     const lines = [...lvl.dialLines, lvl.success];
@@ -1418,10 +1556,9 @@ function checkPassword(){
   const c = CONFIG.passwordPage;
   if(guess === CONFIG.password.join("")){
     $("pw-msg").textContent = c.correct;
-    const p = loadProgress();
-    p.finalVisited = true;
-    saveProgress(p); progress = p;
+    commitProgress(p => { p.finalVisited = true; });
     vibrate([30, 40, 30, 40, 60]);
+    SFX.unlock();
     setTimeout(()=>{
       closeModal();
       confettiBurst();
@@ -1433,6 +1570,7 @@ function checkPassword(){
 }
 /* 彩带：从顶部垂直飘落，铺满整个宽度 */
 function confettiBurst(){
+  SFX.confetti();
   const colors = [T.accents[0], T.cyan, T.accents[2], T.neon, T.purple, "#FFD08A", "#FFB3C1", "#B5EAD7", "#8AD1FF", "#F0C2FF"];
   const container = document.createElement("div");
   container.className = "confetti-container";
@@ -1485,7 +1623,7 @@ function renderFinal(){
   // 返回大厅：进度保留
   $("btn-back-lobby").addEventListener("click", backToHall);
   $("btn-replay").addEventListener("click", ()=>{
-    try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+    clearRaw();
     progress = defaultProgress();
     failCounts = { 1:0, 2:0, 3:0 };  // 失败计数也必须清零，否则新一局首次失败就会出现作弊按钮
     renderOpening();
@@ -1511,7 +1649,33 @@ function finalDecor(){
 }
 
 /* ==================== ⑰ 启动 ==================== */
+
+/* 全局按钮音：所有 .btn 点击都出一声轻响（各关自己的音效另外叠加） */
+document.addEventListener("click", (e) => {
+  const b = e.target.closest && e.target.closest(".btn");
+  if(b && !b.disabled) SFX.tap();
+});
+
+/* 音效开关 */
+function initSfxToggle(){
+  const btn = $("sfx-toggle");
+  if(!btn) return;
+  if(SFX.isDead()){ btn.style.display = "none"; return; }
+  const paint = () => {
+    btn.classList.toggle("muted", SFX.isMuted());
+    btn.setAttribute("aria-pressed", SFX.isMuted() ? "false" : "true");
+  };
+  paint();
+  btn.addEventListener("click", () => {
+    SFX.init();                 // 万一还没初始化过
+    SFX.toggle();
+    paint();
+    if(!SFX.isMuted()) SFX.tap();   // 打开时给一声确认
+  });
+}
+
 function init(){
+  initSfxToggle();
   renderOpening();
   showView("opening");
 }
