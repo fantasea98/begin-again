@@ -380,7 +380,45 @@ function lockDateText(){
 function renderLock(){
   $("view-lock").innerHTML = `
     <div class="lock">
-      <div class="lock-bg"></div>
+      <svg class="lock-bg" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="lgSky2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#F6B27B"/><stop offset=".3" stop-color="#F49A5F"/>
+            <stop offset=".52" stop-color="#EE7F4C"/><stop offset="1" stop-color="#E5673F"/>
+          </linearGradient>
+          <linearGradient id="lgSea2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#DE8048"/><stop offset=".4" stop-color="#C06339"/>
+            <stop offset="1" stop-color="#93452A"/>
+          </linearGradient>
+          <radialGradient id="lgSunGlow" cx=".5" cy=".5" r=".5">
+            <stop offset="0" stop-color="#FFEFC8" stop-opacity=".8"/>
+            <stop offset=".55" stop-color="#FFDF9E" stop-opacity=".32"/>
+            <stop offset="1" stop-color="#FFDF9E" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="lgCol" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#FFE9BC" stop-opacity=".75"/>
+            <stop offset=".6" stop-color="#FFDFa0" stop-opacity=".28"/>
+            <stop offset="1" stop-color="#FFDF9E" stop-opacity="0"/>
+          </linearGradient>
+          <filter id="lb18" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="18"/></filter>
+          <filter id="lb26" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="26"/></filter>
+          <filter id="lb10" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="10"/></filter>
+        </defs>
+        <rect width="390" height="844" fill="url(#lgSky2)"/>
+        <ellipse cx="110" cy="84" rx="190" ry="30" fill="#F4B49C" opacity=".32" filter="url(#lb26)"/>
+        <ellipse cx="290" cy="158" rx="150" ry="24" fill="#FFDDB8" opacity=".5" filter="url(#lb26)"/>
+        <ellipse cx="120" cy="228" rx="160" ry="26" fill="#FFD3A6" opacity=".42" filter="url(#lb26)"/>
+        <ellipse cx="260" cy="320" rx="190" ry="22" fill="#FAC294" opacity=".34" filter="url(#lb26)"/>
+        <circle cx="248" cy="500" r="130" fill="url(#lgSunGlow)"/>
+        <circle cx="248" cy="500" r="36" fill="#FFEEC6"/>
+        <rect y="520" width="390" height="324" fill="url(#lgSea2)"/>
+        <rect y="518.5" width="390" height="3" fill="#FFE3B4" opacity=".7"/>
+        <polygon points="222,523 276,523 306,724 192,724" fill="url(#lgCol)" filter="url(#lb10)" opacity=".62"/>
+        <rect x="196" y="546" width="106" height="5" rx="2.5" fill="#FFE7B6" opacity=".5" filter="url(#lb10)"/>
+        <rect x="214" y="580" width="80" height="4.5" rx="2.2" fill="#FFE2AC" opacity=".4" filter="url(#lb10)"/>
+        <rect x="188" y="624" width="118" height="5" rx="2.5" fill="#FFD9A2" opacity=".3" filter="url(#lb10)"/>
+        <rect x="206" y="672" width="90" height="4.5" rx="2.2" fill="#FFD29A" opacity=".22" filter="url(#lb10)"/>
+      </svg>
 
       <div class="lock-status">
         <span class="ls-op">No Service</span>
@@ -398,27 +436,44 @@ function renderLock(){
 
       <div class="lock-cards">
         <div class="lc lc-weather">
-          <b>21°</b>
-          <span>晚霞满天</span>
+          <span class="lc-top">
+            <svg class="lc-ico" viewBox="0 0 48 48" aria-hidden="true">
+              <circle cx="30" cy="17" r="8.5" fill="#FFD98A"/>
+              <g stroke="#FFD98A" stroke-width="2.6" stroke-linecap="round">
+                <line x1="30" y1="2.5" x2="30" y2="6.5"/>
+                <line x1="43.5" y1="17" x2="47" y2="17"/>
+                <line x1="40.5" y1="7" x2="43.2" y2="4.3"/>
+              </g>
+              <path d="M13 37h22.5a7 7 0 0 0 .9-13.9A10.5 10.5 0 0 0 16.4 20.4 7.8 7.8 0 0 0 13 37z" fill="#FFF4DC"/>
+            </svg>
+            <b>21°</b>
+          </span>
+          <span class="lc-mid">晚霞满天</span>
           <em>最高 24° / 最低 19°</em>
         </div>
         <div class="lc lc-face">
-          <b class="face">(ᵔᴗᵔ)</b>
+          <b class="face">( ˘‿˘ )</b>
           <span>心情晴朗</span>
         </div>
       </div>
 
       <div class="lock-word">
-        <div class="lw-text">begin again</div>
+        <div class="lw-script">begin again</div>
+        <svg class="lw-swash" viewBox="0 0 300 42" aria-hidden="true">
+          <path d="M8 30 C 92 8, 188 36, 250 17 q15 -5 28 3" stroke="#FFF6E4" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".85"/>
+          <path d="M60 24 C 120 14, 190 26, 236 18" stroke="#FFF6E4" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".4"/>
+        </svg>
+        <div class="lw-tag">新的旅程 · 从这里开始</div>
       </div>
 
       <div class="lock-bottom">
         <div class="lock-bar" id="lock-bar">
           <div class="lock-fill" id="lock-fill"></div>
-          <div class="lock-hint" id="lock-hint">向右滑动解锁<i class="chev">›››</i></div>
+          <div class="lock-hint" id="lock-hint">向右滑动解锁</div>
+          <i class="lock-chev">››</i>
           <div class="lock-knob" id="lock-knob">🔓</div>
         </div>
-        <div class="lock-tip">解锁后请解除静音 🔊</div>
+        <div class="lock-tip">🔊 解锁后请解除静音</div>
       </div>
     </div>`;
   bindLock();
