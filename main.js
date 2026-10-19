@@ -109,7 +109,7 @@ const CONFIG = {
     {
       id: 1, year: 2023, emoji: "📞", title: "初来乍到",
       fragment: 1, fragmentName: "入职碎片",
-      tagline: "入职第一天，先打个电话报个到。",
+      tagline: "入职第一天，他是何方神圣？",
       accentIndex: 0,
       intro: ["👂 听说组织部来了个年轻人。", "📞 快打电话问问看是谁吧。"],
       hint: "请拨通正确的电话号码",
@@ -145,7 +145,7 @@ const CONFIG = {
     {
       id: 2, year: 2024, emoji: "💻", title: "好的，收到",
       fragment: 1, fragmentName: "牛马碎片",
-      tagline: "那一年，你独当一面。",
+      tagline: "你成长了，开始独当一面。",
       accentIndex: 1,
       intro: [
         "一个风平浪静的下午。🍵",
@@ -163,7 +163,7 @@ const CONFIG = {
     {
       id: 3, year: 2025, emoji: "🕺", title: "像你这样的朋友",
       fragment: 2, fragmentName: "唱跳碎片",
-      tagline: "同事，有一天变成了朋友。",
+      tagline: "中山每年都有新的朋友，对新来的好朋友 say hello～",
       accentIndex: 2,
       awardName: "最受观众喜爱节目奖",
       intro: [
@@ -180,7 +180,7 @@ const CONFIG = {
     {
       id: 4, year: 2026, emoji: "🧳", title: "最终任务",
       fragment: 2, fragmentName: "未来碎片",
-      tagline: "离开之前，最后的选择。",
+      tagline: "离开以前，替我做选择。",
       accentIndex: 3,
       intro: [
         "终于走到这一天了。🌅",
@@ -402,26 +402,26 @@ function runOpening(){
   const add = (html) => { body.insertAdjacentHTML("beforeend", html); V.scrollTop = V.scrollHeight; };
 
   // 1. 玩家（办公室女，绿色自己）第一句
-  setTimeout(()=> add(`
+  setTimeout(()=>{ add(`
     <div class="msg self pop">
       <div class="avatar">${c.player.avatar}</div>
       <div class="bubble">${c.player.text}</div>
-    </div>`), t.firstMsg);
+    </div>`); SFX.bubble(true); }, t.firstMsg);
 
-  // 2. 时空乱流：剧烈扭曲
-  setTimeout(()=> playGlitch(), t.glitch);
+  // 2. 时空乱流：剧烈扭曲（画面 + 声音同帧）
+  setTimeout(()=>{ playGlitch(); SFX.glitch(); }, t.glitch);
 
   // 3. 系统提示（粉红闪烁）
-  setTimeout(()=> add(`
-    <div class="sys-alert"><span class="pill">${c.sysAlert}</span></div>`), t.sysAlert);
+  setTimeout(()=>{ add(`
+    <div class="sys-alert"><span class="pill">${c.sysAlert}</span></div>`); SFX.sysalert(); }, t.sysAlert);
 
   // 4. 穿越后的他人消息（白色气泡；点赞框不在渲染时占位）
   c.messages.forEach((m, i) => {
-    setTimeout(()=> add(`
+    setTimeout(()=>{ add(`
       <div class="msg pop">
         <div class="avatar">${m.avatar}</div>
         <div class="bubble">${m.text}</div>
-      </div>`), t.othersStart + i * t.othersGap);
+      </div>`); SFX.bubble(false); }, t.othersStart + i * t.othersGap);
   });
 
   // 5. 点赞：随第一个赞一起出现气泡底部框（下一行），气泡自适应变宽
@@ -447,6 +447,7 @@ function runOpening(){
         }
         lastBubble.classList.add("has-likes");
         V.scrollTop = V.scrollHeight;
+        SFX.like();
       }, likesAt + k * t.likeGap);
     }
   }
@@ -460,7 +461,7 @@ function runOpening(){
   const th2At = th1At + t.thought2Delay;
   const guideAt = th2At + t.guideDelay;
 
-  setTimeout(()=> add(`<div class="mono pop" id="mono-box"><p>${th1}</p></div>`), th1At);
+  setTimeout(()=>{ add(`<div class="mono pop" id="mono-box"><p>${th1}</p></div>`); SFX.thought(); }, th1At);
   setTimeout(()=>{
     const box = $("mono-box");
     if(box) box.insertAdjacentHTML("beforeend", `<p>${th2.a}<span class="mono-b fade-in">${th2.b}</span></p>`);
@@ -478,10 +479,11 @@ function runOpening(){
         <button class="btn btn-primary btn-block" id="btn-enter">${c.enterLabel}</button>
       </div>
     </div>`);
+    SFX.flip();
     const b = $("btn-enter");
     if(b) b.addEventListener("click", () => {
       SFX.init();               // 必须在用户手势里初始化（浏览器自动播放策略）
-      SFX.tap();
+      SFX.portal();             // 进入结界的仪式音效
       initHallYear();           // 落在第一个还没通关的年份
       renderHall(); showView("hall");
     });
@@ -554,34 +556,27 @@ function windowSky(y){
     <rect x="22" y="72" width="62" height="8" fill="#E08A4A" opacity=".35"/>`;
 }
 
-/* 门：圆拱顶木门；2024 挂白大褂，2026 门牌是四位数字锁 */
+/* 门：圆拱顶木门；2024 挂白大褂（加长、带衣领袖子和口袋，衣架露在领子上方） */
 function doorSVG(y, ready){
-  const lock = (y === 2026) ? `
-    <rect x="277" y="92" width="38" height="30" rx="6" fill="#FFFDF4" stroke="#C98F5A" stroke-width="1.5"/>
-    ${[0,1,2,3].map(i => `<rect x="${282.5 + i * 7.5}" y="99" width="5" height="16" rx="2.5" fill="#C98F5A" opacity="${ready ? .95 : .32}"/>`).join("")}
-  ` : "";
   const coat = (y === 2024) ? `
-    <path d="M285 78 Q296 68 307 78 L312 132 Q296 139 280 132 Z" fill="#FFFFFF" stroke="#D8CDB8" stroke-width="1.2"/>
-    <path d="M291 74 L296 84 L301 74" fill="none" stroke="#D8CDB8" stroke-width="1.2"/>
-    <circle cx="296" cy="66" r="2.2" fill="#C98F5A"/>
-  ` : "";
+    <line x1="296" y1="60" x2="296" y2="66" stroke="#B4B2A9" stroke-width="1.4"/>
+    <path d="M296 66 L286 76 L306 76 Z" fill="none" stroke="#B4B2A9" stroke-width="1.3"/>
+    <path d="M296 74 Q283 80 282 92 L280 148 Q296 156 312 148 L310 92 Q309 80 296 74 Z" fill="#FFFFFF" stroke="#D8CDB8" stroke-width="1.3"/>
+    <path d="M291 76 L296 88 L301 76 Q296 73 291 76 Z" fill="#FFFDF4" stroke="#D8CDB8" stroke-width="1.2"/>
+    <rect x="286" y="112" width="9" height="9" rx="2" fill="#F3EDE1" stroke="#D8CDB8" stroke-width="1"/>
+    <rect x="297" y="112" width="9" height="9" rx="2" fill="#F3EDE1" stroke="#D8CDB8" stroke-width="1"/>
+    <line x1="296" y1="92" x2="296" y2="142" stroke="#E4DFD2" stroke-width="1"/>` : "";
   return `
     <ellipse cx="296" cy="193" rx="34" ry="5" fill="rgba(120,80,40,.10)"/>
     <path d="M268 194 L268 70 Q268 54 284 54 L308 54 Q324 54 324 70 L324 194 Z" fill="#EDCB92" stroke="#C98F5A" stroke-width="1.8"/>
     <rect x="276" y="64" width="40" height="48" rx="6" fill="#F7E3BC" stroke="#C98F5A" stroke-width="1.1"/>
     <rect x="276" y="122" width="40" height="56" rx="6" fill="#F7E3BC" stroke="#C98F5A" stroke-width="1.1"/>
     <circle cx="316" cy="128" r="2.6" fill="#E5A83B" stroke="#C98F5A" stroke-width="1"/>
-    ${lock}${coat}`;
+    ${coat}`;
 }
 
-/* 椅子：统一背对玩家。2023~2025 拉开在桌前；2026 推回桌下（画在桌后，只露矮椅背） */
-function chairSVG(y){
-  if(y === 2026){
-    return `<g>
-      <rect x="104" y="163" width="32" height="31" rx="9" fill="#FFD9A8" stroke="#C98F5A" stroke-width="1.5"/>
-      <rect x="109" y="168" width="22" height="18" rx="6" fill="#FFEDCB"/>
-    </g>`;
-  }
+/* 椅子：四个年份完全一致 —— 背对玩家、拉在桌子前面 */
+function chairSVG(){
   return `<g>
     <ellipse cx="120" cy="194" rx="26" ry="4.5" fill="rgba(120,80,40,.10)"/>
     <rect x="100" y="151" width="40" height="37" rx="10" fill="#FFD9A8" stroke="#C98F5A" stroke-width="1.6"/>
@@ -590,18 +585,51 @@ function chairSVG(y){
     <rect x="131" y="188" width="5" height="8" rx="1.5" fill="#C98F5A"/>
   </g>`;
 }
+/* 垃圾桶：椅子右边、桌下。2024 满满当当（纸团略微堆出来），2026 空 */
+function binSVG(y){
+  const full = (y === 2024);
+  const junk = full ? `
+    <path d="M154 172 q5 -7 10 -2 q6 -6 10 2 l1 6 Z" fill="#F3EDE1" stroke="#C98F5A" stroke-width="1"/>
+    <circle cx="159" cy="168" r="4" fill="#FFFDF4" stroke="#C98F5A" stroke-width="1"/>
+    <circle cx="169" cy="171" r="3.4" fill="#FFFDF4" stroke="#C98F5A" stroke-width="1"/>` : "";
+  return `<g>
+    ${junk}
+    <rect x="151" y="170" width="22" height="6" rx="2" fill="#EFE7D8" stroke="#C98F5A" stroke-width="1.2"/>
+    <path d="M154 176 h16 l-2.5 18 h-11 Z" fill="#E7DDC9" stroke="#C98F5A" stroke-width="1.2"/>
+  </g>`;
+}
+/* 2023：桌子右侧的空架子（三层，全是空的） */
+function shelfSVG(){
+  return `<g>
+    <rect x="214" y="118" width="48" height="76" rx="4" fill="#F6ECD9" stroke="#C98F5A" stroke-width="1.6"/>
+    <line x1="215" y1="143" x2="261" y2="143" stroke="#E5D5B8" stroke-width="1.6"/>
+    <line x1="215" y1="168" x2="261" y2="168" stroke="#E5D5B8" stroke-width="1.6"/>
+  </g>`;
+}
+/* 2024：墙上的白板，写着工作日历 */
+function whiteboardSVG(){
+  return `<g>
+    <rect x="150" y="14" width="100" height="72" rx="5" fill="#FFFDF6" stroke="#C98F5A" stroke-width="1.8"/>
+    <text x="200" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="#6B4520">工作日历</text>
+    <line x1="156" y1="35" x2="244" y2="35" stroke="#EADFC6" stroke-width="1.2"/>
+    <rect x="160" y="41" width="34" height="11" rx="3" fill="#FFE08A"/>
+    <rect x="200" y="41" width="40" height="11" rx="3" fill="#BFE6C9"/>
+    <rect x="160" y="56" width="50" height="11" rx="3" fill="#FFD1DC"/>
+    <rect x="216" y="56" width="24" height="11" rx="3" fill="#BFE6C9" opacity=".7"/>
+    <rect x="160" y="71" width="70" height="8" rx="3" fill="#EADFC6"/>
+  </g>`;
+}
 
 /* 整个房间的矢量图（随容器宽度等比缩放，天然适配竖屏） */
 function roomSVG(){
   const lv = curHallLevel(), y = lv.year, p = progress;
-  const ready = allDone(p);
-  const glow = (cx, cy, rx, ry) => `<ellipse class="hs-glow" cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/>`;
+  const halo = (x, b, w, h, r) => `<rect class="hs-halo" x="${x}" y="${b}" width="${w}" height="${h}" rx="${r == null ? 6 : r}"/>`;
   let hot = "", props = "", stamp = "";
 
   if(y === 2023){
     stamp = "2023.10";
-    hot = `<g class="hs-hot${isLevelUnlocked(1) ? "" : " is-locked"}" data-lv="1" role="button" aria-label="打电话">
-      ${glow(51, 132, 30, 22)}
+    hot = `<g class="hs-hot${isLevelUnlocked(1) ? "" : " is-locked"}" data-lv="1" role="button" aria-label="特别的物品">
+      ${halo(26, 109, 50, 46, 9)}
       <rect x="33" y="130" width="36" height="20" rx="5" fill="#FFF8E8" stroke="#C98F5A" stroke-width="1.8"/>
       <circle cx="42" cy="138" r="1.8" fill="#C98F5A"/><circle cx="51" cy="138" r="1.8" fill="#C98F5A"/><circle cx="60" cy="138" r="1.8" fill="#C98F5A"/>
       <circle cx="42" cy="145" r="1.8" fill="#C98F5A"/><circle cx="51" cy="145" r="1.8" fill="#C98F5A"/><circle cx="60" cy="145" r="1.8" fill="#C98F5A"/>
@@ -610,32 +638,45 @@ function roomSVG(){
       <rect x="60" y="114" width="7" height="7" rx="3" fill="#C98F5A"/>
     </g>`;
     props = `
+      ${shelfSVG()}
       <rect x="98" y="134" width="14" height="16" rx="3" fill="#BFE6C9" stroke="#7FBF9A" stroke-width="1.5"/>
       <path d="M112 138 q6 0 6 4.5 q0 4.5 -6 4.5" fill="none" stroke="#7FBF9A" stroke-width="1.6"/>
       <path d="M102 130 q0 -3 3 -3 q3 0 3 3" fill="none" stroke="#BFD8C6" stroke-width="1.2"/>`;
   } else if(y === 2024){
-    stamp = "2024.09";
-    hot = `<g class="hs-hot${isLevelUnlocked(2) ? "" : " is-locked"}" data-lv="2" role="button" aria-label="敲键盘">
-      ${glow(64, 118, 42, 32)}
-      <rect x="30" y="90" width="68" height="52" rx="6" fill="#FFF8E8" stroke="#C98F5A" stroke-width="1.8"/>
-      <rect x="36" y="96" width="56" height="40" rx="4" fill="#F2EFE6"/>
-      <line x1="42" y1="105" x2="82" y2="105" stroke="#CFC9BB" stroke-width="2.6" stroke-linecap="round"/>
-      <line x1="42" y1="113" x2="86" y2="113" stroke="#CFC9BB" stroke-width="2.6" stroke-linecap="round"/>
-      <line x1="42" y1="121" x2="74" y2="121" stroke="#CFC9BB" stroke-width="2.6" stroke-linecap="round"/>
-      <path d="M58 142 h12 l4 8 h-20 Z" fill="#C98F5A"/>
-      <rect x="90" y="95" width="10" height="10" rx="2" fill="#FFE08A" transform="rotate(-6 95 100)"/>
-      <rect x="91" y="108" width="8" height="8" rx="2" fill="#FFD1DC" transform="rotate(7 95 112)"/>
+    stamp = "2024.06";
+    hot = `<g class="hs-hot${isLevelUnlocked(2) ? "" : " is-locked"}" data-lv="2" role="button" aria-label="特别的物品">
+      ${halo(78, 85, 78, 70, 8)}
+      <rect x="83" y="90" width="68" height="52" rx="6" fill="#FFF8E8" stroke="#C98F5A" stroke-width="1.8"/>
+      <rect x="89" y="96" width="56" height="40" rx="4" fill="#F2EFE6"/>
+      <line x1="95" y1="105" x2="135" y2="105" stroke="#CFC9BB" stroke-width="2.6" stroke-linecap="round"/>
+      <line x1="95" y1="113" x2="139" y2="113" stroke="#CFC9BB" stroke-width="2.6" stroke-linecap="round"/>
+      <line x1="95" y1="121" x2="127" y2="121" stroke="#CFC9BB" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M112 142 h12 l4 8 h-20 Z" fill="#C98F5A"/>
+      <rect x="141" y="95" width="10" height="10" rx="2" fill="#FFE08A" transform="rotate(-6 146 100)"/>
+      <rect x="142" y="108" width="8" height="8" rx="2" fill="#FFD1DC" transform="rotate(7 146 112)"/>
     </g>`;
     props = `
+      ${whiteboardSVG()}
+      <rect x="26" y="143" width="48" height="7" rx="2.5" fill="#E58BB0" stroke="#C98F5A" stroke-width="1"/>
+      <rect x="28" y="136" width="44" height="7" rx="2.5" fill="#8AD1FF" stroke="#C98F5A" stroke-width="1"/>
+      <rect x="26" y="129" width="46" height="7" rx="2.5" fill="#FFDE59" stroke="#C98F5A" stroke-width="1"/>
+      <rect x="32" y="122" width="36" height="7" rx="2" fill="#FFFDF4" stroke="#C98F5A" stroke-width="1"/>
+      <line x1="36" y1="126" x2="62" y2="126" stroke="#DCD6C9" stroke-width="1.2"/>
+      <path d="M186 130 q4 -4 1 -8 q-3 -4 1 -7" fill="none" stroke="#D8CDB8" stroke-width="1.4" stroke-linecap="round"/>
+      <path d="M194 132 q4 -4 1 -8" fill="none" stroke="#D8CDB8" stroke-width="1.4" stroke-linecap="round"/>
+      <rect x="176" y="148" width="28" height="2.5" rx="1.2" fill="#EADFC6"/>
+      <rect x="180" y="136" width="20" height="12" rx="3" fill="#FFFDF4" stroke="#C98F5A" stroke-width="1.4"/>
+      <rect x="180" y="136" width="20" height="4" rx="2" fill="#B98A4E"/>
+      <path d="M200 139 q6 2 4 7 q-2 4 -6 3" fill="none" stroke="#C98F5A" stroke-width="1.4"/>
       <rect x="104" y="141" width="54" height="9" rx="3" fill="#FFF8E8" stroke="#C98F5A" stroke-width="1.3"/>
       ${[0,1,2,3,4,5,6,7].map(i => `<circle cx="${110 + i * 6.5}" cy="145.5" r="1.4" fill="#D8C7A8"/>`).join("")}
       <rect x="164" y="132" width="26" height="17" rx="2.5" fill="#FFFDF4" stroke="#D8CDB8" stroke-width="1.2"/>
       <line x1="168" y1="138" x2="186" y2="138" stroke="#CFC9BB" stroke-width="1.4"/>
       <line x1="168" y1="143" x2="183" y2="143" stroke="#CFC9BB" stroke-width="1.4"/>`;
   } else if(y === 2025){
-    stamp = "2025.12";
-    hot = `<g class="hs-hot${isLevelUnlocked(3) ? "" : " is-locked"}" data-lv="3" role="button" aria-label="点墙上的海报">
-      ${glow(200, 51, 58, 42)}
+    stamp = "2025.02";
+    hot = `<g class="hs-hot${isLevelUnlocked(3) ? "" : " is-locked"}" data-lv="3" role="button" aria-label="特别的物品">
+      ${halo(145, 11, 110, 80, 9)}
       <rect x="150" y="16" width="100" height="70" rx="7" fill="#FBEAF0" stroke="#E39AB5" stroke-width="2.4"/>
       <path d="M158 16 l7 8 l7 -8 l7 8 l7 -8 l7 8 l7 -8 l7 8 l7 -8 l7 8 l7 -8 l7 8 l7 -8" fill="none" stroke="#E39AB5" stroke-width="1.6"/>
       <text x="200" y="47" text-anchor="middle" font-size="19" font-weight="800" fill="#993556">中山春晚</text>
@@ -654,26 +695,44 @@ function roomSVG(){
       <path d="M60 126 Q68 128 66 134 Q65 138 60 138" fill="none" stroke="#C98F5A" stroke-width="1.5"/>
       <rect x="49" y="137" width="6" height="8" fill="#C98F5A"/>
       <rect x="42" y="145" width="20" height="5" rx="2" fill="#C98F5A"/>
-      <circle cx="130" cy="90" r="9" fill="#FF9BB5"/>
-      <line x1="130" y1="99" x2="130" y2="118" stroke="#B4B2A9" stroke-width="1.2"/>
-      <circle cx="145" cy="72" r="7" fill="#5DCAA5"/>
-      <line x1="145" y1="79" x2="145" y2="96" stroke="#B4B2A9" stroke-width="1.2"/>`;
+      <path d="M72 150 L86 120 L100 150 Z" fill="#FF9BB5" stroke="#E5768F" stroke-width="1.2"/>
+      <path d="M79 141 q7 3 14 0" fill="none" stroke="#FFF3D6" stroke-width="2.4"/>
+      <ellipse cx="86" cy="150" rx="14" ry="2.5" fill="#E5768F"/>
+      <circle cx="86" cy="117" r="4" fill="#FFDE59"/>
+      <line x1="120" y1="150" x2="120" y2="124" stroke="#B4B2A9" stroke-width="2"/>
+      <ellipse cx="120" cy="150" rx="9" ry="2.6" fill="#C98F5A"/>
+      <rect x="114" y="106" width="13" height="20" rx="6.5" fill="#565049" stroke="#3A352F" stroke-width="1"/>
+      <line x1="115" y1="112" x2="126" y2="112" stroke="#8A8377" stroke-width=".9"/>
+      <line x1="115" y1="116" x2="126" y2="116" stroke="#8A8377" stroke-width=".9"/>
+      <line x1="115" y1="120" x2="126" y2="120" stroke="#8A8377" stroke-width=".9"/>
+      <rect x="162" y="142" width="44" height="8" rx="3" fill="#8AD1FF" stroke="#5DA8C9" stroke-width="1"/>
+      <rect x="164" y="133" width="42" height="9" rx="3" fill="#E8E2D6" stroke="#BFB8A6" stroke-width="1"/>
+      <rect x="161" y="124" width="46" height="9" rx="3" fill="#FFC2D1" stroke="#E39AB5" stroke-width="1"/>
+      ${[[226,148,13,"#FF9BB5"],[244,126,11,"#FFDE59"],[252,164,10,"#C77DFF"]].map(([bx,by,r,c]) => `
+        <line x1="${bx}" y1="${by + r}" x2="${bx + 3}" y2="194" stroke="#B4B2A9" stroke-width="1"/>
+        <circle cx="${bx}" cy="${by}" r="${r}" fill="${c}"/>
+        <ellipse cx="${bx - r * .35}" cy="${by - r * .35}" rx="${r * .28}" ry="${r * .22}" fill="#FFFFFF" opacity=".55"/>`).join("")}`;
   } else {
     stamp = "2026.10";
-    hot = `<g class="hs-hot${isLevelUnlocked(4) ? "" : " is-locked"}" data-lv="4" role="button" aria-label="行李箱">
-      ${glow(126, 128, 38, 26)}
-      <rect x="100" y="112" width="52" height="38" rx="8" fill="#F2A65A" stroke="#C9823C" stroke-width="2"/>
-      <rect x="112" y="104" width="28" height="10" rx="5" fill="none" stroke="#C9823C" stroke-width="2.2"/>
-      <line x1="100" y1="130" x2="152" y2="130" stroke="#C9823C" stroke-width="1.6"/>
-      <rect x="110" y="118" width="10" height="10" rx="2.5" fill="#FFF3D6"/>
-      <rect x="132" y="118" width="10" height="10" rx="2.5" fill="#FFF3D6"/>
+    hot = `<g class="hs-hot${isLevelUnlocked(4) ? "" : " is-locked"}" data-lv="4" role="button" aria-label="特别的物品">
+      ${halo(104, 110, 62, 45, 7)}
+      <rect x="110" y="122" width="50" height="28" rx="4" fill="#B98A4E" stroke="#8A6031" stroke-width="1.6"/>
+      <rect x="126" y="114" width="18" height="9" rx="4.5" fill="none" stroke="#8A6031" stroke-width="1.8"/>
+      <rect x="131" y="137" width="8" height="8" rx="2" fill="#E5C79A"/>
+      <line x1="110" y1="135" x2="160" y2="135" stroke="#8A6031" stroke-width="1.1" opacity=".6"/>
     </g>`;
     props = `
-      <rect x="150" y="16" width="100" height="70" rx="7" fill="#F3EDE1" stroke="#DED7C8" stroke-width="1.2" stroke-dasharray="5 5"/>
-      <circle cx="64" cy="142" r="3.2" fill="none" stroke="#C98F5A" stroke-width="1.6"/>
-      <line x1="67.5" y1="142" x2="80" y2="142" stroke="#C98F5A" stroke-width="1.6" stroke-linecap="round"/>`;
+      <path d="M28 130 h36 v20 h-36 Z" fill="#E5C79A" stroke="#C98F5A" stroke-width="1.4"/>
+      <path d="M28 130 l9 -8 h36 l-9 8" fill="#F3E0BC" stroke="#C98F5A" stroke-width="1.1"/>
+      <path d="M64 130 l9 -8 v0 l-9 8" fill="#F3E0BC" stroke="#C98F5A" stroke-width="1.1"/>
+      <line x1="46" y1="130" x2="46" y2="150" stroke="#C98F5A" stroke-width="1" opacity=".55"/>
+      <circle cx="182" cy="143" r="3.4" fill="none" stroke="#C98F5A" stroke-width="1.6"/>
+      <line x1="185.6" y1="143" x2="198" y2="143" stroke="#C98F5A" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="194" y1="140" x2="196" y2="140" stroke="#C98F5A" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="195" y1="146" x2="197" y2="146" stroke="#C98F5A" stroke-width="1.6" stroke-linecap="round"/>`;
   }
 
+  const withBin = (y === 2024 || y === 2026);
   return `<svg class="hs-svg" viewBox="0 0 340 224" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${y} 年的办公室">
     <rect x="0" y="0" width="340" height="194" fill="#FBF3E4"/>
     <rect x="0" y="138" width="340" height="56" fill="#F6ECD9"/>
@@ -693,17 +752,17 @@ function roomSVG(){
     ${clockHands(y)}
     <circle cx="118" cy="50" r="1.5" fill="#7A5A38"/>
 
-    ${doorSVG(y, ready)}
-    ${y === 2026 ? chairSVG(y) : ""}
+    ${doorSVG(y, allDone(p))}
+    ${props}
 
     <ellipse cx="117" cy="194" rx="95" ry="6" fill="rgba(120,80,40,.08)"/>
     <rect x="22" y="150" width="190" height="9" rx="3.5" fill="#F0C987" stroke="#C98F5A" stroke-width="1.4"/>
     <rect x="28" y="159" width="7" height="35" rx="2.5" fill="#D9A56A"/>
     <rect x="199" y="159" width="7" height="35" rx="2.5" fill="#D9A56A"/>
 
-    ${props}
     ${hot}
-    ${y === 2026 ? "" : chairSVG(y)}
+    ${chairSVG()}
+    ${withBin ? binSVG(y) : ""}
 
     <text x="333" y="218" text-anchor="end" font-size="12" font-family="ui-monospace,monospace" fill="#C8834A" opacity=".85">${stamp}</text>
   </svg>`;
@@ -720,7 +779,7 @@ function doorViewSVG(){
     <line x1="0" y1="217" x2="340" y2="217" stroke="#DEC9A8" stroke-width="1"/>
 
     <g class="hs-hot" id="dv-door" role="button" aria-label="最后的门">
-      <ellipse class="hs-glow" cx="170" cy="128" rx="72" ry="92"/>
+      <rect class="hs-halo" x="112" y="38" width="116" height="164" rx="12"/>
       <ellipse cx="170" cy="193" rx="66" ry="6" fill="rgba(120,80,40,.10)"/>
       <path d="M118 196 L118 64 Q118 44 138 44 L202 44 Q222 44 222 64 L222 196 Z" fill="#EDCB92" stroke="#C98F5A" stroke-width="2.4"/>
       <rect x="128" y="58" width="84" height="52" rx="8" fill="#F7E3BC" stroke="#C98F5A" stroke-width="1.3"/>
@@ -741,14 +800,9 @@ function doorViewSVG(){
   </svg>`;
 }
 
-function hallHintText(lv, ready){
-  const id = lv.id;
-  if(id === 1) return "点桌上那部发光的座机";
-  if(id === 2) return "点那台发光的显示器";
-  if(id === 3) return "点墙上那张《中山春晚》海报";
-  if(ready) return "房间收拾好了 —— 点下面的「最后的门」";
-  if(!isLevelUnlocked(4)) return "这个房间还空着 —— 先把前面的年份找回来";
-  return "点桌上那只发光的行李箱";
+/* 提示语：四关一致，不剧透具体是哪件东西 */
+function hallHintText(){
+  return "找一找工位上特别的物品";
 }
 
 function renderHall(){
@@ -809,21 +863,20 @@ function renderHall(){
       <div class="hall2-room ${justCompleted ? "just-done" : ""}">
         ${roomSVG()}
       </div>
-      <div class="hall2-hint">💡 ${hallHintText(lv, ready)}</div>
+      <div class="hall2-hint">💡 ${hallHintText()}</div>
 
       <div class="hall2-info">
         <div class="hall2-line1">
           <span class="hall2-y">${lv.year}</span>
           <span class="hall2-name">${lv.title}</span>
+          <span class="hall2-emoji">${lv.emoji}</span>
         </div>
         <div class="hall2-tag">${lv.tagline}</div>
-        <div class="hall2-frag${done ? (darkFrag ? " on dark" : " on") : ""}">🧩 ${lv.fragmentName}：${done ? lv.fragment : "未获得"}</div>
+        <div class="hall2-frag${done ? (darkFrag ? " on dark" : " on") : ""}">🧩 ${done ? lv.fragmentName + " ×" + lv.fragment : "碎片：未获得"}</div>
       </div>
 
       <div class="hall2-tabs">${tabs}</div>
-      <button class="hall2-doorbtn${ready ? " ready" : ""}" id="hall-door-btn" type="button">
-        ${ready ? "🔐 最后的门" : "🔒 最后的门"}
-      </button>
+      <button class="hall2-doorbtn${ready ? " ready" : ""}" id="hall-door-btn" type="button">🔒最终密码</button>
     </div>`;
 
   /* 年份切换 */
@@ -1076,7 +1129,7 @@ function playResult(lvl, lines){
     SFX.fragmentDrop();   // 碎片落入手中：就在「获得 xx 碎片」出现这一刻
     $("result-tail").innerHTML = `
       <hr class="popup-divider">
-      <div class="frag-big">🧩 ${"获得"}${lvl.fragmentName}：${lvl.fragment}</div>
+      <div class="frag-big">🧩 获得${lvl.fragmentName} ×${lvl.fragment}</div>
       <button class="btn btn-accent btn-block" id="btn-collect">${CONFIG.collectLabel}</button>`;
     $("btn-collect").addEventListener("click", ()=> collect(lvl.id));
   }, 450 + lines.length * 900 + 500);
@@ -1987,8 +2040,22 @@ function initSfxToggle(){
   });
 }
 
+/* 浏览器策略：音频必须在用户手势里解锁。
+   开场动画是自动播放的，所以早先尝试一次 init（多数环境会被挂起），
+   再挂一次性监听 —— 用户第一次触摸/点击屏幕时立刻解锁，
+   之后的每一条气泡、点赞、乱码音效就都能响出来了。 */
+function armAudioUnlock(){
+  try{ SFX.init(); }catch(e){}
+  const unlock = () => {
+    try{ SFX.init(); }catch(e){}
+    ["pointerdown","touchstart","keydown","click"].forEach(ev => window.removeEventListener(ev, unlock));
+  };
+  ["pointerdown","touchstart","keydown","click"].forEach(ev => window.addEventListener(ev, unlock, { once:false, passive:true }));
+}
+
 function init(){
   initSfxToggle();
+  armAudioUnlock();
   renderOpening();
   showView("opening");
 }
