@@ -8,7 +8,7 @@ window.SFX = (function(){
 "use strict";
 
 var MUTE_KEY = "beginAgain.muted";
-var VOLUME   = 0.35;          // 主音量（默认开，静音的页面等于没做音效）
+var VOLUME   = 0.525;         // 主音量（比上一版整体 +50%）
 
 var ctx = null, master = null, ready = false, dead = false;
 var muted = false;
@@ -51,7 +51,18 @@ function init(){
       ctx = new AC();
       master = ctx.createGain();
       master.gain.value = VOLUME;
-      master.connect(ctx.destination);
+      // 音量整体调大后加一级「只削峰不压整体」的软限幅：
+      // 阈值放到 -6dB，普通音效完全不受影响，只有叠加瞬间才被兜住，避免爆音
+      try{
+        var comp = ctx.createDynamicsCompressor();
+        comp.threshold.value = -6;
+        comp.knee.value = 12;
+        comp.ratio.value = 4;
+        comp.attack.value = 0.002;
+        comp.release.value = 0.18;
+        master.connect(comp);
+        comp.connect(ctx.destination);
+      }catch(e){ master.connect(ctx.destination); }
     }
     if(ctx.state === "suspended") ctx.resume();
     ready = true;
@@ -81,7 +92,7 @@ function tone(o){
     g.gain.setValueAtTime(0.0001, t0);
     g.gain.exponentialRampToValueAtTime(peak, t0 + atk);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    osc.connect(g); g.connect(master);
+    osc.connect(g); g.connect(o.bus || master);
     osc.start(t0); osc.stop(t0 + dur + 0.03);
   }catch(e){}
 }
@@ -107,7 +118,7 @@ function noise(o){
     g.gain.setValueAtTime(0.0001, t0);
     g.gain.exponentialRampToValueAtTime(peak, t0 + (o.attack || 0.004));
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    src.connect(f); f.connect(g); g.connect(master);
+    src.connect(f); f.connect(g); g.connect(o.bus || master);
     src.start(t0); src.stop(t0 + dur + 0.03);
   }catch(e){}
 }
@@ -211,91 +222,71 @@ function fragmentDrop(){
 }
 
 /* ---------- 持续型音源 ---------- */
-var _drone = null;
-/* 第 2 关：倒计时期间的紧张底噪（低频嗡鸣 + 快速脉动 = 心慌、局促） */
-function droneStart(){
-  if(!can() || _drone) return;
+var _beatBus = null;
+/* 第 2 关：倒计时期间的紧张「鼓点」——没有任何长鸣低音，
+   只有底鼓 / 军鼓 / 踩镲的八分音符律动，越接近结束越急（460ms → 200ms 一步）。
+   全部一次性音源、用 ctx 时钟一次性排完，中途离场时把总线切掉即可全静音。 */
+function tensionStart(seconds){
+  if(!can()) return;
   try{
-    var o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), o3 = ctx.createOscillator();
-    var g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
-    var lp = ctx.createBiquadFilter();
-    o1.type = "sawtooth"; o1.frequency.value = 58;
-    o2.type = "sine";     o2.frequency.value = 87;
-    o3.type = "sine";     o3.frequency.value = 58.9;   // 与 o1 差 0.9Hz → 轻微拍频，听着「发毛」
-    lp.type = "lowpass";  lp.frequency.value = 400;
-    g.gain.value = 0.0001;
-    lfo.type = "sine"; lfo.frequency.value = 7.4;      // 每秒 7.4 次 = 明显的心跳式局促
-    lg.gain.value = 0.062;
-    lfo.connect(lg); lg.connect(g.gain);
-    o1.connect(lp); o2.connect(lp); o3.connect(lp); lp.connect(g); g.connect(master);
-    var t = ctx.currentTime;
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.165, t + 0.3);   // 比上一版大 2 倍多
-    o1.start(t); o2.start(t); o3.start(t); lfo.start(t);
-    _drone = { o1:o1, o2:o2, o3:o3, lfo:lfo, g:g };
+    tensionStop();
+    _beatBus = ctx.createGain();
+    _beatBus.gain.value = 1;
+    _beatBus.connect(master);
+    var bus = _beatBus;
+    var t0 = ctx.currentTime + 0.06;
+    var total = Math.max(1, seconds || 5);
+    var end = t0 + total;
+    var t = t0, i = 0;
+    while(t < end - 0.03){
+      var frac = Math.min(1, (t - t0) / total);
+      var d = t - ctx.currentTime;
+      if(i % 4 === 0){                                  // 底鼓（每拍第一下）
+        tone({ freq:150, to:48, type:"sine", dur:0.16, gain:0.34, delay:d, bus:bus });
+        tone({ freq:92,  to:44, type:"sine", dur:0.13, gain:0.20, delay:d, bus:bus });
+      } else if(i % 4 === 2){                           // 军鼓（每拍第三下）
+        noise({ dur:0.12, filter:"bandpass", freq:1900, gain:0.22, delay:d, bus:bus });
+        tone({ freq:190, to:120, type:"triangle", dur:0.09, gain:0.13, delay:d, bus:bus });
+      } else {                                          // 踩镲
+        noise({ dur:0.035, filter:"highpass", freq:8200, gain:0.15, delay:d, bus:bus });
+      }
+      t += 0.46 - 0.26 * frac;
+      i++;
+    }
   }catch(e){}
 }
-function droneStop(){
-  if(!_drone) return;
-  var d = _drone; _drone = null;
+function tensionStop(){
+  if(!_beatBus) return;
+  var b = _beatBus; _beatBus = null;
   try{
     var t = ctx.currentTime;
-    d.g.gain.cancelScheduledValues(t);
-    d.g.gain.setValueAtTime(Math.max(0.0001, d.g.gain.value), t);
-    d.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
-    d.o1.stop(t + 0.35); d.o2.stop(t + 0.35); d.o3.stop(t + 0.35); d.lfo.stop(t + 0.35);
+    b.gain.cancelScheduledValues(t);
+    b.gain.setValueAtTime(b.gain.value, t);
+    b.gain.linearRampToValueAtTime(0, t + 0.08);
+    setTimeout(function(){ try{ b.disconnect(); }catch(e){} }, 240);
   }catch(e){}
 }
 
 /* 第 4 关：音乐盒式的回忆单音，五声音阶随机，缓慢飘落 */
-var _box = null, _warm = null;
+var _box = null;
 var BOX_SCALE = [523.3, 587.3, 659.3, 784, 880, 1046.5, 1174.7];
+/* 第 4 关：只有音乐盒般的单音 / 两三音小乐句，不放任何长鸣低音 */
 function musicBoxStart(){
   if(!can() || _box) return;
-  /* ① 回忆的「暖底」：两个低音正弦垫着，5 秒左右起伏一次，压住单调感 */
-  if(!_warm){
-    try{
-      var p1 = ctx.createOscillator(), p2 = ctx.createOscillator();
-      var pg = ctx.createGain(), pl = ctx.createOscillator(), plg = ctx.createGain();
-      p1.type = "sine"; p1.frequency.value = 130.8;
-      p2.type = "sine"; p2.frequency.value = 196;
-      pl.type = "sine"; pl.frequency.value = 0.18;
-      plg.gain.value = 0.014;
-      pg.gain.value = 0.0001;
-      pl.connect(plg); plg.connect(pg.gain);
-      p1.connect(pg); p2.connect(pg); pg.connect(master);
-      var t0 = ctx.currentTime;
-      pg.gain.setValueAtTime(0.0001, t0);
-      pg.gain.exponentialRampToValueAtTime(0.05, t0 + 1.3);
-      p1.start(t0); p2.start(t0); pl.start(t0);
-      _warm = { p1:p1, p2:p2, pl:pl, g:pg };
-    }catch(e){}
-  }
-  /* ② 音乐盒：单音与两三音小乐句交替出现，比每 2.2s 固定一个音更有起伏 */
   _box = setInterval(function(){
     var n = Math.random() < 0.45 ? 2 : 1;
     var idx = Math.floor(Math.random() * BOX_SCALE.length);
     for(var i = 0; i < n; i++){
       var f = BOX_SCALE[Math.min(BOX_SCALE.length - 1, idx + i)];
       var gap = i * 0.34;
-      tone({ freq:f,       type:"sine", dur:1.5,  gain:0.12,  delay:gap });
-      tone({ freq:f * 2,   type:"sine", dur:0.85, gain:0.038, delay:gap + 0.01 });
-      tone({ freq:f * 1.5, type:"sine", dur:1.0,  gain:0.032, delay:gap + 0.12 });
+      tone({ freq:f,       type:"sine", dur:1.4,  gain:0.12,  delay:gap });
+      tone({ freq:f * 2,   type:"sine", dur:0.8,  gain:0.038, delay:gap + 0.01 });
+      tone({ freq:f * 1.5, type:"sine", dur:0.95, gain:0.032, delay:gap + 0.12 });
     }
   }, 1900);
 }
 function musicBoxStop(){
   if(_box){ clearInterval(_box); _box = null; }
-  if(_warm){
-    var w = _warm; _warm = null;
-    try{
-      var t = ctx.currentTime;
-      w.g.gain.cancelScheduledValues(t);
-      w.g.gain.setValueAtTime(Math.max(0.0001, w.g.gain.value), t);
-      w.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
-      w.p1.stop(t + 0.7); w.p2.stop(t + 0.7); w.pl.stop(t + 0.7);
-    }catch(e){}
-  }
 }
 /* 翻牌：纸张声 */
 function flip(){
@@ -336,7 +327,7 @@ return {
   l3Action: l3Action, l3CountIn: l3CountIn,
   perfect: perfect, miss: miss,
   fragment: fragment, fragmentDrop: fragmentDrop, flip: flip,
-  droneStart: droneStart, droneStop: droneStop,
+  tensionStart: tensionStart, tensionStop: tensionStop,
   musicBoxStart: musicBoxStart, musicBoxStop: musicBoxStop,
   unlock: unlock, confetti: confetti
 };
