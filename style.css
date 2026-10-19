@@ -499,11 +499,13 @@ body{
 .l3-hud-v.rank-B{ color:#FFDE59; }
 .l3-hud-v.rank-C{ color:#FF9BB5; }
 
-/* 「IT'S SHOW TIME」：白 ↔ 亮金闪烁，不再闪成黑色（会和紫粉底糊在一起） */
-#view-level3 .showtime{ animation:showtimeLv3 1.3s ease-in-out infinite; }
+/* 「IT'S SHOW TIME」：亮黄 → 红 → 浅白 循环（不再出现和背景糊在一起的黑色） */
+#view-level3 .showtime{ animation:showtimeLv3 1.6s linear infinite; }
 @keyframes showtimeLv3{
-  0%,100%{ color:#FFFFFF; text-shadow:0 1px 6px rgba(60,0,80,.55); }
-  50%    { color:#FFE45E; text-shadow:0 0 16px rgba(255,225,90,.9), 0 1px 6px rgba(60,0,80,.5); }
+  0%  { color:#FFE45E; text-shadow:0 0 16px rgba(255,225,90,.95), 0 1px 6px rgba(60,0,80,.5); }
+  33% { color:#FF3B4E; text-shadow:0 0 18px rgba(255,60,80,.95), 0 1px 6px rgba(60,0,80,.5); }
+  66% { color:#FFFFFF; text-shadow:0 0 14px rgba(255,255,255,.95), 0 1px 6px rgba(60,0,80,.5); }
+  100%{ color:#FFE45E; text-shadow:0 0 16px rgba(255,225,90,.95), 0 1px 6px rgba(60,0,80,.5); }
 }
 
 /* 节目单：半透明深色玻璃卡，压住花哨背景 */
@@ -516,11 +518,11 @@ body{
 }
 #view-level3 .story-card .t-body{ color:#fff; text-shadow:0 1px 6px rgba(60,0,80,.45); }
 
-/* 节目单海报式标题 */
+/* 节目单海报式标题：字号/字重/字距与前三关一致，只保留白色与投影（否则压不住花哨底） */
 #view-level3 .level-head-title{
-  font-size:34px; font-weight:900; font-style:italic; letter-spacing:1px;
+  font-size:30px; font-weight:800; font-style:normal; letter-spacing:.5px;
   color:#fff;
-  text-shadow:0 2px 0 #6A1180, 0 3px 14px rgba(70,0,80,.6), 0 0 22px rgba(255,140,215,.55);
+  text-shadow:0 2px 0 #6A1180, 0 3px 14px rgba(70,0,80,.6), 0 0 22px rgba(255,140,215,.45);
 }
 #view-level3 .level-head-year{ color:rgba(255,255,255,.9); letter-spacing:3px; }
 
@@ -620,26 +622,26 @@ body{
   background:linear-gradient(180deg,#FF9E5E 0%,#FFC079 55%,#FFE7BC 100%);
   opacity:var(--warm,0);
 }
-/* 太阳：倒计时开始后沿抛物线从左上划过天顶、落到右上 */
+/* 太阳：倒计时开始后沿抛物线从左上划过天顶、落到右上（尺寸放大到 88px） */
 .bg-2 .win-sun{
-  position:absolute; left:5%; top:25%; margin-left:-24px; width:48px; height:48px; border-radius:50%;
-  background:radial-gradient(circle,#FFF6D0,#FFD35E 70%,rgba(255,190,70,.5));
-  box-shadow:0 0 24px rgba(255,210,90,.85);
-  opacity:.9;
+  position:absolute; left:5%; top:25%; margin-left:-44px; width:88px; height:88px; border-radius:50%;
+  background:radial-gradient(circle,#FFFBE6 0%,#FFE08A 55%,#FFC24D 78%,rgba(255,190,70,.35) 100%);
+  box-shadow:0 0 34px rgba(255,215,105,.9), 0 0 70px rgba(255,196,80,.55);
+  opacity:.95;
 }
 .bg-2.sun-run .win-sun{ animation:sunArc var(--cd,5s) linear forwards; }
 .bg-2.sun-freeze .win-sun{ animation-play-state:paused; }
-/* 抛物线 y=0.00741*(x-50)^2+10，9 个采样点保证圆润弧线 */
+/* 抛物线 y=0.0065*(x-50)^2+12，9 个采样点保证圆润弧线（太阳放大后弧线相应压低） */
 @keyframes sunArc{
-  0%    { left:5%;     top:25%;   transform:scale(.9); }
-  12.5% { left:16.25%; top:18.4%; transform:scale(.93); }
-  25%   { left:27.5%;  top:13.8%; transform:scale(.96); }
-  37.5% { left:38.75%; top:10.9%; transform:scale(.98); }
-  50%   { left:50%;    top:10%;   transform:scale(1); }
-  62.5% { left:61.25%; top:10.9%; transform:scale(.98); }
-  75%   { left:72.5%;  top:13.8%; transform:scale(.96); }
-  87.5% { left:83.75%; top:18.4%; transform:scale(.93); }
-  100%  { left:95%;    top:25%;   transform:scale(.9); }
+  0%    { left:5%;     top:25%;   transform:scale(.88); }
+  12.5% { left:16.25%; top:19.2%; transform:scale(.91); }
+  25%   { left:27.5%;  top:15.4%; transform:scale(.94); }
+  37.5% { left:38.75%; top:13.1%; transform:scale(.97); }
+  50%   { left:50%;    top:12%;   transform:scale(1);   }
+  62.5% { left:61.25%; top:13.1%; transform:scale(.97); }
+  75%   { left:72.5%;  top:15.4%; transform:scale(.94); }
+  87.5% { left:83.75%; top:19.2%; transform:scale(.91); }
+  100%  { left:95%;    top:25%;   transform:scale(.88); }
 }
 .bg-2 .cloud{ position:absolute; font-size:24px; opacity:.45; animation:cloudDrift linear infinite; z-index:1; }
 .bg-2 .cloud.c1{ top:12%; left:-12%; animation-duration:15s; }
