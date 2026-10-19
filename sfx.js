@@ -38,6 +38,8 @@ function live(){
 }
 function markGesture(){ _gestureUntil = Date.now() + 500; }
 var _audEl = null;
+var _lastResume = 0;
+var _rebuilds = 0;
 
 /* iOS 静音拨杆打开时 Web Audio 会被系统静音。
    办法：在手势里播一段极短的静音 wav（走 <audio> 通道），
@@ -70,9 +72,14 @@ function init(){
        有时永远无法 resume（页面加载时 armAudioUnlock 提前建过一次，就是这种情况）。
        现在既然处于真实手势里，就果断把旧的关掉、现场重建一个 —— 这是 iOS 解锁音频
        最可靠的做法。ctx 正常运行时这里不会触发，不影响日常使用。 */
-    if(ctx && ctx.state !== "running"){
+    /* 只有当「已经尝试 resume 超过 1.2 秒还没成功」时才重建。
+       否则会把上一个正在异步 resume 的 ctx 关掉，导致永远解锁不了
+       （Chrome / Safari 严格自动播放策略下会一直卡在 suspended）。 */
+    var stuck = Date.now() - _lastResume > 1200;
+    if(ctx && ctx.state !== "running" && stuck){
       try{ ctx.close(); }catch(e){}
       ctx = null; master = null; ready = false; _nb = null;
+      _rebuilds++;
     }
     if(!ctx){
       var AC = window.AudioContext || window.webkitAudioContext;
@@ -92,7 +99,7 @@ function init(){
         comp.connect(ctx.destination);
       }catch(e){ master.connect(ctx.destination); }
     }
-    if(ctx.state === "suspended") ctx.resume();
+    if(ctx.state !== "running"){ _lastResume = Date.now(); try{ ctx.resume(); }catch(e){} }
     ready = true;
     // 切回前台时 ctx 可能又被挂起，这里再补一次 resume
     try{
@@ -138,6 +145,7 @@ function ensure(){
     init();
     if(ctx){
       if(ctx.state !== "running"){
+        _lastResume = Date.now();
         try{
           var pr = ctx.resume();
           if(pr && pr.then) pr.then(function(){ ping(); }, function(){});
@@ -480,7 +488,7 @@ return {
   setMuted: setMuted,
   toggle: toggle,
   isDead: function(){ return dead; },
-  _debug: function(){ return { state: ctx ? ctx.state : null, ready: ready, dead: dead, muted: muted }; },
+  _debug: function(){ return { state: ctx ? ctx.state : null, ready: ready, dead: dead, muted: muted, rebuilds: _rebuilds, sinceResume: Date.now() - _lastResume }; },
   tap: tap, dial: dial, connected: connected, wrong: wrong, ringback: ringback,
   key: key, tick: tick,
   kick: kick, snare: snare, hihat: hihat,
