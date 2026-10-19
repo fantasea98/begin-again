@@ -37,6 +37,7 @@ function live(){
   return false;
 }
 function markGesture(){ _gestureUntil = Date.now() + 500; }
+var _audEl = null;
 
 /* iOS 静音拨杆打开时 Web Audio 会被系统静音。
    办法：在手势里播一段极短的静音 wav（走 <audio> 通道），
@@ -106,11 +107,55 @@ function init(){
     var url = silentWavUrl();
     if(url){
       var a = new Audio(url);
-      a.muted = true;               // 内容本来就是静音，只为切换音频会话
+      a.loop = false; a.preload = "auto";
+      a.volume = 0.02;              // 不能设 muted：iOS 下 muted 播放不算解锁
+      _audEl = a;                   // 留住引用，避免被 GC 掉导致播放中断
       var pr = a.play();
       if(pr && pr.catch) pr.catch(function(){});
     }
   }catch(e){ dead = true; }
+}
+
+/* 立刻启动一个 1 采样的静音源 —— iOS 真正「解锁」Web Audio 靠的就是
+   在用户手势里 start() 一个 source，光 resume() 有时不够。 */
+function ping(){
+  try{
+    if(!ctx) return;
+    var b = ctx.createBuffer(1, 1, ctx.sampleRate || 44100);
+    var src = ctx.createBufferSource();
+    src.buffer = b;
+    src.connect(master || ctx.destination);
+    src.start(0);
+  }catch(e){}
+}
+
+/* 对外唯一入口：可以放心重复调用，直到音频真的 running 为止。
+   每次调用都会：标记手势窗口 → 必要时重建 ctx → resume → start 静音源 → 播静音 wav */
+function ensure(){
+  markGesture();
+  if(dead) return false;
+  try{
+    init();
+    if(ctx){
+      if(ctx.state !== "running"){
+        try{
+          var pr = ctx.resume();
+          if(pr && pr.then) pr.then(function(){ ping(); }, function(){});
+        }catch(e){}
+      }
+      ping();
+      var url = silentWavUrl();
+      if(url){
+        try{
+          var a = _audEl || new Audio(url);
+          _audEl = a; a.volume = 0.02;
+          var p2 = a.play();
+          if(p2 && p2.catch) p2.catch(function(){});
+        }catch(e){}
+      }
+    }
+  }catch(e){}
+  return !!(ctx && ctx.state === "running");
 }
 
 /* ---------- 基础合成 ---------- */
@@ -429,6 +474,8 @@ function toggle(){ return setMuted(!muted); }
 
 return {
   init: init,
+  ensure: ensure,
+  ping: ping,
   isMuted: function(){ return muted; },
   setMuted: setMuted,
   toggle: toggle,
