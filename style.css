@@ -1077,14 +1077,12 @@ body{
 .hall2-emoji{
   margin-left:auto; margin-right:10px; font-size:36px; line-height:1;
   filter:drop-shadow(0 3px 5px rgba(120,80,40,.22));
-  animation:emojiSway 3.4s ease-in-out infinite;
+  animation:emojiSway 3.6s ease-in-out infinite;
 }
 @keyframes emojiSway{
-  0%   { transform:translateX(0)   rotate(-7deg); }
-  25%  { transform:translateX(-5px) rotate(0deg); }
-  50%  { transform:translateX(0)   rotate(7deg); }
-  75%  { transform:translateX(5px)  rotate(0deg); }
-  100% { transform:translateX(0)   rotate(-7deg); }
+  0%   { transform:translateX(-6px); }
+  50%  { transform:translateX(6px); }
+  100% { transform:translateX(-6px); }
 }
 .hall2-tag{ font-size:13.5px; color:#8A7258; margin-top:5px; line-height:1.6; }
 .hall2-frag{
@@ -1155,3 +1153,49 @@ body{
   .hall2-y{ font-size:13.5px; }
   .hall2-tab{ font-size:11.5px; padding:9px 3px 10px; }
 }
+
+/* =========================================================
+   锁屏页（滑动解锁 · 一举拿到音频播放权限）
+   ========================================================= */
+#view-lock{ padding:0; }
+#view-lock .lock{
+  min-height:100%; display:flex; flex-direction:column;
+  align-items:center; justify-content:space-between;
+  padding:58px 22px 42px;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,.55), rgba(255,255,255,0) 60%),
+    linear-gradient(165deg, #FCE9C6 0%, #F3C88D 42%, #E39B57 100%);
+  color:#5A3A17; text-align:center;
+}
+.lock-top{ opacity:.94; }
+.lock-time{ font-size:62px; font-weight:200; letter-spacing:1px; line-height:1; }
+.lock-date{ margin-top:8px; font-size:13px; letter-spacing:1px; }
+.lock-mid{ flex:1; display:flex; flex-direction:column; justify-content:center; gap:10px; }
+.lock-brand{
+  font-size:34px; font-weight:900; letter-spacing:2px; color:#5A3A17;
+  text-shadow:0 2px 0 rgba(255,255,255,.45);
+}
+.lock-sub{ font-size:12.5px; letter-spacing:1px; color:#7B5628; opacity:.9; }
+.lock-bottom{ width:100%; display:flex; flex-direction:column; align-items:center; gap:12px; }
+.lock-bar{
+  position:relative; width:100%; max-width:300px; height:54px; border-radius:27px;
+  background:rgba(255,255,255,.26); border:1px solid rgba(255,255,255,.55);
+  overflow:hidden; touch-action:none; -webkit-user-select:none; user-select:none;
+  box-shadow:inset 0 1px 3px rgba(120,80,40,.18);
+}
+.lock-fill{
+  position:absolute; left:0; top:0; bottom:0; width:54px;
+  background:linear-gradient(90deg, rgba(255,255,255,.42), rgba(255,255,255,.62));
+}
+.lock-hint{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:13px; letter-spacing:2px; color:#6B4A20; opacity:.9;
+  pointer-events:none; transition:opacity .15s linear;
+}
+.lock-knob{
+  position:absolute; left:0; top:0; width:54px; height:54px; border-radius:27px;
+  background:#FFFDF6; display:flex; align-items:center; justify-content:center;
+  font-size:22px; box-shadow:0 4px 12px rgba(120,80,40,.28);
+  will-change:transform;
+}
+.lock-tip{ font-size:12px; letter-spacing:1px; color:#7B5628; opacity:.85; }
