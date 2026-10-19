@@ -14,11 +14,29 @@ var ctx = null, master = null, ready = false, dead = false;
 var muted = false;
 var lastAt = {};              // 节流时间戳
 var _nb = null, _wavUrl = null;
+var _gestureUntil = 0;        // 手势后允许排程的短暂窗口（毫秒戳）
 
 try{ muted = localStorage.getItem(MUTE_KEY) === "1"; }catch(e){}
 
 function supported(){ return !!(window.AudioContext || window.webkitAudioContext); }
 function can(){ return ready && !dead && !muted && ctx && ctx.state !== "closed"; }
+
+/* 关键：AudioContext 处于 suspended 时 currentTime 是冻结的。
+   此时排程的音符会被钉在同一个"现在"，等用户第一次触摸恢复音频后，
+   它们会在同一瞬间集中炸出来 —— 这就是开场音效"卡几秒后一次性播放"的原因。
+   所以：suspended 期间一律不排程（直接丢弃），只有这两种情况才发声：
+     ① ctx 已 running（正常）
+     ② 刚刚发生过用户手势（resume 生效前的 ~500ms 宽限窗，保证点击声能响） */
+function live(){
+  if(!can()) return false;
+  if(ctx.state === "running") return true;
+  if(ctx.state === "suspended" || ctx.state === "interrupted"){
+    try{ var p = ctx.resume(); if(p && p.catch) p.catch(function(){}); }catch(e){}
+    return Date.now() < _gestureUntil;
+  }
+  return false;
+}
+function markGesture(){ _gestureUntil = Date.now() + 500; }
 
 /* iOS 静音拨杆打开时 Web Audio 会被系统静音。
    办法：在手势里播一段极短的静音 wav（走 <audio> 通道），
@@ -43,6 +61,7 @@ function silentWavUrl(){
 }
 
 function init(){
+  markGesture();
   if(dead) return;
   if(!supported()){ dead = true; return; }
   try{
@@ -66,6 +85,16 @@ function init(){
     }
     if(ctx.state === "suspended") ctx.resume();
     ready = true;
+    // 切回前台时 ctx 可能又被挂起，这里再补一次 resume
+    try{
+      if(!document.__baVis){
+        document.__baVis = true;
+        document.addEventListener("visibilitychange", function(){
+          if(document.hidden) return;
+          try{ if(ctx && ctx.state !== "running") ctx.resume(); }catch(e){}
+        });
+      }
+    }catch(e){}
     var url = silentWavUrl();
     if(url){
       var a = new Audio(url);
@@ -78,7 +107,7 @@ function init(){
 
 /* ---------- 基础合成 ---------- */
 function tone(o){
-  if(!can()) return;
+  if(!live()) return;
   try{
     var t0 = ctx.currentTime + (o.delay || 0);
     var dur = o.dur || 0.12;
@@ -97,7 +126,7 @@ function tone(o){
   }catch(e){}
 }
 function noise(o){
-  if(!can()) return;
+  if(!live()) return;
   try{
     if(!_nb){
       var len = Math.floor(ctx.sampleRate * 0.5);
@@ -227,7 +256,7 @@ var _beatBus = null;
    四拍一顿（重音更高更亮），整体节奏从 300ms 一路收紧到 95ms。
    全部一次性音源、用 ctx 时钟一次性排完，中途离场时把总线切掉即可全静音。 */
 function tensionStart(seconds){
-  if(!can()) return;
+  if(!live()) return;
   try{
     tensionStop();
     _beatBus = ctx.createGain();
@@ -396,6 +425,7 @@ return {
   setMuted: setMuted,
   toggle: toggle,
   isDead: function(){ return dead; },
+  _debug: function(){ return { state: ctx ? ctx.state : null, ready: ready, dead: dead, muted: muted }; },
   tap: tap, dial: dial, connected: connected, wrong: wrong, ringback: ringback,
   key: key, tick: tick,
   kick: kick, snare: snare, hihat: hihat,
