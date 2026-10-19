@@ -65,6 +65,14 @@ function init(){
   if(dead) return;
   if(!supported()){ dead = true; return; }
   try{
+    /* 关键修复：在「非手势环境」里创建的 AudioContext，在 iOS / 微信 WebView 上
+       有时永远无法 resume（页面加载时 armAudioUnlock 提前建过一次，就是这种情况）。
+       现在既然处于真实手势里，就果断把旧的关掉、现场重建一个 —— 这是 iOS 解锁音频
+       最可靠的做法。ctx 正常运行时这里不会触发，不影响日常使用。 */
+    if(ctx && ctx.state !== "running"){
+      try{ ctx.close(); }catch(e){}
+      ctx = null; master = null; ready = false; _nb = null;
+    }
     if(!ctx){
       var AC = window.AudioContext || window.webkitAudioContext;
       ctx = new AC();
