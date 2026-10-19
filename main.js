@@ -378,58 +378,12 @@ function lockDateText(){
   return d.length === 3 ? `${d[0]}年${+d[1]}月${+d[2]}日` : (CONFIG.workDates.end || "");
 }
 function renderLock(){
-  const stars = (() => {
-    let out = "";
-    for(let i = 0; i < 30; i++){
-      const x = (i * 53) % 330 + 5, y = 12 + (i * 41) % 300;
-      out += `<circle cx="${x}" cy="${y}" r="${(i % 3) * 0.4 + 0.7}" fill="#FFF3DC" opacity="${0.22 + (i % 4) * 0.12}"/>`;
-    }
-    return out;
-  })();
   $("view-lock").innerHTML = `
     <div class="lock">
-      <svg class="lock-scene" viewBox="0 0 340 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <defs>
-          <linearGradient id="lgSky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#F7A95A"/><stop offset=".5" stop-color="#F0813F"/><stop offset="1" stop-color="#DE6234"/>
-          </linearGradient>
-          <linearGradient id="lgSea" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#D2663A"/><stop offset="1" stop-color="#8E3F24"/>
-          </linearGradient>
-          <radialGradient id="lgSun" cx=".5" cy=".5" r=".5">
-            <stop offset="0" stop-color="#FFEFC4" stop-opacity=".95"/>
-            <stop offset="1" stop-color="#FFDF9E" stop-opacity="0"/>
-          </radialGradient>
-        </defs>
-        <rect width="340" height="380" fill="url(#lgSky)"/>
-        ${stars}
-        <circle cx="62" cy="374" r="58" fill="url(#lgSun)"/>
-        <circle cx="62" cy="374" r="21" fill="#FFEFC8"/>
-        <path d="M34 292 L268 258" stroke="#FFF6E4" stroke-width="1.2" opacity=".55" stroke-dasharray="7 8"/>
-        <path d="M262 251 l24 -8 -3 14 -10 -2 Z" fill="#FFF6E4" opacity=".95"/>
-        <path d="M246 158 q5 -5 9 0 q4 -5 9 0" stroke="#FFF1D6" stroke-width="1.5" fill="none" opacity=".6"/>
-        <path d="M276 138 q4 -4 7 0 q3 -4 7 0" stroke="#FFF1D6" stroke-width="1.3" fill="none" opacity=".45"/>
-        <rect y="380" width="340" height="180" fill="url(#lgSea)"/>
-        <rect y="378" width="340" height="3" fill="#FFE3B8" opacity=".6"/>
-        <ellipse cx="62" cy="392" rx="34" ry="7" fill="#FFE7B4" opacity=".35"/>
-        <path d="M40 424 q26 4 52 0" stroke="#FFDCA8" stroke-width="1.5" fill="none" opacity=".35"/>
-        <path d="M236 452 q30 5 60 0" stroke="#FFDCA8" stroke-width="1.5" fill="none" opacity=".3"/>
-        <path d="M92 504 q26 4 52 0" stroke="#FFDCA8" stroke-width="1.5" fill="none" opacity=".22"/>
-        <path d="M282 392 q22 3 44 0" stroke="#FFDCA8" stroke-width="1.5" fill="none" opacity=".3"/>
-        <ellipse cx="160" cy="404" rx="80" ry="14" fill="#7E3A21"/>
-        <ellipse cx="160" cy="400" rx="80" ry="10" fill="#9C4B2B"/>
-        <circle cx="146" cy="378" r="3.4" fill="#39291C"/>
-        <rect x="141.5" y="382" width="9" height="16" rx="4.5" fill="#39291C"/>
-        <path d="M149 387 q8 -5 10 -12" stroke="#39291C" stroke-width="2.6" stroke-linecap="round" fill="none"/>
-        <circle cx="160" cy="373" r="1.6" fill="#FFE9BF"/>
-        <circle cx="171" cy="379" r="3.4" fill="#39291C"/>
-        <rect x="166.5" y="383" width="9" height="15" rx="4.5" fill="#39291C"/>
-        <rect x="184" y="389" width="8" height="11" rx="2" fill="#54301C"/>
-        <path d="M186 389 v-2.5 h4 v2.5" stroke="#54301C" stroke-width="1.4" fill="none"/>
-      </svg>
+      <div class="lock-bg"></div>
 
       <div class="lock-status">
-        <span class="ls-op">中国电信</span>
+        <span class="ls-op">No Service</span>
         <span class="ls-right">
           <span class="ls-bat"><i style="width:78%"></i></span>
           <b>78%</b>
@@ -437,29 +391,25 @@ function renderLock(){
       </div>
 
       <div class="lock-head">
-        <div class="lock-eyebrow"><span class="dot"></span>10月30日 星期五</div>
+        <div class="lock-date">10月30日 星期五</div>
         <div class="lock-time">17:00</div>
         <div class="lock-sub">丙午年九月廿一 · 宜告别，宜重逢</div>
       </div>
 
       <div class="lock-cards">
-        <div class="lc">
-          <span class="lc-ico">🌇</span>
-          <span class="lc-txt"><b>21°</b><span>晚霞满天</span><em>最高 24° / 最低 19°</em></span>
+        <div class="lc lc-weather">
+          <b>21°</b>
+          <span>晚霞满天</span>
+          <em>最高 24° / 最低 19°</em>
         </div>
-        <div class="lc">
-          <span class="lc-ico">💼</span>
-          <span class="lc-txt"><b>1122 天</b><span>一起走过</span><em>2023.10.05 — 2026.10.30</em></span>
+        <div class="lc lc-face">
+          <b class="face">(ᵔᴗᵔ)</b>
+          <span>心情晴朗</span>
         </div>
       </div>
 
       <div class="lock-word">
-        <div class="lw-row">
-          <span class="lw-line"></span>
-          <span class="lw-text">begin again</span>
-          <span class="lw-line lw-line-r"></span>
-        </div>
-        <div class="lw-sub">one more time</div>
+        <div class="lw-text">begin again</div>
       </div>
 
       <div class="lock-bottom">
@@ -468,14 +418,8 @@ function renderLock(){
           <div class="lock-hint" id="lock-hint">向右滑动解锁<i class="chev">›››</i></div>
           <div class="lock-knob" id="lock-knob">🔓</div>
         </div>
-        <div class="lock-quick">
-          <span class="lq"><i>🔦</i><em>手电筒</em></span>
-          <span class="lq"><i>📷</i><em>相机</em></span>
-        </div>
+        <div class="lock-tip">解锁后请解除静音 🔊</div>
       </div>
-
-      <div class="lock-tip">解锁后请打开声音 🔊</div>
-      <div class="lock-homebar"></div>
     </div>`;
   bindLock();
 }
@@ -527,7 +471,9 @@ function unlockPhone(){
   // 这一次是真的用户手势：全力解锁（重建 ctx + resume + start 静音源 + 静音 wav）
   try{ SFX.ensure(); }catch(e){}
   // 手势的「瞬时激活」还能维持几秒，趁热再补几次，覆盖各内核的异步差异
-  [0, 120, 400, 900].forEach(ms => setTimeout(() => { try{ SFX.ensure(); }catch(e){} }, ms));
+  // 注意节奏：前几次只是补 resume（不敢重建，会打断异步 resume），
+  // 1400ms 那一次才允许重建上下文 —— 此时仍在手势的瞬时激活窗口内
+  [0, 150, 700, 1400].forEach(ms => setTimeout(() => { try{ SFX.ensure(); }catch(e){} }, ms));
   SFX.unlock();
   renderOpening();            // 解锁后才开始微信开场动画，音效不会丢
   showView("opening");
@@ -2313,7 +2259,7 @@ function armSoundNudge(){
     let ok = false;
     try{ const st = SFX._debug && SFX._debug(); ok = !!(st && st.state === "running"); }catch(e){}
     if(ok){ hideSoundNudge(); return; }
-    if(tries >= 4){                      // 约 1.6 秒后仍未解锁才显示
+    if(tries >= 8){                      // 约 3.2 秒后仍未解锁才显示
       if(document.getElementById("sound-nudge")) return;
       const host = $("screen") || document.body;
       const el = document.createElement("div");
