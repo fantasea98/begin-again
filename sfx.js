@@ -306,6 +306,54 @@ function confetti(){
   }
 }
 
+/* ---------- 开场微信群聊专用 ---------- */
+
+/* 气泡弹出：自己的消息偏亮上行，别人的消息偏低短促（微信气泡感） */
+function bubble(self){
+  if(!gate("bubble", 45)) return;
+  if(self){
+    tone({ freq:622.3, type:"triangle", dur:0.07, gain:0.15 });
+    tone({ freq:1046.5,type:"triangle", dur:0.10, gain:0.11, delay:0.055 });
+    noise({ dur:0.03, filter:"highpass", freq:4200, gain:0.06, delay:0.02 });
+  } else {
+    tone({ freq:523.3, type:"sine", dur:0.09, gain:0.16 });
+    tone({ freq:392,   type:"sine", dur:0.12, gain:0.11, delay:0.05 });
+    noise({ dur:0.025, filter:"highpass", freq:2400, gain:0.05, delay:0.02 });
+  }
+}
+/* 系统提示 pill：两声轻警示 */
+function sysalert(){
+  tone({ freq:1244.5, type:"square", dur:0.10, gain:0.09, delay:0    });
+  tone({ freq:1244.5, type:"square", dur:0.10, gain:0.09, delay:0.20 });
+}
+/* 时空乱流：下扫 + 宽频噪声 + 回弹上行（画面 glitch 同帧触发） */
+function glitch(){
+  tone({ freq:1200, to:110, type:"sawtooth", dur:0.55, gain:0.15 });
+  tone({ freq:1760, to:660, type:"square",   dur:0.55, gain:0.05, delay:0.04 });
+  noise({ dur:0.5, filter:"bandpass", freq:400, to:4200, gain:0.13 });
+  noise({ dur:0.3, filter:"highpass", freq:3200, gain:0.07, delay:0.5 });
+  tone({ freq:160, to:1500, type:"sine", dur:0.34, gain:0.13, delay:0.52 });
+}
+/* 点赞：清脆小铃（连点时逐个错开，不糊成一团） */
+function like(){
+  if(!gate("like", 55)) return;
+  tone({ freq:1318.5, type:"sine", dur:0.13, gain:0.14 });
+  tone({ freq:2093,   type:"sine", dur:0.22, gain:0.07, delay:0.04 });
+}
+/* 内心 OS：柔和气声 + 一个悬空单音 */
+function thought(){
+  noise({ dur:0.45, filter:"lowpass", freq:1100, to:380, gain:0.07 });
+  tone({ freq:493.9, type:"sine", dur:0.60, gain:0.09 });
+}
+/* 进入结界：whoosh + 上行扫频 + 三连高音（入场仪式感） */
+function portal(){
+  noise({ dur:0.9, filter:"bandpass", freq:260, to:5200, gain:0.17 });
+  tone ({ freq:160, to:1500, type:"sine", dur:0.9, gain:0.17 });
+  [523.3, 784, 1046.5].forEach(function(f, i){
+    tone({ freq:f, type:"triangle", dur:0.55, gain:0.14, delay:0.52 + i * 0.09 });
+  });
+}
+
 /* ---------- 开关 ---------- */
 function setMuted(m){
   muted = !!m;
@@ -329,6 +377,8 @@ return {
   fragment: fragment, fragmentDrop: fragmentDrop, flip: flip,
   tensionStart: tensionStart, tensionStop: tensionStop,
   musicBoxStart: musicBoxStart, musicBoxStop: musicBoxStop,
-  unlock: unlock, confetti: confetti
+  unlock: unlock, confetti: confetti,
+  bubble: bubble, sysalert: sysalert, glitch: glitch,
+  like: like, thought: thought, portal: portal
 };
 })();
