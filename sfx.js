@@ -142,9 +142,19 @@ function connected(){
   tone({ freq:554.4,type:"sine", dur:0.14, gain:0.2, delay:0.09 });
   tone({ freq:659.3,type:"sine", dur:0.24, gain:0.2, delay:0.18 });
 }
-/* 打错：忙音下滑 */
+/* 打错：标准电话忙音（480+620Hz 双音，响 0.4 停 0.35 再响 0.4） */
 function wrong(){
-  tone({ freq:200, to:110, type:"square", dur:0.26, gain:0.16 });
+  [0, 0.75].forEach(function(d){
+    tone({ freq:480, type:"square", dur:0.4, gain:0.10, delay:d });
+    tone({ freq:620, type:"square", dur:0.4, gain:0.10, delay:d });
+  });
+}
+/* 拨号后的回铃音「嘟……嘟……」（440+480Hz，响 1s 停 0.4s 再响 1s） */
+function ringback(){
+  [0, 1.4].forEach(function(d){
+    tone({ freq:440, type:"sine", dur:1.0, gain:0.15, delay:d });
+    tone({ freq:480, type:"sine", dur:1.0, gain:0.15, delay:d });
+  });
 }
 /* 敲键盘（音高随机 ±10%，避免机械重复） */
 function key(){
@@ -192,6 +202,101 @@ function fragment(){
     tone({ freq:f, type:"sine", dur:0.3, gain:0.2, delay:i * 0.075 });
   });
 }
+/* 碎片落入手中：清脆上行 + 金属铃感（在「获得 xx 碎片」那一行出现时响） */
+function fragmentDrop(){
+  tone({ freq:1318.5, type:"sine", dur:0.5, gain:0.22, delay:0    });
+  tone({ freq:1760,   type:"sine", dur:0.6, gain:0.18, delay:0.09 });
+  tone({ freq:2637,   type:"sine", dur:0.5, gain:0.07, delay:0.09 });
+  noise({ dur:0.16, filter:"highpass", freq:5000, gain:0.10, delay:0.02 });
+}
+
+/* ---------- 持续型音源 ---------- */
+var _drone = null;
+/* 第 2 关：倒计时期间的紧张底噪（低频嗡鸣 + 快速脉动 = 心慌、局促） */
+function droneStart(){
+  if(!can() || _drone) return;
+  try{
+    var o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), o3 = ctx.createOscillator();
+    var g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+    var lp = ctx.createBiquadFilter();
+    o1.type = "sawtooth"; o1.frequency.value = 58;
+    o2.type = "sine";     o2.frequency.value = 87;
+    o3.type = "sine";     o3.frequency.value = 58.9;   // 与 o1 差 0.9Hz → 轻微拍频，听着「发毛」
+    lp.type = "lowpass";  lp.frequency.value = 400;
+    g.gain.value = 0.0001;
+    lfo.type = "sine"; lfo.frequency.value = 7.4;      // 每秒 7.4 次 = 明显的心跳式局促
+    lg.gain.value = 0.062;
+    lfo.connect(lg); lg.connect(g.gain);
+    o1.connect(lp); o2.connect(lp); o3.connect(lp); lp.connect(g); g.connect(master);
+    var t = ctx.currentTime;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.165, t + 0.3);   // 比上一版大 2 倍多
+    o1.start(t); o2.start(t); o3.start(t); lfo.start(t);
+    _drone = { o1:o1, o2:o2, o3:o3, lfo:lfo, g:g };
+  }catch(e){}
+}
+function droneStop(){
+  if(!_drone) return;
+  var d = _drone; _drone = null;
+  try{
+    var t = ctx.currentTime;
+    d.g.gain.cancelScheduledValues(t);
+    d.g.gain.setValueAtTime(Math.max(0.0001, d.g.gain.value), t);
+    d.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+    d.o1.stop(t + 0.35); d.o2.stop(t + 0.35); d.o3.stop(t + 0.35); d.lfo.stop(t + 0.35);
+  }catch(e){}
+}
+
+/* 第 4 关：音乐盒式的回忆单音，五声音阶随机，缓慢飘落 */
+var _box = null, _warm = null;
+var BOX_SCALE = [523.3, 587.3, 659.3, 784, 880, 1046.5, 1174.7];
+function musicBoxStart(){
+  if(!can() || _box) return;
+  /* ① 回忆的「暖底」：两个低音正弦垫着，5 秒左右起伏一次，压住单调感 */
+  if(!_warm){
+    try{
+      var p1 = ctx.createOscillator(), p2 = ctx.createOscillator();
+      var pg = ctx.createGain(), pl = ctx.createOscillator(), plg = ctx.createGain();
+      p1.type = "sine"; p1.frequency.value = 130.8;
+      p2.type = "sine"; p2.frequency.value = 196;
+      pl.type = "sine"; pl.frequency.value = 0.18;
+      plg.gain.value = 0.014;
+      pg.gain.value = 0.0001;
+      pl.connect(plg); plg.connect(pg.gain);
+      p1.connect(pg); p2.connect(pg); pg.connect(master);
+      var t0 = ctx.currentTime;
+      pg.gain.setValueAtTime(0.0001, t0);
+      pg.gain.exponentialRampToValueAtTime(0.05, t0 + 1.3);
+      p1.start(t0); p2.start(t0); pl.start(t0);
+      _warm = { p1:p1, p2:p2, pl:pl, g:pg };
+    }catch(e){}
+  }
+  /* ② 音乐盒：单音与两三音小乐句交替出现，比每 2.2s 固定一个音更有起伏 */
+  _box = setInterval(function(){
+    var n = Math.random() < 0.45 ? 2 : 1;
+    var idx = Math.floor(Math.random() * BOX_SCALE.length);
+    for(var i = 0; i < n; i++){
+      var f = BOX_SCALE[Math.min(BOX_SCALE.length - 1, idx + i)];
+      var gap = i * 0.34;
+      tone({ freq:f,       type:"sine", dur:1.5,  gain:0.12,  delay:gap });
+      tone({ freq:f * 2,   type:"sine", dur:0.85, gain:0.038, delay:gap + 0.01 });
+      tone({ freq:f * 1.5, type:"sine", dur:1.0,  gain:0.032, delay:gap + 0.12 });
+    }
+  }, 1900);
+}
+function musicBoxStop(){
+  if(_box){ clearInterval(_box); _box = null; }
+  if(_warm){
+    var w = _warm; _warm = null;
+    try{
+      var t = ctx.currentTime;
+      w.g.gain.cancelScheduledValues(t);
+      w.g.gain.setValueAtTime(Math.max(0.0001, w.g.gain.value), t);
+      w.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+      w.p1.stop(t + 0.7); w.p2.stop(t + 0.7); w.pl.stop(t + 0.7);
+    }catch(e){}
+  }
+}
 /* 翻牌：纸张声 */
 function flip(){
   if(!gate("flip", 60)) return;
@@ -225,12 +330,14 @@ return {
   setMuted: setMuted,
   toggle: toggle,
   isDead: function(){ return dead; },
-  tap: tap, dial: dial, connected: connected, wrong: wrong,
+  tap: tap, dial: dial, connected: connected, wrong: wrong, ringback: ringback,
   key: key, tick: tick,
   kick: kick, snare: snare, hihat: hihat,
   l3Action: l3Action, l3CountIn: l3CountIn,
   perfect: perfect, miss: miss,
-  fragment: fragment, flip: flip,
+  fragment: fragment, fragmentDrop: fragmentDrop, flip: flip,
+  droneStart: droneStart, droneStop: droneStop,
+  musicBoxStart: musicBoxStart, musicBoxStop: musicBoxStop,
   unlock: unlock, confetti: confetti
 };
 })();
