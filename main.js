@@ -317,7 +317,7 @@ let failCounts = { 1:0, 2:0, 3:0 };  // 失败计数（内存，作弊后清零�
 let justCompleted = null;            // 刚通关的关卡，用于大厅闪灰动画
 
 /* ==================== ④ 视图切换 ==================== */
-const VIEWS = ["opening","hall","level1","level2","level3","level4","password","final"];
+const VIEWS = ["lock","opening","hall","level1","level2","level3","level4","password","final"];
 let currentView = null;
 function showView(name){
   VIEWS.forEach(v => $("view-" + v).classList.remove("active"));
@@ -327,7 +327,7 @@ function showView(name){
   currentView = name;
   // 音效开关只在非开场页出现（开场页右上角是群聊「…」）
   const sc = $("screen");
-  if(sc) sc.classList.toggle("sfx-show", name !== "opening");
+  if(sc) sc.classList.toggle("sfx-show", name !== "opening" && name !== "lock");
 }
 function backToHall(){
   SFX.tensionStop(); SFX.musicBoxStop();   // 离开关卡，停掉所有持续音源
@@ -369,7 +369,91 @@ function closeModal(){
   box.innerHTML = html;
 })();
 
+/* ==================== ⑧-0 锁屏页（用于拿到「用户手势」解锁音频） ==================== */
+/* 浏览器的自动播放策略：不经过一次真实触摸/点击，Web Audio 永远不出声。
+   所以开场前先放一把「锁屏」，滑动解锁既是仪式感，也是解锁音频的那一次手势。 */
+let phoneUnlocked = false;
+function lockDateText(){
+  const d = (CONFIG.workDates.end || "").split(".");
+  return d.length === 3 ? `${d[0]}年${+d[1]}月${+d[2]}日` : (CONFIG.workDates.end || "");
+}
+function renderLock(){
+  $("view-lock").innerHTML = `
+    <div class="lock">
+      <div class="lock-top">
+        <div class="lock-time">08:00</div>
+        <div class="lock-date">${lockDateText()} 星期五</div>
+      </div>
+
+      <div class="lock-mid">
+        <div class="lock-brand">begin again</div>
+        <div class="lock-sub">一只送给我同事们的离职纪念</div>
+      </div>
+
+      <div class="lock-bottom">
+        <div class="lock-bar" id="lock-bar">
+          <div class="lock-fill" id="lock-fill"></div>
+          <div class="lock-hint" id="lock-hint">向右滑动解锁</div>
+          <div class="lock-knob" id="lock-knob">🔓</div>
+        </div>
+        <div class="lock-tip">解锁后请打开声音 🔊</div>
+      </div>
+    </div>`;
+  bindLock();
+}
+function bindLock(){
+  const bar = $("lock-bar"), knob = $("lock-knob"), fill = $("lock-fill");
+  if(!bar) return;
+  const maxX = () => Math.max(1, bar.clientWidth - knob.offsetWidth);
+  let dragging = false, startX = 0, x = 0, moved = false, done = false;
+  const setX = (v) => {
+    knob.style.transform = "translateX(" + v + "px)";
+    fill.style.width = (v + knob.offsetWidth) + "px";
+    $("lock-hint").style.opacity = String(Math.max(0, 1 - v / (maxX() * 0.6)));
+  };
+  setX(0);
+  const onDown = (e) => {
+    if(done) return;
+    dragging = true; moved = false; startX = e.clientX;
+    try{ if(e.pointerId != null) bar.setPointerCapture(e.pointerId); }catch(err){}
+  };
+  const onMove = (e) => {
+    if(!dragging || done) return;
+    const dx = e.clientX - startX;
+    if(Math.abs(dx) > 4) moved = true;
+    x = Math.max(0, Math.min(maxX(), dx));
+    setX(x);
+  };
+  if(window.PointerEvent){
+    bar.addEventListener("pointerdown", onDown);
+    bar.addEventListener("pointermove", onMove);
+  } else {                                   // 老设备没有 PointerEvent，退回 touch
+    bar.addEventListener("touchstart", (e) => onDown(e.touches[0]), { passive:true });
+    bar.addEventListener("touchmove", (e) => onMove(e.touches[0]), { passive:true });
+  }
+  const finish = () => {
+    if(!dragging || done) return;
+    dragging = false;
+    if(x > maxX() * 0.7 || !moved){ done = true; unlockPhone(); return; }
+    knob.style.transition = "transform .3s cubic-bezier(.3,1.5,.5,1)";
+    fill.style.transition = "width .3s ease";
+    setX(0);
+    setTimeout(()=>{ knob.style.transition = ""; fill.style.transition = ""; }, 340);
+  };
+  ["pointerup","pointercancel","pointerleave"].forEach(ev => bar.addEventListener(ev, finish));
+  ["touchend","touchcancel"].forEach(ev => bar.addEventListener(ev, finish));
+}
+function unlockPhone(){
+  if(phoneUnlocked) return;
+  phoneUnlocked = true;
+  SFX.init();                 // 这一次是真的用户手势，音频从此畅通
+  SFX.unlock();
+  renderOpening();            // 解锁后才开始微信开场动画，音效不会丢
+  showView("opening");
+}
+
 /* ==================== ⑦ 穿越预示动画 ==================== */
+
 function playGlitch(){
   const flash = $("flash");
   const frame = document.querySelector(".phone-frame");
@@ -795,16 +879,20 @@ function roomSVG(){
     return `<svg class="hs-svg is-frosted" viewBox="0 0 340 224" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${y} 年的办公室（未解锁）">
       <defs>
         <filter id="hsFrost" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB">
-          <feGaussianBlur stdDeviation="3.4"/>
+          <feGaussianBlur stdDeviation="4.2"/>
+        </filter>
+        <filter id="hsSoft" x="-60%" y="-60%" width="220%" height="220%" color-interpolation-filters="sRGB">
+          <feGaussianBlur stdDeviation="3.2"/>
         </filter>
       </defs>
       <g filter="url(#hsFrost)">${roomBody}</g>
-      <rect x="0" y="0" width="340" height="224" fill="#FBF4E6" opacity=".55" pointer-events="none"/>
+      <rect x="0" y="0" width="340" height="224" fill="#FBF4E6" opacity=".65" pointer-events="none"/>
       <g class="hs-lock" pointer-events="none">
-        <circle cx="170" cy="112" r="31" fill="#FFFDF6" opacity=".88"/>
-        <circle cx="170" cy="112" r="31" fill="none" stroke="#C98F5A" stroke-width="1.6" opacity=".7"/>
-        <text x="170" y="110" text-anchor="middle" font-size="22">🔒</text>
-        <text x="170" y="132" text-anchor="middle" font-size="13" font-weight="700" fill="#96714A">未解锁</text>
+        <circle cx="170" cy="112" r="42" fill="#FFFDF6" opacity=".55" filter="url(#hsSoft)"/>
+        <circle cx="170" cy="112" r="35" fill="#FFFDF6" opacity=".78" filter="url(#hsSoft)"/>
+        <circle cx="170" cy="112" r="30" fill="#FFFDF6" opacity=".82"/>
+        <text x="170" y="113" text-anchor="middle" font-size="27">🔒</text>
+        <text x="170" y="142" text-anchor="middle" font-size="13.5" font-weight="700" fill="#8A7258">未解锁</text>
       </g>
     </svg>`;
   }
@@ -1376,7 +1464,7 @@ function renderLevel2(lvl){
         <div class="crt-frame" id="l2-crt">
           <div class="crt-bar">
             <span class="crt-dots"><i></i><i></i><i></i></span>
-            <span class="crt-name">【初稿】240902申报材料.docx</span>
+            <span class="crt-name">【初稿】240628申报材料.docx</span>
             <span id="l2-cd">${fmtCd(lvl.countdownSeconds)}</span>
           </div>
           <div class="crt-screen">
@@ -2106,8 +2194,8 @@ function armAudioUnlock(){
 function init(){
   initSfxToggle();
   armAudioUnlock();
-  renderOpening();
-  showView("opening");
+  renderLock();
+  showView("lock");
 }
 document.addEventListener("DOMContentLoaded", init);
 
