@@ -111,6 +111,26 @@ body{
 .view.active{ opacity:1; visibility:visible; z-index:1; transform:none; }
 .view.bleed{ padding:0; }
 
+/* ---------- 音效开关 ---------- */
+.sfx-toggle{
+  position:absolute; top:12px; right:12px; z-index:150;
+  width:34px; height:34px; padding:0; border-radius:999px;
+  display:none; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.86); border:1px solid rgba(26,26,26,.10);
+  color:#1a1a1a; cursor:pointer; font-family:inherit;
+  -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px);
+  transition:opacity .2s ease, transform .12s ease;
+}
+.screen.sfx-show .sfx-toggle{ display:flex; }
+.sfx-toggle:active{ transform:scale(.92); }
+.sfx-toggle .ic-off{ display:none; }
+.sfx-toggle.muted{ opacity:.5; }
+.sfx-toggle.muted .ic-on{ display:none; }
+.sfx-toggle.muted .ic-off{ display:block; }
+@media(max-width:600px){
+  .sfx-toggle{ top:10px; right:10px; width:32px; height:32px; }
+}
+
 /* 关卡专用：固定背景层 + 可滚动内容层（背景不随滚动移动） */
 #view-level1, #view-level2, #view-level3, #view-level4{ padding:0; overflow:hidden; }
 .view-scroll{
@@ -445,7 +465,97 @@ body{
    关卡 3：节拍点击（舞台）
    ========================================================= */
 .lv3-hint{ text-align:center; white-space:pre-line; line-height:1.7; font-size:13px; color:var(--muted); margin-bottom:10px; }
-.stage{ position:relative; width:260px; height:260px; margin:8px auto 4px; touch-action:manipulation; }
+/* 舞台尺寸：用百分比而非 vw，保证手机框内 / 全屏手机上都正确 */
+.stage{
+  position:relative;
+  width:min(300px, calc(100% - 16px));
+  aspect-ratio:1/1; height:auto;
+  margin:6px auto 4px; touch-action:manipulation;
+}
+@supports not (aspect-ratio:1/1){ .stage{ height:300px; } }
+
+/* =========================================================
+   关卡 3 视觉人格：去掉白卡片，舞台直接站在 Party 底上
+   ========================================================= */
+.l3-hud{
+  position:relative; z-index:2; display:flex; justify-content:center; gap:8px;
+  margin:14px 0 12px;
+}
+.l3-hud-item{
+  flex:1 1 0; min-width:0; text-align:center;
+  padding:7px 4px 8px; border-radius:12px;
+  background:rgba(30,0,45,.34); border:1px solid rgba(255,255,255,.18);
+  -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px);
+}
+.l3-hud-k{ display:block; font-size:10.5px; letter-spacing:1.2px; color:rgba(255,255,255,.62); line-height:1.4; }
+.l3-hud-v{
+  display:block; font-size:17px; font-weight:800; color:#fff; line-height:1.25;
+  font-variant-numeric:tabular-nums; text-shadow:0 1px 8px rgba(255,120,200,.5);
+}
+.l3-hud-v.bump{ animation:hudBump .32s cubic-bezier(.34,1.56,.64,1); }
+@keyframes hudBump{ 0%{ transform:scale(1);} 45%{ transform:scale(1.35);} 100%{ transform:scale(1);} }
+.l3-hud-v.rank-S{ color:#A3FF73; }
+.l3-hud-v.rank-A{ color:#5CE1E6; }
+.l3-hud-v.rank-B{ color:#FFDE59; }
+.l3-hud-v.rank-C{ color:#FF9BB5; }
+
+/* 节目单：半透明深色玻璃卡，压住花哨背景 */
+#view-level3 .story-card{
+  background:rgba(38,2,58,.34);
+  border-left-color:#FFD1E6;
+  border:1px solid rgba(255,255,255,.16);
+  -webkit-backdrop-filter:blur(5px); backdrop-filter:blur(5px);
+  box-shadow:0 6px 22px rgba(50,0,70,.25);
+}
+#view-level3 .story-card .t-body{ color:#fff; text-shadow:0 1px 6px rgba(60,0,80,.45); }
+
+/* 节目单海报式标题 */
+#view-level3 .level-head-title{
+  font-size:34px; font-weight:900; font-style:italic; letter-spacing:1px;
+  color:#fff;
+  text-shadow:0 2px 0 #6A1180, 0 3px 14px rgba(70,0,80,.6), 0 0 22px rgba(255,140,215,.55);
+}
+#view-level3 .level-head-year{ color:rgba(255,255,255,.9); letter-spacing:3px; }
+
+/* 天鹅绒幕布：闭幕时罩住整个舞台，点 MUSIC 向两侧拉开 */
+.stage .velvet-wrap{
+  position:absolute; inset:0; z-index:6; overflow:hidden;
+  border-radius:18px; pointer-events:none;
+  box-shadow:0 12px 32px rgba(60,0,70,.4), inset 0 0 0 1px rgba(255,255,255,.12);
+}
+.stage .velvet{
+  position:absolute; top:0; width:50.5%; height:100%;
+  background:#6E0F3A;
+  transition:transform 1.15s cubic-bezier(.62,.02,.34,1);
+}
+.stage .velvet::after{
+  content:""; position:absolute; inset:0;
+  background:repeating-linear-gradient(90deg, rgba(255,255,255,.10) 0 7px, rgba(0,0,0,.20) 7px 17px);
+}
+.stage .velvet::before{
+  content:""; position:absolute; left:0; right:0; top:0; height:14px;
+  background:linear-gradient(180deg, rgba(0,0,0,.32), rgba(0,0,0,0));
+}
+.stage .velvet.vl{ left:0; }
+.stage .velvet.vr{ right:0; }
+.stage.opened .velvet.vl{ transform:translateX(-101%); }
+.stage.opened .velvet.vr{ transform:translateX(101%); }
+.stage.opened .velvet-wrap{ box-shadow:none; }
+
+/* PERFECT 时地板光柱瞬间拔高 */
+.bg-3 .floor-glow{ transition:opacity .3s ease, transform .3s ease, filter .3s ease; transform-origin:50% 100%; }
+.bg-3.beam .floor-glow{ opacity:1; filter:blur(20px); transform:scaleY(2.4) scaleX(1.3); }
+
+/* Party 底上的说明文字改白 */
+#view-level3 .lv3-hint{ color:rgba(255,255,255,.92); text-shadow:0 1px 6px rgba(60,0,80,.5); }
+#view-level3 .lv3-progress{ color:rgba(255,255,255,.9); text-shadow:0 1px 6px rgba(60,0,80,.5); }
+#view-level3 .view-head{ position:relative; z-index:4; }
+
+@media(max-width:600px){
+  #view-level3 .level-head-title{ font-size:30px; }
+  .l3-hud-v{ font-size:16px; }
+  .l3-hud-item{ padding:6px 2px 7px; }
+}
 
 /* =========================================================
    关卡专属背景特效
@@ -574,7 +684,6 @@ body{
 .bg-3 .stage-floor{
   position:absolute; left:0; right:0; bottom:0; height:20%;
   background:linear-gradient(180deg, transparent, rgba(120,20,130,.22) 40%, rgba(70,8,80,.55));
-  border-top:1px solid rgba(255,255,255,.18);
 }
 /* Party 底上的页头文字：白色才看得清 */
 #view-level3 .level-head-title{ color:#fff; text-shadow:0 2px 12px rgba(70,0,80,.5); }
@@ -648,7 +757,7 @@ body{
 }
 .bull{
   position:absolute; left:50%; top:50%;
-  width:102px; height:102px; margin:-51px 0 0 -51px;
+  width:124px; height:124px; margin:-62px 0 0 -62px;
   background:transparent; border:5px dashed var(--action-color, var(--a3)); border-radius:50%;
   animation:bullGlow 1.4s ease-in-out infinite;
 }
@@ -668,6 +777,9 @@ body{
 .verdict.perfect{ display:block; background:var(--success); color:#fff; box-shadow:0 4px 12px rgba(61,220,132,.4); animation:verdictPop .35s cubic-bezier(.34,1.56,.64,1) both; }
 .verdict.miss{ display:block; background:var(--danger); color:#fff; box-shadow:0 4px 12px rgba(228,93,84,.4); animation:verdictPop .35s cubic-bezier(.34,1.56,.64,1) both; }
 @keyframes verdictPop{ 0%{ transform:scale(0) translateY(6px); } 60%{ transform:scale(1.15) translateY(0); } 100%{ transform:scale(1) translateY(0); } }
+/* 喝彩词长短不一，长词自动缩一档，保证小屏不挤出舞台 */
+.verdict[data-len="7"]{ font-size:13.5px; padding:5px 12px; }
+.verdict[data-len="8"], .verdict[data-len="9"]{ font-size:12.5px; padding:5px 10px; }
 .verdict.corner-tr{ top:-6px; right:-4px; }
 .verdict.corner-tl{ top:-6px; left:-4px; }
 .verdict.corner-br{ bottom:-6px; right:-4px; }
@@ -784,4 +896,177 @@ body{
   .view-scroll{ padding:20px 16px 24px; }
   html,body{ overflow:hidden; height:100dvh; touch-action:manipulation; overscroll-behavior:none; }
   .scroll{ overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+}
+
+/* 极窄屏（≤360px）再收一档，避免贴边 */
+@media(max-width:360px){
+  .view{ padding:16px 12px 20px; }
+  .view-scroll{ padding:16px 12px 20px; }
+  .l3-hud{ gap:6px; }
+  .l3-hud-k{ font-size:10px; letter-spacing:.8px; }
+}
+
+/* =========================================================
+   关卡视觉人格（1/2/4 关去模板化；第 3 关见上方独立区块）
+   ========================================================= */
+
+/* ---------- 2023 · 办公室：A4 便签 + 按键机 + LCD 来电屏 ---------- */
+#view-level1 .story-card, #view-level1 .play-card{
+  position:relative; background:#fff; border:1px solid rgba(26,26,26,.08);
+  border-left:none; border-radius:10px; overflow:visible;
+  transform:rotate(-.7deg);
+  box-shadow:0 8px 22px rgba(120,90,30,.15);
+  background-image:repeating-linear-gradient(180deg, transparent 0 27px, rgba(110,140,190,.14) 27px 28px);
+}
+#view-level1 .play-card{ padding-top:20px; }
+#view-level1 .play-card::before{          /* 回形针（居中） */
+  content:""; position:absolute; top:-13px; left:50%;
+  width:16px; height:30px; margin-left:-8px;
+  border:3px solid #B4B2A9;
+  border-bottom:none; border-radius:8px 8px 0 0;
+  box-shadow:0 2px 3px rgba(0,0,0,.14);
+  background:transparent;
+}
+#view-level1 .play-title{ letter-spacing:1px; color:#6B4E14; }
+/* 电话机显示屏：暖黄底，不用黑底 */
+.l1-screen{
+  background:linear-gradient(180deg,#FFFDF4,#FFF2CE);
+  border:1px solid rgba(170,130,40,.32); border-radius:12px;
+  padding:8px 10px 10px; margin-bottom:10px;
+  box-shadow:inset 0 2px 7px rgba(160,120,40,.20), 0 1px 0 #fff;
+}
+.l1-screen-bar{
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  font-size:11.5px; font-weight:700; color:#8A6A2A; letter-spacing:1.5px;
+  margin-bottom:7px;
+}
+/* 拨号盘：圆形电话按键，主色黄，按下物理下沉 */
+#view-level1 .keypad{ gap:12px; margin-bottom:10px; }
+#view-level1 .key{
+  justify-self:center; width:56px; height:56px; min-height:0;
+  border-radius:50%; border:1px solid rgba(160,120,30,.35);
+  background:radial-gradient(circle at 34% 24%, #FFFDF5 0%, #FFE9A8 70%, #FFDE82 100%);
+  color:#5A3C08; font-size:22px; font-weight:800;
+  box-shadow:0 3px 0 #D9B25C, 0 6px 12px rgba(130,95,25,.22), inset 0 1px 0 rgba(255,255,255,.95);
+  transition:transform .08s ease, box-shadow .08s ease;
+}
+#view-level1 .key:active{
+  transform:translateY(3px);
+  box-shadow:0 0 0 #D9B25C, 0 2px 5px rgba(130,95,25,.20), inset 0 2px 4px rgba(150,110,30,.25);
+}
+#view-level1 .key.ghost{ background:transparent; box-shadow:none; color:var(--faint); }
+/* 号码显示：暖黄凸字屏 */
+#view-level1 .digit-row{ gap:4px; }
+#view-level1 .digit-box{
+  width:27px; height:42px; border:1px solid rgba(160,120,40,.28); border-radius:7px;
+  background:linear-gradient(180deg,#FFFFFF,#FFF8E4);
+  color:#3B2A12;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-weight:800;
+  box-shadow:inset 0 2px 5px rgba(160,120,40,.20);
+}
+#view-level1 .digit-box.filled{
+  background:linear-gradient(180deg,#FFEBB0,#FFD86B);
+  color:#5A3C08; border-color:rgba(150,110,25,.45);
+  box-shadow:inset 0 2px 5px rgba(140,100,20,.30), 0 0 8px rgba(255,206,80,.5);
+}
+#view-level1 .digit-sep{ color:#A08A56; }
+
+/* ---------- 2024 · 加班：CRT 显示器（夕阳天色保留在显示器后面） ---------- */
+#view-level2 .play-card{ background:transparent; border:none; box-shadow:none; padding:0; }
+.crt-frame{
+  position:relative; margin-bottom:20px; padding:12px 12px 10px;
+  border-radius:16px; border:1px solid #CBC6BC;
+  background:linear-gradient(180deg,#F3F1EC 0%, #E2DFD7 100%);
+  box-shadow:0 14px 30px rgba(60,50,40,.20), inset 0 1px 0 #fff;
+}
+.crt-frame::after{            /* 显示器底座 */
+  content:""; position:absolute; left:50%; bottom:-14px; margin-left:-45px;
+  width:90px; height:14px; border-radius:0 0 9px 9px;
+  background:linear-gradient(180deg,#DAD6CD,#C5C0B5);
+  border:1px solid #C0BBB0; border-top:none;
+}
+.crt-bar{
+  display:flex; align-items:center; gap:9px;
+  background:#EAE7DF; border:1px solid #D3CFC5; border-bottom:none;
+  border-radius:9px 9px 0 0; padding:7px 10px; font-size:12px; color:#4B463C;
+}
+.crt-dots{ display:flex; gap:5px; flex:0 0 auto; }
+.crt-dots i{ display:block; width:8px; height:8px; border-radius:50%; }
+.crt-dots i:nth-child(1){ background:#E8756A; }
+.crt-dots i:nth-child(2){ background:#E8BE5A; }
+.crt-dots i:nth-child(3){ background:#6FBF73; }
+.crt-name{
+  flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:11.5px; color:#5B554A;
+}
+.crt-bar #l2-cd{
+  flex:0 0 auto; color:#B4462F; font-weight:800; font-variant-numeric:tabular-nums;
+}
+.crt-screen{
+  position:relative; background:#FFFDF6; border:1px solid #D3CFC5;
+  border-radius:0 0 9px 9px; padding:10px; overflow:hidden;
+  box-shadow:inset 0 2px 8px rgba(120,110,90,.12);
+}
+.crt-screen::after{          /* 极淡扫描线 */
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(180deg, rgba(60,70,90,.035) 0 2px, transparent 2px 4px);
+}
+.crt-screen .paper{ background:#FFFDF3; box-shadow:none; border:none; }
+.crt-screen .paper-title{ color:#5A4A2E; }
+.crt-timebar{
+  height:8px; margin:10px 4px 2px; border-radius:999px; overflow:hidden;
+  background:#E4E0D7; box-shadow:inset 0 1px 2px rgba(0,0,0,.08);
+}
+.crt-timebar-fill{
+  height:100%; width:100%; border-radius:999px;
+  background:linear-gradient(90deg,#4CBFD1,#2E93A6);
+}
+.crt-frame.tear .crt-timebar-fill{ background:linear-gradient(90deg,#F0913F,#E4623C); }
+/* 最后 3 秒：画面轻微横向抖动 */
+.crt-frame.tear .crt-screen{ animation:crtTear .18s steps(2) infinite; }
+@keyframes crtTear{
+  0%  { transform:translateX(0); }
+  50% { transform:translateX(2px) skewX(.5deg); }
+  100%{ transform:translateX(-2px); }
+}
+
+/* ---------- 2026 · 告别：皮质行李箱 + 贴纸 ---------- */
+#view-level4 .suitcase{
+  position:relative; background:#C89B72;
+  border:2px solid #8C6A45; border-radius:16px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.25), inset 0 -3px 8px rgba(90,60,30,.25), 0 10px 24px rgba(120,80,40,.18);
+}
+#view-level4 .suitcase::before, #view-level4 .suitcase::after{   /* 金属扣带 */
+  content:""; position:absolute; top:0; bottom:0; width:8px;
+  background:#A87F55; border-radius:2px; box-shadow:inset 0 0 0 1px rgba(90,60,30,.25);
+}
+#view-level4 .suitcase::before{ left:24px; }
+#view-level4 .suitcase::after{ right:24px; }
+#view-level4 .suitcase-handle{
+  top:-20px; width:84px; height:20px;
+  border:3px solid #8C6A45; border-bottom:none;
+  border-radius:12px 12px 0 0; background:transparent;
+}
+#view-level4 .suitcase-label{ color:#6E4E2E; }
+#view-level4 .suit-item{
+  background:#F5EFE2; color:#4A3826; border:1px solid rgba(140,106,69,.45);
+  transform:rotate(var(--rot,0deg));
+  box-shadow:0 3px 6px rgba(90,60,30,.22);
+  animation:stickOn .35s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes stickOn{
+  0%  { transform:scale(.5) rotate(var(--rot,0deg)); opacity:0; }
+  100%{ transform:scale(1) rotate(var(--rot,0deg)); }
+}
+#view-level4 .opt{
+  border:1px solid rgba(255,255,255,.35);
+  box-shadow:0 6px 14px rgba(120,80,40,.25), inset 0 0 0 1px rgba(255,255,255,.15);
+}
+
+/* 尊重系统「减弱动态效果」：只关最容易引起不适的强闪与穿越扭曲。
+   轻柔的漂浮 / 上升 / 追光一律保留——否则整页会变成一张静止画面 */
+@media(prefers-reduced-motion: reduce){
+  .phone-frame.glitch{ animation:none; }
+  .glow-word, .red-flash, .showtime, .hl-word{ animation:none !important; }
+  .bg-4 .memo, .bg-1 .dust{ animation-duration:40s !important; }
 }
