@@ -329,7 +329,10 @@ function showView(name){
   const sc = $("screen");
   if(sc) sc.classList.toggle("sfx-show", name !== "opening");
 }
-function backToHall(){ renderHall(); showView("hall"); }
+function backToHall(){
+  SFX.droneStop(); SFX.musicBoxStop();   // 离开关卡，停掉所有持续音源
+  renderHall(); showView("hall");
+}
 
 /* ==================== ⑤ 弹窗 ==================== */
 function openModal(html){
@@ -771,6 +774,7 @@ function playResult(lvl, lines){
   });
   setTimeout(()=>{
     $("result-tail").style.display = "block";
+    SFX.fragmentDrop();   // 碎片落入手中：就在「获得 xx 碎片」出现这一刻
     $("result-tail").innerHTML = `
       <hr class="popup-divider">
       <div class="frag-big">🧩 ${"获得"}${lvl.fragmentName}：${lvl.fragment}</div>
@@ -811,10 +815,7 @@ function renderLevel1(lvl){
       </div>
       <div class="play-card">
         <div class="play-title">${lvl.hint}</div>
-        <div class="l1-screen">
-          <div class="l1-screen-bar"><span>☎</span><span>中山医院 · 内线</span></div>
-          <div class="digit-row" id="l1-digits"></div>
-        </div>
+        <div class="digit-row" id="l1-digits"></div>
         <div class="dial-hint" id="l1-hint"></div>
         <div class="keypad">${keyHtml}</div>
         <button class="btn btn-ghost btn-block" id="l1-del" style="margin-bottom:10px">⌫ 删除</button>
@@ -855,7 +856,8 @@ function pressKey(lvl, k, keyEl){
   if(lv1.entered.length === lvl.digitLength){
     lv1.dialJudging = true;
     $("l1-hint").textContent = "正在拨号……";
-    lv1.judgeTimer = setTimeout(()=>{ lv1.judgeTimer = null; judgeL1(lvl); }, 500);
+    SFX.ringback();   // 嘟……嘟…… 回铃音
+    lv1.judgeTimer = setTimeout(()=>{ lv1.judgeTimer = null; judgeL1(lvl); }, 900);
   }
 }
 function deleteKey(lvl){
@@ -1065,6 +1067,8 @@ function startL2Cd(){
   // 太阳开始沿弧线落山（动画时长与倒计时一致）
   if(bg){ bg.style.setProperty("--cd", lvl.countdownSeconds + "s"); bg.classList.add("sun-run"); }
   let lastSec = null;
+  let lastTick = performance.now();
+  SFX.droneStart();   // 紧张底噪，持续到写完或超时
   lv2.cdTimer = setInterval(()=>{
     const el = (performance.now() - lv2.t0) / 1000;
     const remain = Math.max(0, lvl.countdownSeconds - el);
@@ -1078,14 +1082,16 @@ function startL2Cd(){
     const cf = $("l2-crt");
     if(cf) cf.classList.toggle("tear", remain > 0 && remain <= 3);
     if(remain <= 1 && bg) bg.classList.add("danger");
-    // 每秒一次滴答，最后 3 秒变调加速
-    const sec = Math.ceil(remain);
-    if(sec !== lastSec && remain > 0){ lastSec = sec; SFX.tick(sec <= 3); }
+    // 滴答：平时每 0.5 秒一次，最后 3 秒加密到 0.25 秒一次并变调
+    const now = performance.now();
+    const step = remain <= 3 ? 250 : 500;
+    if(remain > 0 && now - lastTick >= step){ lastTick = now; SFX.tick(remain <= 3); }
     if(remain <= 0){ lv2Fail(); }
   }, 30);
 }
 function lv2Win(){
   clearInterval(lv2.cdTimer);
+  SFX.droneStop();
   lv2.state = "done";
   $("l2-cd").textContent = "🎉";
   // 准点下班：太阳正好沉底、满屏金色
@@ -1097,6 +1103,7 @@ function lv2Win(){
 }
 function lv2Fail(){
   clearInterval(lv2.cdTimer);
+  SFX.droneStop();
   lv2.state = "fail";
   failCounts[2]++;
   $("l2-cd").textContent = fmtCd(0);
@@ -1134,6 +1141,7 @@ function resetLv2(){
 }
 function stopL2AndBack(){
   if(lv2.cdTimer) clearInterval(lv2.cdTimer);
+  SFX.droneStop();
   backToHall();
 }
 
@@ -1238,13 +1246,14 @@ const L3_DUR = 1500;
    圈缩到虚线圈约 85% 时窗口即关闭——「圈明显更小」就一定判 MISS */
 const L3_MIN = 0.48, L3_MAX = 0.67;
 /* 命中时的随机喝彩（每次不同，避免八拍下来一直同一个词） */
+/* 每个词一种颜色，避免整场都是同一个浅绿 */
 const L3_PRAISE = [
-  { e:"✨", t:"PERFECT"   },
-  { e:"🌟", t:"EXCELLENT" },
-  { e:"🎯", t:"GREAT"     },
-  { e:"🔥", t:"AMAZING"   },
-  { e:"👏", t:"BRAVO"     },
-  { e:"💯", t:"NICE"      },
+  { e:"✨", t:"PERFECT",   c:"#FF5E97", tc:"#fff"    },
+  { e:"🌟", t:"EXCELLENT", c:"#5CE1E6", tc:"#0A3A40" },
+  { e:"🎯", t:"GREAT",     c:"#FFDE59", tc:"#3A2A00" },
+  { e:"🔥", t:"AMAZING",   c:"#FF8A3D", tc:"#fff"    },
+  { e:"👏", t:"BRAVO",     c:"#C77DFF", tc:"#fff"    },
+  { e:"💯", t:"NICE",      c:"#A3FF73", tc:"#1E3B0A" },
 ];
 const L3_MISS_WORD = ["MISS", "哎呀", "乱了"];
 function pickPraise(){
@@ -1276,6 +1285,9 @@ function l3Perfect(){
   const v = $("l3-verdict");
   v.className = "verdict " + (lv3.corner || "corner-tr") + " perfect";
   v.textContent = pr.e + " " + pr.t;
+  v.style.background = pr.c;
+  v.style.color = pr.tc;
+  v.style.boxShadow = "0 6px 16px " + pr.c + "66, 0 2px 6px rgba(0,0,0,.25)";
   v.dataset.len = pr.t.length;   // 长词自动缩一点，保证小屏放得下
   lv3.actionIdx++;
   if(lv3.stepTimer) clearTimeout(lv3.stepTimer);
@@ -1321,6 +1333,7 @@ function l3Miss(){
   updateL3Hud(true);
   const v = $("l3-verdict");
   v.className = "verdict " + (lv3.corner || "corner-tr") + " miss";
+  v.style.background = ""; v.style.color = ""; v.style.boxShadow = "";
   v.textContent = "💥 " + L3_MISS_WORD[randi(0, L3_MISS_WORD.length - 1)];
 
   if(lv3.stepTimer) clearTimeout(lv3.stepTimer);
@@ -1366,6 +1379,7 @@ let lv4 = {};
 function renderLevel4(lvl){
   setLevelAccent("level4", lvl);
   lv4 = { chosen:[], phase:"intro" };
+  SFX.musicBoxStart();   // 回忆氛围：音乐盒单音
   $("view-level4").innerHTML = `
     ${bgLevel4()}
     <div class="view-scroll">
@@ -1464,7 +1478,6 @@ function lv4Success(lvl){
 
 /* ---------- 关卡成功统一入口 ---------- */
 function runLevelSuccess(lvl, opts){
-  SFX.fragment();       // 碎片到手：上行琶音
   openModal("");
   if(lvl.id === 1){
     const lines = [...lvl.dialLines, lvl.success];
