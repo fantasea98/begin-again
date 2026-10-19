@@ -1,3 +1,15 @@
+/* 内嵌子集字体：Playfair Display（数字+冒号，3.8KB）/ Great Vibes（begin again，2KB） */
+@font-face{
+  font-family:"Playfair Sub";
+  src:url("fonts-playfair-subset.woff2") format("woff2");
+  font-weight:700; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"Great Vibes Sub";
+  src:url("fonts-greatvibes-subset.woff2") format("woff2");
+  font-weight:400; font-style:normal; font-display:swap;
+}
+
 /* =========================================================
    《begin again》样式表（去重整理版）
    设计语言：米卡其底 + 高饱和撞色，UI 骨架借鉴微信/胶囊
@@ -1155,7 +1167,7 @@ body{
 }
 
 /* =========================================================
-   锁屏页 · 纯橙色渐变 · 居中排版 · 加厚拖条
+   锁屏页 v5 · 夕阳海面（纯渐变 SVG）· Didot 系时间 · 花体字标
    ========================================================= */
 #view-lock{ padding:0; }
 #view-lock .lock{
@@ -1164,75 +1176,89 @@ body{
   color:#FFF7E8;
   -webkit-user-select:none; user-select:none;
 }
-.lock-bg{
-  position:absolute; inset:0; z-index:1;
-  background:linear-gradient(180deg,
-    #F9B96F 0%, #F59A52 26%, #F0813F 48%,
-    #E36B3C 68%, #C8502F 88%, #B2442B 100%);
-}
+.lock-bg{ position:absolute; inset:0; width:100%; height:100%; display:block; z-index:1; }
 .lock > *:not(.lock-bg){ position:relative; z-index:3; }
 
 /* 状态栏 */
 .lock-status{
   display:flex; align-items:center; justify-content:space-between;
-  padding:16px 24px 0; font-size:13px; font-weight:600; letter-spacing:.4px;
+  padding:16px 24px 0; font-size:14.5px; font-weight:600; letter-spacing:.4px;
 }
-.lock-status .ls-right{ display:flex; align-items:center; gap:6px; font-size:12.5px; }
+.lock-status .ls-right{ display:flex; align-items:center; gap:6px; font-size:14px; }
 .lock-status .ls-bat{
-  width:24px; height:12px; border-radius:3.5px; padding:1.5px;
-  border:1.4px solid rgba(255,247,232,.75); position:relative;
+  width:25px; height:12.5px; border-radius:4px; padding:1.5px;
+  border:1.4px solid rgba(255,247,232,.8); position:relative;
 }
 .lock-status .ls-bat::after{
-  content:""; position:absolute; right:-3.5px; top:3px; width:2px; height:5px;
-  border-radius:0 2px 2px 0; background:rgba(255,247,232,.6);
+  content:""; position:absolute; right:-3.5px; top:3.5px; width:2px; height:5px;
+  border-radius:0 2px 2px 0; background:rgba(255,247,232,.65);
 }
-.lock-status .ls-bat i{ display:block; height:100%; border-radius:2px; background:#FFF9EC; }
+.lock-status .ls-bat i{ display:block; height:100%; border-radius:2.5px; background:#FFF9EC; }
 
-/* 日期 + 时间（居中） */
+/* 日期 + 时间（居中 · 衬线 Didone 风） */
 .lock-head{ padding:20px 26px 0; text-align:center; }
 .lock-date{
-  font-size:18px; font-weight:700; letter-spacing:1.6px;
-  text-shadow:0 2px 10px rgba(120,48,16,.28);
+  font-family:"Songti SC","STSong","Noto Serif SC",serif;
+  font-size:20px; font-weight:600; letter-spacing:3px;
+  text-shadow:0 2px 12px rgba(120,48,16,.3);
 }
 .lock-time{
   margin-top:6px;
-  font-family:"SF Pro Display",-apple-system,"PingFang SC","Segoe UI",Roboto,"Helvetica Neue",sans-serif;
-  font-size:100px; font-weight:800; line-height:.94; letter-spacing:-2.5px;
-  font-variant-numeric:tabular-nums;
-  color:#FFFDF7; text-shadow:0 4px 22px rgba(120,48,16,.35);
+  font-family:"Playfair Sub","Didot","Bodoni 72","Playfair Display",Georgia,"Times New Roman",serif;
+  font-size:clamp(76px, 26vw, 118px);
+  font-weight:700; line-height:1; letter-spacing:.05em;
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+  color:#FFF6E0; text-shadow:0 5px 26px rgba(120,48,16,.38);
 }
-.lock-sub{ margin-top:10px; font-size:12.5px; letter-spacing:1.4px; opacity:.9; }
+.lock-sub{
+  margin-top:10px;
+  font-family:"Songti SC","STSong","Noto Serif SC",serif;
+  font-size:14px; letter-spacing:2.2px; opacity:.92;
+}
 
 /* 组件：天气 2/3 + 颜文字 1/3 */
 .lock-cards{ display:flex; gap:12px; padding:26px 22px 0; }
 .lc{
   display:flex; flex-direction:column; justify-content:center;
-  padding:13px 15px; border-radius:20px;
-  background:rgba(255,247,232,.15); border:1px solid rgba(255,247,232,.3);
-  -webkit-backdrop-filter:blur(9px); backdrop-filter:blur(9px);
-  box-shadow:0 6px 18px rgba(120,48,16,.14);
+  padding:16px 18px; border-radius:22px;
+  background:linear-gradient(150deg, rgba(255,250,240,.32), rgba(255,250,240,.1) 55%, rgba(255,250,240,.2));
+  border:1px solid rgba(255,252,244,.42);
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  box-shadow:0 8px 24px rgba(120,48,16,.16);
 }
 .lc-weather{ flex:2; align-items:flex-start; }
-.lc-weather b{ font-size:26px; font-weight:800; line-height:1.05; letter-spacing:.5px; }
-.lc-weather span{ font-size:12.5px; opacity:.92; margin-top:3px; }
-.lc-weather em{ font-style:normal; font-size:10px; opacity:.72; margin-top:4px; letter-spacing:.3px; }
-.lc-face{ flex:1; align-items:center; justify-content:center; gap:4px; }
-.lc-face .face{ font-size:19px; font-weight:700; letter-spacing:.5px; line-height:1.1; }
-.lc-face span{ font-size:10.5px; opacity:.85; }
+.lc-top{ display:flex; align-items:center; gap:8px; }
+.lc-ico{ width:27px; height:27px; }
+.lc-weather b{
+  font-family:"Playfair Sub","Didot",Georgia,serif;
+  font-size:32px; font-weight:700; line-height:1; letter-spacing:.02em;
+}
+.lc-mid{ font-size:15px; font-weight:600; letter-spacing:1px; margin-top:7px; }
+.lc-weather em{ font-style:normal; font-size:12px; opacity:.78; margin-top:4px; letter-spacing:.4px; }
+.lc-face{ flex:1; align-items:center; justify-content:center; gap:5px; }
+.lc-face .face{ font-size:24px; font-weight:600; letter-spacing:.5px; line-height:1.1; white-space:nowrap; }
+.lc-face span{ font-size:12.5px; opacity:.88; letter-spacing:1px; }
 
-/* 字标 */
+/* 花体字标 + 签名式飘线 + 小标语 */
 .lock-word{
-  flex:1; min-height:130px;
-  display:flex; align-items:center; justify-content:center;
-  padding:6px 26px 0;
+  flex:1; min-height:150px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:0 26px;
 }
-.lw-text{
-  font-family:Georgia,"Times New Roman",serif; font-style:italic;
-  font-size:40px; letter-spacing:2.5px; color:#FFF8E6;
-  text-shadow:0 3px 18px rgba(120,48,16,.4); white-space:nowrap;
+.lw-script{
+  font-family:"Great Vibes Sub","Snell Roundhand","Segoe Script",cursive;
+  font-size:clamp(46px, 14vw, 62px); line-height:1.05;
+  color:#FFF8E9; white-space:nowrap;
+  text-shadow:0 3px 18px rgba(120,48,16,.45);
+}
+.lw-swash{ width:min(72%, 280px); margin-top:-10px; overflow:visible; }
+.lw-tag{
+  margin-top:8px; font-size:13px; letter-spacing:4.5px; opacity:.92;
+  font-family:"Songti SC","STSong","Noto Serif SC",serif;
+  text-shadow:0 2px 10px rgba(120,48,16,.35);
 }
 
-/* 底部：加厚拖条（圆角贴合圆形滑块） */
+/* 底部：加厚拖条 */
 .lock-bottom{ padding:0 22px 26px; }
 .lock-bar{
   position:relative; width:100%; height:70px; border-radius:35px;
@@ -1243,18 +1269,23 @@ body{
 }
 .lock-fill{
   position:absolute; left:0; top:0; bottom:0; width:70px;
-  border-radius:35px;                    /* 与圆形滑块边缘吻合 */
+  border-radius:35px;
   background:linear-gradient(90deg, rgba(255,247,232,.38), rgba(255,250,238,.68));
 }
 .lock-hint{
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  gap:9px; font-size:15.5px; font-weight:800; letter-spacing:3px;
+  font-size:17px; font-weight:800; letter-spacing:3.5px;
   color:#FFF9EC; opacity:.96;
   text-shadow:0 1px 6px rgba(110,42,14,.3);
   pointer-events:none; transition:opacity .15s linear;
 }
-.lock-hint .chev{ font-style:normal; letter-spacing:0; font-weight:700; animation:chevMove 1.5s ease-in-out infinite; }
-@keyframes chevMove{ 0%,100%{ opacity:.45; transform:translateX(-2px); } 50%{ opacity:1; transform:translateX(3px); } }
+.lock-chev{
+  position:absolute; right:22px; top:50%; transform:translateY(-50%);
+  font-style:normal; font-size:21px; font-weight:700; letter-spacing:1px;
+  color:#FFF9EC; opacity:.95; pointer-events:none;
+  animation:chevMove 1.5s ease-in-out infinite;
+}
+@keyframes chevMove{ 0%,100%{ opacity:.4; transform:translateY(-50%) translateX(-2px); } 50%{ opacity:1; transform:translateY(-50%) translateX(2px); } }
 .lock-knob{
   position:absolute; left:0; top:0; width:70px; height:70px; border-radius:35px;
   background:linear-gradient(180deg,#FFFDF7,#FFF3DC);
@@ -1272,9 +1303,9 @@ body{
   100%{ transform:scale(1.06); opacity:0; }
 }
 .lock-tip{
-  margin:16px auto 0; padding:7px 16px; border-radius:16px;
+  margin:16px auto 0; padding:8px 17px; border-radius:17px;
   background:rgba(255,247,232,.13); border:1px solid rgba(255,247,232,.26);
-  font-size:12.5px; font-weight:600; letter-spacing:1.2px; width:fit-content;
+  font-size:13.5px; font-weight:600; letter-spacing:1.2px; width:fit-content;
 }
 
 /* 兜底：音频没醒时的一触即开按钮 */
@@ -1293,22 +1324,24 @@ body{
 
 /* 矮屏适配 */
 @media (max-height:720px){
-  .lock-time{ font-size:80px; }
-  .lock-date{ font-size:16.5px; }
+  .lock-time{ font-size:clamp(64px, 24vw, 96px); }
+  .lock-date{ font-size:18px; letter-spacing:2.5px; }
   .lock-head{ padding-top:12px; }
   .lock-cards{ padding-top:18px; }
-  .lw-text{ font-size:34px; }
-  .lock-word{ min-height:96px; }
+  .lw-script{ font-size:clamp(40px, 12vw, 52px); }
+  .lock-word{ min-height:104px; }
+  .lw-tag{ font-size:12px; letter-spacing:3.5px; }
   .lock-bar{ height:62px; border-radius:31px; }
   .lock-knob{ width:62px; height:62px; border-radius:31px; font-size:24px; }
   .lock-fill{ width:62px; border-radius:31px; }
-  .lock-hint{ font-size:14px; }
+  .lock-hint{ font-size:15.5px; }
+  .lock-chev{ font-size:19px; right:18px; }
   .lock-tip{ margin-top:12px; }
   .lock-bottom{ padding-bottom:18px; }
 }
 @media (max-height:640px){
-  .lock-time{ font-size:68px; }
-  .lw-text{ font-size:30px; }
+  .lock-time{ font-size:clamp(56px, 22vw, 82px); }
+  .lw-script{ font-size:clamp(34px, 11vw, 44px); }
   .lock-word{ min-height:70px; }
-  .lock-sub{ margin-top:6px; font-size:11.5px; }
+  .lock-sub{ margin-top:6px; font-size:12.5px; }
 }
