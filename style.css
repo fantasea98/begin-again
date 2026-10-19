@@ -1064,13 +1064,13 @@ body{
 .hall2-info{ margin-top:12px; }
 .hall2-line1{ display:flex; align-items:baseline; gap:9px; }
 .hall2-y{
-  font-size:12px; font-weight:800; letter-spacing:1.5px; color:var(--muted);
+  font-size:15px; font-weight:900; letter-spacing:1.5px; color:var(--muted);
   font-variant-numeric:tabular-nums;
 }
-.hall2-name{ font-size:18px; font-weight:900; color:var(--ink); }
-.hall2-tag{ font-size:12.5px; color:var(--muted); margin-top:5px; line-height:1.6; }
+.hall2-name{ font-size:23px; font-weight:900; color:var(--ink); }
+.hall2-tag{ font-size:13.5px; color:var(--muted); margin-top:5px; line-height:1.6; }
 .hall2-frag{
-  display:inline-block; margin-top:9px; font-size:12px; font-weight:700;
+  display:inline-block; margin-top:9px; font-size:13px; font-weight:700;
   padding:5px 12px; border-radius:999px;
   background:rgba(0,0,0,.045); color:var(--faint);
 }
@@ -1079,6 +1079,7 @@ body{
   box-shadow:0 0 0 1px rgba(255,255,255,.6);
   animation:fragPop .5s ease;
 }
+.hall2-frag.on.dark{ color:#FFFFFF; }
 
 .hall2-tabs{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:18px; }
 .hall2-tab{
@@ -1105,8 +1106,33 @@ body{
 .hall2-room.just-done{ animation:roomPop .6s cubic-bezier(.34,1.56,.64,1); }
 @keyframes roomPop{ 0%{ transform:scale(.97);} 60%{ transform:scale(1.012);} 100%{ transform:scale(1);} }
 
+/* —— 最后的门按钮 + 密码门专属场景 —— */
+.hall2-doorbtn{
+  display:block; width:100%; margin-top:10px; padding:13px 10px 14px;
+  border-radius:14px; border:1.5px dashed rgba(0,0,0,.22);
+  background:var(--card); font:inherit; font-size:14px; font-weight:800;
+  letter-spacing:2px; color:var(--faint); cursor:pointer; transition:all .18s ease;
+}
+.hall2-doorbtn:active{ transform:scale(.97); }
+.hall2-doorbtn.ready{
+  border-style:solid; border-color:#C98F5A;
+  background:linear-gradient(135deg,#FFE9BC,#FFC24D);
+  color:#5A3A12; box-shadow:0 6px 16px rgba(201,143,90,.35);
+}
+.dv{ padding-bottom:8px; }
+.dv-back{
+  display:block; border:none; background:none; font:inherit; font-size:13px;
+  font-weight:700; color:var(--muted); cursor:pointer;
+  padding:2px 4px; margin:0 0 10px;
+}
+.dv-back:active{ opacity:.6; }
+.dv .otp-row{ margin:16px 0 12px; }
+.dv .pw-msg{ margin-top:10px; }
+.dv-room{ cursor:pointer; }
+
 @media (max-width:360px){
   .hall2-title{ font-size:23px; }
-  .hall2-name{ font-size:16px; }
+  .hall2-name{ font-size:19px; }
+  .hall2-y{ font-size:13.5px; }
   .hall2-tab{ font-size:11.5px; padding:9px 3px 10px; }
 }
