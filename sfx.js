@@ -223,8 +223,8 @@ function fragmentDrop(){
 
 /* ---------- 持续型音源 ---------- */
 var _beatBus = null;
-/* 第 2 关：倒计时期间的紧张「鼓点」——没有任何长鸣低音，
-   只有底鼓 / 军鼓 / 踩镲的八分音符律动，越接近结束越急（460ms → 200ms 一步）。
+/* 第 2 关：倒计时期间的紧张感 —— 不用鼓组，改用越来越密的「滴滴」秒针声，
+   四拍一顿（重音更高更亮），整体节奏从 300ms 一路收紧到 95ms。
    全部一次性音源、用 ctx 时钟一次性排完，中途离场时把总线切掉即可全静音。 */
 function tensionStart(seconds){
   if(!can()) return;
@@ -234,23 +234,21 @@ function tensionStart(seconds){
     _beatBus.gain.value = 1;
     _beatBus.connect(master);
     var bus = _beatBus;
-    var t0 = ctx.currentTime + 0.06;
+    var t0 = ctx.currentTime + 0.05;
     var total = Math.max(1, seconds || 5);
     var end = t0 + total;
     var t = t0, i = 0;
-    while(t < end - 0.03){
-      var frac = Math.min(1, (t - t0) / total);
-      var d = t - ctx.currentTime;
-      if(i % 4 === 0){                                  // 底鼓（每拍第一下）
-        tone({ freq:150, to:48, type:"sine", dur:0.16, gain:0.34, delay:d, bus:bus });
-        tone({ freq:92,  to:44, type:"sine", dur:0.13, gain:0.20, delay:d, bus:bus });
-      } else if(i % 4 === 2){                           // 军鼓（每拍第三下）
-        noise({ dur:0.12, filter:"bandpass", freq:1900, gain:0.22, delay:d, bus:bus });
-        tone({ freq:190, to:120, type:"triangle", dur:0.09, gain:0.13, delay:d, bus:bus });
-      } else {                                          // 踩镲
-        noise({ dur:0.035, filter:"highpass", freq:8200, gain:0.15, delay:d, bus:bus });
+    while(t < end - 0.02){
+      var frac = Math.min(1, (t - t0) / total);          // 0 → 1，越接近结束越快
+      var d  = t - ctx.currentTime;
+      var hi = frac > 0.55;                              // 后半程整体音高抬上去，更焦躁
+      if(i % 4 === 0){                                   // 每 4 下一记重音
+        tone({ freq: hi ? 2093 : 1760, type:"square", dur:0.034, gain:0.20, delay:d, bus:bus });
+        tone({ freq: hi ? 3136 : 2640, type:"sine",   dur:0.030, gain:0.10, delay:d, bus:bus });
+      } else {                                           // 普通的「滴」
+        tone({ freq: hi ? 1568 : 1320, type:"square", dur:0.026, gain:0.13, delay:d, bus:bus });
       }
-      t += 0.46 - 0.26 * frac;
+      t += 0.30 - 0.205 * frac;                          // 300ms → 95ms
       i++;
     }
   }catch(e){}
@@ -354,6 +352,35 @@ function portal(){
   });
 }
 
+/* 点中房间里的关键物品：温暖的「就是它」双音 + 一点气流 */
+function reveal(){
+  if(!gate("reveal", 200)) return;
+  tone({ freq:659.3, type:"triangle", dur:0.12, gain:0.17 });
+  tone({ freq:987.8, type:"triangle", dur:0.16, gain:0.14, delay:0.07 });
+  tone({ freq:1318.5,type:"sine",     dur:0.24, gain:0.08, delay:0.14 });
+  noise({ dur:0.12, filter:"highpass", freq:3600, gain:0.05, delay:0.02 });
+}
+/* 切换年份：柔和的翻页（替代原来偏刺耳的噪声「啧啧」声） */
+function turn(){
+  if(!gate("turn", 120)) return;
+  noise({ dur:0.07, filter:"bandpass", freq:820, to:340, gain:0.085 });
+  tone ({ freq:523.3, type:"sine", dur:0.11, gain:0.11 });
+  tone ({ freq:783.9, type:"sine", dur:0.15, gain:0.09, delay:0.06 });
+}
+/* 成功结算弹窗：明亮上行琶音 + 一点点闪光 */
+function winPop(){
+  [523.3, 659.3, 784, 1046.5].forEach(function(f, i){
+    tone({ freq:f, type:"triangle", dur:0.26, gain:0.17, delay:i * 0.08 });
+  });
+  noise({ dur:0.26, filter:"highpass", freq:6200, gain:0.05, delay:0.10 });
+}
+/* 失败结算弹窗：下行两音 + 一记闷响 */
+function failPop(){
+  tone({ freq:392,   type:"triangle", dur:0.16, gain:0.16 });
+  tone({ freq:311.1, type:"triangle", dur:0.28, gain:0.16, delay:0.13 });
+  tone({ freq:110, to:78, type:"sine", dur:0.32, gain:0.13, delay:0.13 });
+}
+
 /* ---------- 开关 ---------- */
 function setMuted(m){
   muted = !!m;
@@ -379,6 +406,7 @@ return {
   musicBoxStart: musicBoxStart, musicBoxStop: musicBoxStop,
   unlock: unlock, confetti: confetti,
   bubble: bubble, sysalert: sysalert, glitch: glitch,
-  like: like, thought: thought, portal: portal
+  like: like, thought: thought, portal: portal,
+  reveal: reveal, turn: turn, winPop: winPop, failPop: failPop
 };
 })();
