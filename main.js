@@ -153,7 +153,7 @@ const CONFIG = {
         "<b class=\"red-flash\">「这份材料，今天内交给我。」🧨</b>",
         "既然如此，我和你拼了！💪",
       ],
-      targetHits: 25,
+      targetHits: 30,
       countdownSeconds: 5,
       blockChar: "█",
       paperTitle: "████████████",
@@ -556,23 +556,39 @@ function windowSky(y){
     <rect x="22" y="72" width="62" height="8" fill="#E08A4A" opacity=".35"/>`;
 }
 
-/* 门：圆拱顶木门；2024 挂白大褂（加长、带衣领袖子和口袋，衣架露在领子上方） */
+/* 门：圆拱顶木门。2024 挂白大褂；2025 挂演出服（绿色连帽卫衣，同一套衣架） */
 function doorSVG(y, ready){
-  const coat = (y === 2024) ? `
+  /* 衣架：两种衣服共用（钩 + 三角架） */
+  const hanger = `
     <line x1="296" y1="60" x2="296" y2="66" stroke="#B4B2A9" stroke-width="1.4"/>
-    <path d="M296 66 L286 76 L306 76 Z" fill="none" stroke="#B4B2A9" stroke-width="1.3"/>
+    <path d="M296 66 L286 76 L306 76 Z" fill="none" stroke="#B4B2A9" stroke-width="1.3"/>`;
+  const coat = (y === 2024) ? `
+    ${hanger}
     <path d="M296 74 Q283 80 282 92 L280 148 Q296 156 312 148 L310 92 Q309 80 296 74 Z" fill="#FFFFFF" stroke="#D8CDB8" stroke-width="1.3"/>
     <path d="M291 76 L296 88 L301 76 Q296 73 291 76 Z" fill="#FFFDF4" stroke="#D8CDB8" stroke-width="1.2"/>
     <rect x="286" y="112" width="9" height="9" rx="2" fill="#F3EDE1" stroke="#D8CDB8" stroke-width="1"/>
     <rect x="297" y="112" width="9" height="9" rx="2" fill="#F3EDE1" stroke="#D8CDB8" stroke-width="1"/>
     <line x1="296" y1="92" x2="296" y2="142" stroke="#E4DFD2" stroke-width="1"/>` : "";
+  /* 绿色连帽卫衣：帽子挂在领子后面、抽绳垂下、正面两个口袋 */
+  const hoodie = (y === 2025) ? `
+    ${hanger}
+    <path d="M296 74 Q283 80 282 92 L280 148 Q296 156 312 148 L310 92 Q309 80 296 74 Z" fill="#7FBF8A" stroke="#4F8F60" stroke-width="1.3"/>
+    <path d="M286 80 Q296 68 306 80 Q306 92 296 95 Q286 92 286 80 Z" fill="#6AAF77" stroke="#4F8F60" stroke-width="1.2"/>
+    <path d="M291 76 L296 90 L301 76 Q296 72 291 76 Z" fill="#EAF7EE" stroke="#4F8F60" stroke-width="1.2"/>
+    <line x1="292" y1="90" x2="291" y2="100" stroke="#EAF7EE" stroke-width="1.4" stroke-linecap="round"/>
+    <line x1="300" y1="90" x2="301" y2="100" stroke="#EAF7EE" stroke-width="1.4" stroke-linecap="round"/>
+    <circle cx="291" cy="101" r="1.6" fill="#EAF7EE" stroke="#4F8F60" stroke-width=".8"/>
+    <circle cx="301" cy="101" r="1.6" fill="#EAF7EE" stroke="#4F8F60" stroke-width=".8"/>
+    <rect x="286" y="122" width="11" height="11" rx="2.5" fill="#6AAF77" stroke="#4F8F60" stroke-width="1"/>
+    <rect x="301" y="122" width="11" height="11" rx="2.5" fill="#6AAF77" stroke="#4F8F60" stroke-width="1"/>
+    <line x1="296" y1="106" x2="296" y2="150" stroke="#5FA36C" stroke-width="1"/>` : "";
   return `
     <ellipse cx="296" cy="193" rx="34" ry="5" fill="rgba(120,80,40,.10)"/>
     <path d="M268 194 L268 70 Q268 54 284 54 L308 54 Q324 54 324 70 L324 194 Z" fill="#EDCB92" stroke="#C98F5A" stroke-width="1.8"/>
     <rect x="276" y="64" width="40" height="48" rx="6" fill="#F7E3BC" stroke="#C98F5A" stroke-width="1.1"/>
     <rect x="276" y="122" width="40" height="56" rx="6" fill="#F7E3BC" stroke="#C98F5A" stroke-width="1.1"/>
     <circle cx="316" cy="128" r="2.6" fill="#E5A83B" stroke="#C98F5A" stroke-width="1"/>
-    ${coat}`;
+    ${coat}${hoodie}`;
 }
 
 /* 椅子：四个年份完全一致 —— 背对玩家、拉在桌子前面 */
@@ -598,12 +614,17 @@ function binSVG(y){
     <path d="M154 176 h16 l-2.5 18 h-11 Z" fill="#E7DDC9" stroke="#C98F5A" stroke-width="1.2"/>
   </g>`;
 }
-/* 2023：桌子右侧的空架子（三层，全是空的） */
-function shelfSVG(){
+/* 2026：墙上的离职倒计时日历，上边缘是被撕掉的不整齐锯齿 */
+function calendarSVG(){
+  let zig = "M150 26";
+  for(let x = 150; x < 250; x += 10) zig += ` q5 ${(x / 10) % 2 ? 4 : -5} 10 0`;
   return `<g>
-    <rect x="214" y="118" width="48" height="76" rx="4" fill="#F6ECD9" stroke="#C98F5A" stroke-width="1.6"/>
-    <line x1="215" y1="143" x2="261" y2="143" stroke="#E5D5B8" stroke-width="1.6"/>
-    <line x1="215" y1="168" x2="261" y2="168" stroke="#E5D5B8" stroke-width="1.6"/>
+    <path d="${zig} L250 26 L250 86 L150 86 Z" fill="#FFFDF6" stroke="#D8CDB8" stroke-width="1.3"/>
+    <rect x="150" y="26" width="100" height="10" fill="#E5735A"/>
+    <text x="200" y="34" text-anchor="middle" font-size="8" fill="#FFFFFF">离职倒计时</text>
+    <text x="200" y="62" text-anchor="middle" font-size="22" font-weight="800" fill="#E5735A">0 天</text>
+    <line x1="158" y1="70" x2="242" y2="70" stroke="#EADFC6" stroke-width="1"/>
+    <line x1="158" y1="78" x2="228" y2="78" stroke="#EADFC6" stroke-width="1"/>
   </g>`;
 }
 /* 2024：墙上的白板，写着工作日历 */
@@ -638,7 +659,6 @@ function roomSVG(){
       <rect x="60" y="114" width="7" height="7" rx="3" fill="#C98F5A"/>
     </g>`;
     props = `
-      ${shelfSVG()}
       <rect x="98" y="134" width="14" height="16" rx="3" fill="#BFE6C9" stroke="#7FBF9A" stroke-width="1.5"/>
       <path d="M112 138 q6 0 6 4.5 q0 4.5 -6 4.5" fill="none" stroke="#7FBF9A" stroke-width="1.6"/>
       <path d="M102 130 q0 -3 3 -3 q3 0 3 3" fill="none" stroke="#BFD8C6" stroke-width="1.2"/>`;
@@ -668,11 +688,7 @@ function roomSVG(){
       <rect x="180" y="136" width="20" height="12" rx="3" fill="#FFFDF4" stroke="#C98F5A" stroke-width="1.4"/>
       <rect x="180" y="136" width="20" height="4" rx="2" fill="#B98A4E"/>
       <path d="M200 139 q6 2 4 7 q-2 4 -6 3" fill="none" stroke="#C98F5A" stroke-width="1.4"/>
-      <rect x="104" y="141" width="54" height="9" rx="3" fill="#FFF8E8" stroke="#C98F5A" stroke-width="1.3"/>
-      ${[0,1,2,3,4,5,6,7].map(i => `<circle cx="${110 + i * 6.5}" cy="145.5" r="1.4" fill="#D8C7A8"/>`).join("")}
-      <rect x="164" y="132" width="26" height="17" rx="2.5" fill="#FFFDF4" stroke="#D8CDB8" stroke-width="1.2"/>
-      <line x1="168" y1="138" x2="186" y2="138" stroke="#CFC9BB" stroke-width="1.4"/>
-      <line x1="168" y1="143" x2="183" y2="143" stroke="#CFC9BB" stroke-width="1.4"/>`;
+`;
   } else if(y === 2025){
     stamp = "2025.02";
     hot = `<g class="hs-hot${isLevelUnlocked(3) ? "" : " is-locked"}" data-lv="3" role="button" aria-label="特别的物品">
@@ -699,15 +715,13 @@ function roomSVG(){
       <path d="M79 141 q7 3 14 0" fill="none" stroke="#FFF3D6" stroke-width="2.4"/>
       <ellipse cx="86" cy="150" rx="14" ry="2.5" fill="#E5768F"/>
       <circle cx="86" cy="117" r="4" fill="#FFDE59"/>
-      <line x1="120" y1="150" x2="120" y2="124" stroke="#B4B2A9" stroke-width="2"/>
-      <ellipse cx="120" cy="150" rx="9" ry="2.6" fill="#C98F5A"/>
-      <rect x="114" y="106" width="13" height="20" rx="6.5" fill="#565049" stroke="#3A352F" stroke-width="1"/>
-      <line x1="115" y1="112" x2="126" y2="112" stroke="#8A8377" stroke-width=".9"/>
-      <line x1="115" y1="116" x2="126" y2="116" stroke="#8A8377" stroke-width=".9"/>
-      <line x1="115" y1="120" x2="126" y2="120" stroke="#8A8377" stroke-width=".9"/>
-      <rect x="162" y="142" width="44" height="8" rx="3" fill="#8AD1FF" stroke="#5DA8C9" stroke-width="1"/>
-      <rect x="164" y="133" width="42" height="9" rx="3" fill="#E8E2D6" stroke="#BFB8A6" stroke-width="1"/>
-      <rect x="161" y="124" width="46" height="9" rx="3" fill="#FFC2D1" stroke="#E39AB5" stroke-width="1"/>
+      <rect x="176" y="139" width="30" height="11" rx="5.5" fill="#565049" stroke="#3A352F" stroke-width="1"/>
+      <line x1="188" y1="139" x2="188" y2="150" stroke="#3A352F" stroke-width="1"/>
+      <rect x="164" y="137" width="13" height="15" rx="6.5" fill="#6E665C" stroke="#3A352F" stroke-width="1"/>
+      <line x1="166" y1="141" x2="175" y2="141" stroke="#9C948A" stroke-width=".9"/>
+      <line x1="166" y1="145" x2="175" y2="145" stroke="#9C948A" stroke-width=".9"/>
+      <line x1="166" y1="149" x2="175" y2="149" stroke="#9C948A" stroke-width=".9"/>
+      <path d="M206 145 q6 1 6 5" fill="none" stroke="#3A352F" stroke-width="1.2"/>
       ${[[226,148,13,"#FF9BB5"],[244,126,11,"#FFDE59"],[252,164,10,"#C77DFF"]].map(([bx,by,r,c]) => `
         <line x1="${bx}" y1="${by + r}" x2="${bx + 3}" y2="194" stroke="#B4B2A9" stroke-width="1"/>
         <circle cx="${bx}" cy="${by}" r="${r}" fill="${c}"/>
@@ -722,10 +736,15 @@ function roomSVG(){
       <line x1="110" y1="135" x2="160" y2="135" stroke="#8A6031" stroke-width="1.1" opacity=".6"/>
     </g>`;
     props = `
-      <path d="M28 130 h36 v20 h-36 Z" fill="#E5C79A" stroke="#C98F5A" stroke-width="1.4"/>
-      <path d="M28 130 l9 -8 h36 l-9 8" fill="#F3E0BC" stroke="#C98F5A" stroke-width="1.1"/>
-      <path d="M64 130 l9 -8 v0 l-9 8" fill="#F3E0BC" stroke="#C98F5A" stroke-width="1.1"/>
-      <line x1="46" y1="130" x2="46" y2="150" stroke="#C98F5A" stroke-width="1" opacity=".55"/>
+      ${calendarSVG()}
+      <rect x="30" y="128" width="36" height="22" rx="2" fill="#E5C79A" stroke="#C98F5A" stroke-width="1.4"/>
+      <line x1="30" y1="134" x2="66" y2="134" stroke="#D3B183" stroke-width="1" opacity=".8"/>
+      <line x1="48" y1="128" x2="48" y2="150" stroke="#A98A5C" stroke-width="1.6"/>
+      <line x1="30" y1="139" x2="66" y2="139" stroke="#A98A5C" stroke-width="1.6"/>
+      <path d="M48 139 q-7 -4 -9 -1 q-2 3 4 4 q5 1 5 -3 Z" fill="#C98F5A"/>
+      <path d="M48 139 q7 -4 9 -1 q2 3 -4 4 q-5 1 -5 -3 Z" fill="#C98F5A"/>
+      <circle cx="48" cy="139" r="1.8" fill="#E5C79A" stroke="#A98A5C" stroke-width=".8"/>
+      <path d="M52 141 q6 3 9 8" fill="none" stroke="#A98A5C" stroke-width="1"/>
       <circle cx="182" cy="143" r="3.4" fill="none" stroke="#C98F5A" stroke-width="1.6"/>
       <line x1="185.6" y1="143" x2="198" y2="143" stroke="#C98F5A" stroke-width="1.6" stroke-linecap="round"/>
       <line x1="194" y1="140" x2="196" y2="140" stroke="#C98F5A" stroke-width="1.6" stroke-linecap="round"/>
@@ -746,7 +765,6 @@ function roomSVG(){
     <rect x="22" y="24" width="62" height="56" rx="3" fill="none" stroke="#C98F5A" stroke-width="2.6"/>
     <line x1="53" y1="24" x2="53" y2="80" stroke="#C98F5A" stroke-width="1.6"/>
     <line x1="22" y1="52" x2="84" y2="52" stroke="#C98F5A" stroke-width="1.6"/>
-    <rect x="17" y="80" width="72" height="5" rx="2.5" fill="#C98F5A"/>
 
     <circle cx="118" cy="50" r="14" fill="#FFFDF4" stroke="#C98F5A" stroke-width="2"/>
     ${clockHands(y)}
@@ -830,7 +848,7 @@ function renderHall(){
         <div class="pw-msg" id="pw-msg"></div>
       </div>`;
     bindOTP();
-    $("dv-back").addEventListener("click", () => { SFX.flip(); hallDoorView = false; renderHall(); });
+    $("dv-back").addEventListener("click", () => { SFX.turn(); hallDoorView = false; renderHall(); });
     $("btn-unlock").addEventListener("click", checkPassword);
     const d = $("dv-door");
     if(d) d.addEventListener("click", () => { const f = document.querySelector("#otp-row .otp"); if(f) f.focus(); });
@@ -884,7 +902,7 @@ function renderHall(){
     btn.addEventListener("click", () => {
       const y = parseInt(btn.dataset.y, 10);
       if(y === hallYear) return;
-      SFX.flip();
+      SFX.turn();
       hallYear = y;
       const keep = $("view-hall").scrollTop;
       renderHall();
@@ -898,6 +916,7 @@ function renderHall(){
       e.stopPropagation();
       const id = parseInt(g.dataset.lv, 10);
       if(!isLevelUnlocked(id)){ showLockedHint(); return; }
+      SFX.reveal();                 // 「找到你了」的音效
       enterLevel(id, e.clientX, e.clientY);
     });
   });
@@ -1246,6 +1265,7 @@ function judgeL1(lvl){
       if(currentView !== "level1") return;
       const funny = lvl.wrongLines[randi(0, lvl.wrongLines.length - 1)];
       const cheatBtn = failCounts[1] >= 3 ? `<button class="btn btn-accent btn-block" id="btn-cheat" style="margin-top:10px">${CONFIG.cheat.label}</button>` : "";
+      SFX.failPop();                // 失败结算弹窗的音效
       openModal(`
         <div class="popup-head">📞</div>
         <div class="popup-title" style="color:var(--danger)">📵 好像打错了。</div>
@@ -1464,6 +1484,7 @@ function lv2Fail(){
   if(bg0){ bg0.classList.remove("danger"); bg0.classList.add("overtime","sun-freeze"); }
   const crt0 = $("l2-crt"); if(crt0) crt0.classList.remove("tear");
   const cheatBtn = failCounts[2] >= 3 ? `<button class="btn btn-accent btn-block" id="btn-cheat" style="margin-top:10px">${CONFIG.cheat.label}</button>` : "";
+  SFX.failPop();                    // 失败结算弹窗的音效
   openModal(`
     <div class="popup-head">⏰</div>
     <div class="popup-title" style="color:var(--danger)">时间到！</div>
@@ -1696,6 +1717,7 @@ function l3Miss(){
     const lvl = levelById(3);
     const his = lvl.missText.map(t=>`<div class="popup-body-line">${t}</div>`).join("");
     const cheatBtn = lv3.fails >= 3 ? `<button class="btn btn-accent btn-block" id="btn-cheat" style="margin-top:12px">${CONFIG.cheat.label}</button>` : "";
+    SFX.failPop();                  // 失败结算弹窗的音效
     openModal(`
       <div class="popup-head">🚷</div>
       <div class="popup-body">${his}</div>
@@ -1831,6 +1853,7 @@ function lv4Success(lvl){
 /* ---------- 关卡成功统一入口 ---------- */
 function runLevelSuccess(lvl, opts){
   openModal("");
+  SFX.winPop();                     // 成功结算弹窗的音效
   if(lvl.id === 1){
     const lines = [...lvl.dialLines, lvl.success];
     playResult(lvl, lines);
