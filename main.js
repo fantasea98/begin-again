@@ -378,16 +378,71 @@ function lockDateText(){
   return d.length === 3 ? `${d[0]}年${+d[1]}月${+d[2]}日` : (CONFIG.workDates.end || "");
 }
 function renderLock(){
+  const stars = (() => {
+    let out = "";
+    for(let i = 0; i < 26; i++){
+      const x = (i * 53) % 330 + 5, y = 14 + (i * 37) % 300;
+      out += `<circle cx="${x}" cy="${y}" r="${(i % 3) * 0.4 + 0.7}" fill="#FFF3DC" opacity="${0.25 + (i % 4) * 0.12}"/>`;
+    }
+    return out;
+  })();
   $("view-lock").innerHTML = `
     <div class="lock">
-      <div class="lock-top">
-        <div class="lock-time">08:00</div>
-        <div class="lock-date">${lockDateText()} 星期五</div>
+      <svg class="lock-scene" viewBox="0 0 340 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="lgSky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#F9AE62"/><stop offset=".55" stop-color="#F28A4E"/><stop offset="1" stop-color="#E5703F"/>
+          </linearGradient>
+          <linearGradient id="lgSea" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#DB7A46"/><stop offset="1" stop-color="#9E4A2B"/>
+          </linearGradient>
+        </defs>
+        <rect width="340" height="380" fill="url(#lgSky)"/>
+        ${stars}
+        <circle cx="176" cy="150" r="62" fill="#FFEDCB"/>
+        <circle cx="176" cy="150" r="55" fill="none" stroke="#FFE0AE" stroke-width="1.5" opacity=".55"/>
+        <text x="176" y="142" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-style="italic" font-size="23" letter-spacing="1.5" fill="#C9823C">begin</text>
+        <text x="176" y="170" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-style="italic" font-size="23" letter-spacing="1.5" fill="#C9823C">again</text>
+        <path d="M40 206 L264 182" stroke="#FFF6E4" stroke-width="1.1" opacity=".55" stroke-dasharray="7 7"/>
+        <path d="M258 176 l20 -7 -3 12 -8 -2 Z" fill="#FFF6E4"/>
+        <rect y="380" width="340" height="180" fill="url(#lgSea)"/>
+        <rect y="378" width="340" height="3" fill="#FFE3B8" opacity=".55"/>
+        <path d="M40 424 q26 4 52 0" stroke="#FFDCA8" stroke-width="1.5" fill="none" opacity=".35"/>
+        <path d="M236 452 q30 5 60 0" stroke="#FFDCA8" stroke-width="1.5" fill="none" opacity=".3"/>
+        <path d="M92 504 q26 4 52 0" stroke="#FFDCA8" stroke-width="1.5" fill="none" opacity=".25"/>
+        <path d="M282 392 q22 3 44 0" stroke="#FFDCA8" stroke-width="1.5" fill="none" opacity=".3"/>
+        <ellipse cx="160" cy="404" rx="80" ry="14" fill="#8A4326"/>
+        <ellipse cx="160" cy="400" rx="80" ry="10" fill="#A85431"/>
+        <circle cx="146" cy="378" r="3.4" fill="#3A2B1E"/>
+        <rect x="141.5" y="382" width="9" height="16" rx="4.5" fill="#3A2B1E"/>
+        <path d="M149 387 q8 -5 10 -12" stroke="#3A2B1E" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+        <circle cx="160" cy="374" r="1.5" fill="#FFE9BF"/>
+        <circle cx="171" cy="379" r="3.4" fill="#3A2B1E"/>
+        <rect x="166.5" y="383" width="9" height="15" rx="4.5" fill="#3A2B1E"/>
+        <rect x="184" y="389" width="8" height="11" rx="2" fill="#5C331F"/>
+        <path d="M186 389 v-2.5 h4 v2.5" stroke="#5C331F" stroke-width="1.4" fill="none"/>
+      </svg>
+
+      <div class="lock-status">
+        <span>中国电信</span>
+        <span class="ls-right"><i></i>🛜 <b>43</b></span>
       </div>
 
-      <div class="lock-mid">
-        <div class="lock-brand">begin again</div>
-        <div class="lock-sub">一只送给我同事们的离职纪念</div>
+      <div class="lock-head">
+        <div class="lock-date">10月30日周五 · 丙午年九月廿一</div>
+        <div class="lock-time">17:00</div>
+      </div>
+
+      <div class="lock-widgets">
+        <div class="lw-weather">
+          <div class="lw-w1">🌇 21°</div>
+          <div class="lw-w2">晚霞满天</div>
+          <div class="lw-w3">最高 24° 最低 19°</div>
+        </div>
+        <div class="lw-right">
+          <div class="lw-circle">💼</div>
+          <div class="lw-circle lw-days"><b>1122天</b><span>一起走过</span></div>
+        </div>
       </div>
 
       <div class="lock-bottom">
@@ -396,8 +451,14 @@ function renderLock(){
           <div class="lock-hint" id="lock-hint">向右滑动解锁</div>
           <div class="lock-knob" id="lock-knob">🔓</div>
         </div>
-        <div class="lock-tip">解锁后请打开声音 🔊</div>
+        <div class="lock-quick">
+          <span class="lq">🔦</span>
+          <span class="lq">📷</span>
+        </div>
       </div>
+
+      <div class="lock-tip">解锁后请打开声音 🔊</div>
+      <div class="lock-homebar"></div>
     </div>`;
   bindLock();
 }
@@ -448,6 +509,7 @@ function unlockPhone(){
   phoneUnlocked = true;
   SFX.init();                 // 这一次是真的用户手势，音频从此畅通
   SFX.unlock();
+  setTimeout(()=>{ try{ SFX.init(); }catch(e){} }, 120);   // 双保险：仍处于同一次手势的激活窗口内
   renderOpening();            // 解锁后才开始微信开场动画，音效不会丢
   showView("opening");
 }
