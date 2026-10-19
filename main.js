@@ -500,6 +500,11 @@ function runOpening(){
 let hallYear = 2023;
 let hallDoorView = false;
 
+/* 把标题开头的 emoji 拆出来单独放大（例如「🏰 记忆结界」） */
+function splitEmoji(t){
+  const m = /^(\p{Extended_Pictographic}(?:\u200d\p{Extended_Pictographic})*)\s*([\s\S]*)$/u.exec(t || "");
+  return m ? `<span class="title-emoji">${m[1]}</span>${m[2]}` : t;
+}
 function levelByYear(y){ return CONFIG.levels.find(l => l.year === y) || CONFIG.levels[0]; }
 function isLevelUnlocked(id){
   const p = progress;
@@ -616,15 +621,15 @@ function binSVG(y){
 }
 /* 2026：墙上的离职倒计时日历，上边缘是被撕掉的不整齐锯齿 */
 function calendarSVG(){
-  let zig = "M150 26";
-  for(let x = 150; x < 250; x += 10) zig += ` q5 ${(x / 10) % 2 ? 4 : -5} 10 0`;
+  let zig = "M168 26";
+  for(let x = 168; x < 232; x += 8) zig += ` q4 ${(x / 8) % 2 ? 4 : -5} 8 0`;
   return `<g>
-    <path d="${zig} L250 26 L250 86 L150 86 Z" fill="#FFFDF6" stroke="#D8CDB8" stroke-width="1.3"/>
-    <rect x="150" y="26" width="100" height="10" fill="#E5735A"/>
-    <text x="200" y="34" text-anchor="middle" font-size="8" fill="#FFFFFF">离职倒计时</text>
-    <text x="200" y="62" text-anchor="middle" font-size="22" font-weight="800" fill="#E5735A">0 天</text>
-    <line x1="158" y1="70" x2="242" y2="70" stroke="#EADFC6" stroke-width="1"/>
-    <line x1="158" y1="78" x2="228" y2="78" stroke="#EADFC6" stroke-width="1"/>
+    <path d="${zig} L232 26 L232 86 L168 86 Z" fill="#FFFDF6" stroke="#D8CDB8" stroke-width="1.3"/>
+    <rect x="168" y="26" width="64" height="13" fill="#E5735A"/>
+    <text x="200" y="36" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF">离职倒计时</text>
+    <text x="200" y="64" text-anchor="middle" font-size="17" font-weight="800" fill="#E5735A">0 天</text>
+    <line x1="174" y1="71" x2="226" y2="71" stroke="#EADFC6" stroke-width="1"/>
+    <line x1="174" y1="79" x2="214" y2="79" stroke="#EADFC6" stroke-width="1"/>
   </g>`;
 }
 /* 2024：墙上的白板，写着工作日历 */
@@ -665,15 +670,15 @@ function roomSVG(){
   } else if(y === 2024){
     stamp = "2024.06";
     hot = `<g class="hs-hot${isLevelUnlocked(2) ? "" : " is-locked"}" data-lv="2" role="button" aria-label="特别的物品">
-      ${halo(78, 85, 78, 70, 8)}
-      <rect x="83" y="90" width="68" height="52" rx="6" fill="#FFF8E8" stroke="#C98F5A" stroke-width="1.8"/>
-      <rect x="89" y="96" width="56" height="40" rx="4" fill="#F2EFE6"/>
-      <line x1="95" y1="105" x2="135" y2="105" stroke="#CFC9BB" stroke-width="2.6" stroke-linecap="round"/>
-      <line x1="95" y1="113" x2="139" y2="113" stroke="#CFC9BB" stroke-width="2.6" stroke-linecap="round"/>
-      <line x1="95" y1="121" x2="127" y2="121" stroke="#CFC9BB" stroke-width="2.6" stroke-linecap="round"/>
-      <path d="M112 142 h12 l4 8 h-20 Z" fill="#C98F5A"/>
-      <rect x="141" y="95" width="10" height="10" rx="2" fill="#FFE08A" transform="rotate(-6 146 100)"/>
-      <rect x="142" y="108" width="8" height="8" rx="2" fill="#FFD1DC" transform="rotate(7 146 112)"/>
+      ${halo(81, 85, 78, 70, 8)}
+      <rect x="86" y="90" width="68" height="52" rx="6" fill="#FFF8E8" stroke="#C98F5A" stroke-width="1.8"/>
+      <rect x="92" y="96" width="56" height="40" rx="4" fill="#F2EFE6"/>
+      <line x1="98" y1="105" x2="138" y2="105" stroke="#CFC9BB" stroke-width="2.6" stroke-linecap="round"/>
+      <line x1="98" y1="113" x2="142" y2="113" stroke="#CFC9BB" stroke-width="2.6" stroke-linecap="round"/>
+      <line x1="98" y1="121" x2="130" y2="121" stroke="#CFC9BB" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M115 142 h12 l4 8 h-20 Z" fill="#C98F5A"/>
+      <rect x="144" y="95" width="10" height="10" rx="2" fill="#FFE08A" transform="rotate(-6 149 100)"/>
+      <rect x="145" y="108" width="8" height="8" rx="2" fill="#FFD1DC" transform="rotate(7 149 112)"/>
     </g>`;
     props = `
       ${whiteboardSVG()}
@@ -752,7 +757,8 @@ function roomSVG(){
   }
 
   const withBin = (y === 2024 || y === 2026);
-  return `<svg class="hs-svg" viewBox="0 0 340 224" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${y} 年的办公室">
+  const locked = !isLevelUnlocked(lv.id);
+  const roomBody = `
     <rect x="0" y="0" width="340" height="194" fill="#FBF3E4"/>
     <rect x="0" y="138" width="340" height="56" fill="#F6ECD9"/>
     <line x1="0" y1="138" x2="340" y2="138" stroke="#EADFC6" stroke-width="1.6"/>
@@ -783,6 +789,27 @@ function roomSVG(){
     ${withBin ? binSVG(y) : ""}
 
     <text x="333" y="218" text-anchor="end" font-size="12" font-family="ui-monospace,monospace" fill="#C8834A" opacity=".85">${stamp}</text>
+  `;
+  /* 未解锁：整间房套一层高斯模糊 + 奶白半透层（毛玻璃），再压一个锁牌 */
+  if(locked){
+    return `<svg class="hs-svg is-frosted" viewBox="0 0 340 224" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${y} 年的办公室（未解锁）">
+      <defs>
+        <filter id="hsFrost" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB">
+          <feGaussianBlur stdDeviation="3.4"/>
+        </filter>
+      </defs>
+      <g filter="url(#hsFrost)">${roomBody}</g>
+      <rect x="0" y="0" width="340" height="224" fill="#FBF4E6" opacity=".55" pointer-events="none"/>
+      <g class="hs-lock" pointer-events="none">
+        <circle cx="170" cy="112" r="31" fill="#FFFDF6" opacity=".88"/>
+        <circle cx="170" cy="112" r="31" fill="none" stroke="#C98F5A" stroke-width="1.6" opacity=".7"/>
+        <text x="170" y="110" text-anchor="middle" font-size="22">🔒</text>
+        <text x="170" y="132" text-anchor="middle" font-size="13" font-weight="700" fill="#96714A">未解锁</text>
+      </g>
+    </svg>`;
+  }
+  return `<svg class="hs-svg" viewBox="0 0 340 224" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${y} 年的办公室">
+    ${roomBody}
   </svg>`;
 }
 
@@ -874,7 +901,7 @@ function renderHall(){
   $("view-hall").innerHTML = `
     <div class="hall2" style="--lv-accent:${accentOf(lv)}">
       <div class="hall2-head">
-        <div class="hall2-title">${CONFIG.hallTitle}</div>
+        <div class="hall2-title">${splitEmoji(CONFIG.hallTitle)}</div>
         <div class="hall2-sub">${CONFIG.hallSubtitle}</div>
       </div>
 
