@@ -492,8 +492,11 @@ function runOpening(){
 /* 设计要点：
    - 四屏共用同一套「墙 / 窗 / 门 / 桌 / 椅 / 地板」，这是「同一间房」的锚点
    - 年份靠两条隐藏线索读出来：墙上挂钟的时刻 + 窗外的天色
-   - 可点物带暖黄柔光呼吸（.hs-hot），未解锁的物不发光 */
+   - 可点物带暖黄柔光呼吸（.hs-hot），未解锁的物不发光
+   - 椅子统一背对玩家、在桌子前面；2026 推回桌下只露矮椅背
+   - 全通关后，年份条下方出现「最后的门」按钮 → 房间切换成居中密码门 */
 let hallYear = 2023;
+let hallDoorView = false;
 
 function levelByYear(y){ return CONFIG.levels.find(l => l.year === y) || CONFIG.levels[0]; }
 function isLevelUnlocked(id){
@@ -504,8 +507,15 @@ function isLevelUnlocked(id){
 function initHallYear(){
   const un = CONFIG.levels.find(l => !progress["level" + l.id].done);
   hallYear = (un || CONFIG.levels[CONFIG.levels.length - 1]).year;
+  hallDoorView = false;
 }
 function curHallLevel(){ return levelByYear(hallYear); }
+/* 深色主题色上的文字要反白 */
+function isDarkColor(hex){
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return (r * .299 + g * .587 + b * .114) < 150;
+}
 
 /* 挂钟：四年指四个时刻 —— 8:00 / 16:30 / 21:00 / 5:00 */
 const HALL_CLOCK = { 2023: [8, 0], 2024: [16, 30], 2025: [21, 0], 2026: [5, 0] };
@@ -516,62 +526,69 @@ function clockHands(y){
   const ma = t[1] * Math.PI / 30;
   const hx = cx + Math.sin(ha) * R * 0.5, hy = cy - Math.cos(ha) * R * 0.5;
   const mx = cx + Math.sin(ma) * R * 0.82, my = cy - Math.cos(ma) * R * 0.82;
-  return `<line x1="${cx}" y1="${cy}" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}" stroke="#5F5E5A" stroke-width="1.8" stroke-linecap="round"/>`
-       + `<line x1="${cx}" y1="${cy}" x2="${mx.toFixed(1)}" y2="${my.toFixed(1)}" stroke="#5F5E5A" stroke-width="1" stroke-linecap="round"/>`;
+  return `<line x1="${cx}" y1="${cy}" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}" stroke="#7A5A38" stroke-width="1.8" stroke-linecap="round"/>`
+       + `<line x1="${cx}" y1="${cy}" x2="${mx.toFixed(1)}" y2="${my.toFixed(1)}" stroke="#7A5A38" stroke-width="1.1" stroke-linecap="round"/>`;
 }
 
-/* 窗外：白天 → 下午的太阳 → 夜里的礼堂灯 → 黄昏 */
+/* 窗外：白天 → 下午的太阳 → 夜里的礼堂灯 → 黄昏（内容被裁剪在窗框内，不会穿模） */
 function windowSky(y){
-  const box = 'x="22" y="26" width="62" height="52"';
+  const box = 'x="22" y="24" width="62" height="56"';
   if(y === 2023) return `<rect ${box} fill="#DDEEFB"/>
-    <ellipse cx="42" cy="44" rx="11" ry="5" fill="#FFFFFF" opacity=".92"/>
-    <ellipse cx="53" cy="46" rx="8" ry="4" fill="#FFFFFF" opacity=".92"/>
-    <ellipse cx="72" cy="68" rx="9" ry="4" fill="#FFFFFF" opacity=".7"/>`;
+    <ellipse cx="42" cy="40" rx="11" ry="5" fill="#FFFFFF" opacity=".95"/>
+    <ellipse cx="56" cy="46" rx="9" ry="4.5" fill="#FFFFFF" opacity=".9"/>
+    <ellipse cx="70" cy="34" rx="7" ry="3.5" fill="#FFFFFF" opacity=".8"/>`;
   if(y === 2024) return `<rect ${box} fill="#FFE2B4"/>
-    <circle cx="72" cy="44" r="16" fill="#FFD166" opacity=".28"/>
-    <circle cx="72" cy="44" r="9" fill="#FFC24D"/>`;
+    <circle cx="66" cy="40" r="13" fill="#FFD166" opacity=".35"/>
+    <circle cx="66" cy="40" r="7.5" fill="#FFC24D"/>`;
   if(y === 2025) return `<rect ${box} fill="#3A2350"/>
-    <rect x="22" y="58" width="62" height="20" fill="#2A1840" opacity=".72"/>
-    <circle cx="36" cy="40" r="2" fill="#FFDE59"/>
-    <circle cx="48" cy="35" r="1.5" fill="#FF9BB5"/>
-    <circle cx="60" cy="43" r="1.5" fill="#5DCAA5"/>
-    <circle cx="72" cy="37" r="1.8" fill="#FFDE59"/>`;
+    <rect x="22" y="62" width="62" height="18" fill="#2A1840" opacity=".8"/>
+    <rect x="56" y="56" width="22" height="12" rx="1.5" fill="#241436"/>
+    <circle cx="61" cy="61" r="1.6" fill="#FFDE59"/><circle cx="66" cy="61" r="1.6" fill="#FFDE59"/><circle cx="71" cy="61" r="1.6" fill="#FFDE59"/>
+    <circle cx="36" cy="38" r="1.8" fill="#FFDE59"/>
+    <circle cx="48" cy="33" r="1.4" fill="#FF9BB5"/>
+    <circle cx="58" cy="43" r="1.4" fill="#5DCAA5"/>
+    <circle cx="44" cy="50" r="1.2" fill="#FFDE59"/>`;
   return `<rect ${box} fill="#F7BE8A"/>
-    <circle cx="52" cy="70" r="16" fill="#FFD9A0" opacity=".35"/>
-    <circle cx="52" cy="70" r="10" fill="#FFB067"/>
-    <rect x="22" y="74" width="62" height="4" fill="#E08A4A" opacity=".45"/>`;
+    <circle cx="52" cy="76" r="14" fill="#FFD9A0" opacity=".4"/>
+    <circle cx="52" cy="76" r="8.5" fill="#FFB067"/>
+    <rect x="22" y="72" width="62" height="8" fill="#E08A4A" opacity=".35"/>`;
 }
 
-/* 门：2024 挂白大褂，2026 露出四位数字锁 */
+/* 门：圆拱顶木门；2024 挂白大褂，2026 门牌是四位数字锁 */
 function doorSVG(y, ready){
   const lock = (y === 2026) ? `
-    <rect x="278" y="64" width="38" height="24" rx="3" fill="#F6E7C1" stroke="#BA7517" stroke-width="1.2"/>
-    ${[0,1,2,3].map(i => `<rect x="${283 + i * 8}" y="70" width="5" height="12" rx="1" fill="#BA7517" opacity="${ready ? .95 : .32}"/>`).join("")}
+    <rect x="277" y="92" width="38" height="30" rx="6" fill="#FFFDF4" stroke="#C98F5A" stroke-width="1.5"/>
+    ${[0,1,2,3].map(i => `<rect x="${282.5 + i * 7.5}" y="99" width="5" height="16" rx="2.5" fill="#C98F5A" opacity="${ready ? .95 : .32}"/>`).join("")}
   ` : "";
   const coat = (y === 2024) ? `
-    <path d="M286 74 Q297 64 308 74 L313 122 Q297 129 281 122 Z" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="1"/>
-    <path d="M292 71 L297 80 L302 71" fill="none" stroke="#B4B2A9" stroke-width="1"/>
-    <line x1="297" y1="64" x2="297" y2="57" stroke="#B4B2A9" stroke-width="1.4"/>
+    <path d="M285 78 Q296 68 307 78 L312 132 Q296 139 280 132 Z" fill="#FFFFFF" stroke="#D8CDB8" stroke-width="1.2"/>
+    <path d="M291 74 L296 84 L301 74" fill="none" stroke="#D8CDB8" stroke-width="1.2"/>
+    <circle cx="296" cy="66" r="2.2" fill="#C98F5A"/>
   ` : "";
   return `
-    <rect x="270" y="54" width="54" height="142" rx="2" fill="#FFFDF6" stroke="#B4B2A9" stroke-width="1.2"/>
-    <rect x="276" y="62" width="42" height="52" rx="2" fill="none" stroke="#E7DFCF"/>
-    <rect x="276" y="130" width="42" height="52" rx="2" fill="none" stroke="#E7DFCF"/>
-    <circle cx="314" cy="122" r="2.4" fill="#B4B2A9"/>
+    <ellipse cx="296" cy="193" rx="34" ry="5" fill="rgba(120,80,40,.10)"/>
+    <path d="M268 194 L268 70 Q268 54 284 54 L308 54 Q324 54 324 70 L324 194 Z" fill="#EDCB92" stroke="#C98F5A" stroke-width="1.8"/>
+    <rect x="276" y="64" width="40" height="48" rx="6" fill="#F7E3BC" stroke="#C98F5A" stroke-width="1.1"/>
+    <rect x="276" y="122" width="40" height="56" rx="6" fill="#F7E3BC" stroke="#C98F5A" stroke-width="1.1"/>
+    <circle cx="316" cy="128" r="2.6" fill="#E5A83B" stroke="#C98F5A" stroke-width="1"/>
     ${lock}${coat}`;
 }
 
-/* 椅子：2023 推向一边 · 2026 推回桌下（画在桌子后面，只露出椅背） */
+/* 椅子：统一背对玩家。2023~2025 拉开在桌前；2026 推回桌下（画在桌后，只露矮椅背） */
 function chairSVG(y){
   if(y === 2026){
-    return `<g><rect x="146" y="124" width="7" height="34" rx="2" fill="#D9D2C4" stroke="#B4B2A9" stroke-width="1"/></g>`;
+    return `<g>
+      <rect x="104" y="163" width="32" height="31" rx="9" fill="#FFD9A8" stroke="#C98F5A" stroke-width="1.5"/>
+      <rect x="109" y="168" width="22" height="18" rx="6" fill="#FFEDCB"/>
+    </g>`;
   }
-  const g = `
-    <rect x="196" y="158" width="34" height="11" rx="3" fill="#D9D2C4" stroke="#B4B2A9" stroke-width="1"/>
-    <rect x="222" y="126" width="7" height="34" rx="2" fill="#D9D2C4" stroke="#B4B2A9" stroke-width="1"/>
-    <rect x="200" y="169" width="5" height="27" fill="#B4B2A9"/>
-    <rect x="222" y="169" width="5" height="27" fill="#B4B2A9"/>`;
-  return y === 2023 ? `<g transform="rotate(-9 213 180)">${g}</g>` : `<g>${g}</g>`;
+  return `<g>
+    <ellipse cx="120" cy="194" rx="26" ry="4.5" fill="rgba(120,80,40,.10)"/>
+    <rect x="100" y="151" width="40" height="37" rx="10" fill="#FFD9A8" stroke="#C98F5A" stroke-width="1.6"/>
+    <rect x="105" y="156" width="30" height="24" rx="7" fill="#FFEDCB"/>
+    <rect x="104" y="188" width="5" height="8" rx="1.5" fill="#C98F5A"/>
+    <rect x="131" y="188" width="5" height="8" rx="1.5" fill="#C98F5A"/>
+  </g>`;
 }
 
 /* 整个房间的矢量图（随容器宽度等比缩放，天然适配竖屏） */
@@ -584,139 +601,192 @@ function roomSVG(){
   if(y === 2023){
     stamp = "2023.10";
     hot = `<g class="hs-hot${isLevelUnlocked(1) ? "" : " is-locked"}" data-lv="1" role="button" aria-label="打电话">
-      ${glow(51, 138, 30, 22)}
-      <rect x="34" y="131" width="34" height="19" rx="3" fill="#F6E7C1" stroke="#BA7517" stroke-width="1.6"/>
-      <circle cx="44" cy="140" r="1.7" fill="#BA7517"/><circle cx="51" cy="140" r="1.7" fill="#BA7517"/><circle cx="58" cy="140" r="1.7" fill="#BA7517"/>
-      <circle cx="44" cy="146" r="1.7" fill="#BA7517"/><circle cx="51" cy="146" r="1.7" fill="#BA7517"/><circle cx="58" cy="146" r="1.7" fill="#BA7517"/>
-      <rect x="32" y="123" width="38" height="8" rx="4" fill="#BA7517"/>
-      <rect x="36" y="120" width="6" height="5" rx="2" fill="#BA7517"/>
-      <rect x="60" y="120" width="6" height="5" rx="2" fill="#BA7517"/>
+      ${glow(51, 132, 30, 22)}
+      <rect x="33" y="130" width="36" height="20" rx="5" fill="#FFF8E8" stroke="#C98F5A" stroke-width="1.8"/>
+      <circle cx="42" cy="138" r="1.8" fill="#C98F5A"/><circle cx="51" cy="138" r="1.8" fill="#C98F5A"/><circle cx="60" cy="138" r="1.8" fill="#C98F5A"/>
+      <circle cx="42" cy="145" r="1.8" fill="#C98F5A"/><circle cx="51" cy="145" r="1.8" fill="#C98F5A"/><circle cx="60" cy="145" r="1.8" fill="#C98F5A"/>
+      <rect x="31" y="119" width="40" height="8" rx="4" fill="#C98F5A"/>
+      <rect x="35" y="114" width="7" height="7" rx="3" fill="#C98F5A"/>
+      <rect x="60" y="114" width="7" height="7" rx="3" fill="#C98F5A"/>
     </g>`;
     props = `
-      <rect x="74" y="138" width="16" height="12" rx="1" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="1"/>
-      <line x1="77" y1="143" x2="87" y2="143" stroke="#B4B2A9" stroke-width=".8"/>
-      <rect x="96" y="133" width="13" height="17" rx="2" fill="#EAF3DE" stroke="#97C459" stroke-width="1"/>
-      <rect x="116" y="142" width="15" height="8" fill="#FFE08A"/>
-      <rect x="268" y="150" width="54" height="46" fill="#EFE9DC" stroke="#B4B2A9" stroke-width="1"/>
-      <line x1="268" y1="170" x2="322" y2="170" stroke="#D3D1C7"/>
-      <rect x="40" y="206" width="50" height="50" fill="#EFE9DC" stroke="#B4B2A9" stroke-width="1"/>
-      <line x1="65" y1="206" x2="65" y2="256" stroke="#D3D1C7"/>
-      <rect x="96" y="218" width="38" height="38" fill="#EFE9DC" stroke="#B4B2A9" stroke-width="1"/>`;
+      <rect x="98" y="134" width="14" height="16" rx="3" fill="#BFE6C9" stroke="#7FBF9A" stroke-width="1.5"/>
+      <path d="M112 138 q6 0 6 4.5 q0 4.5 -6 4.5" fill="none" stroke="#7FBF9A" stroke-width="1.6"/>
+      <path d="M102 130 q0 -3 3 -3 q3 0 3 3" fill="none" stroke="#BFD8C6" stroke-width="1.2"/>`;
   } else if(y === 2024){
     stamp = "2024.09";
     hot = `<g class="hs-hot${isLevelUnlocked(2) ? "" : " is-locked"}" data-lv="2" role="button" aria-label="敲键盘">
-      ${glow(66, 118, 44, 34)}
-      <rect x="30" y="92" width="66" height="50" rx="3" fill="#FFFDF6" stroke="#BA7517" stroke-width="1.8"/>
-      <rect x="35" y="97" width="56" height="40" rx="2" fill="#F7F4EC"/>
-      <line x1="41" y1="105" x2="80" y2="105" stroke="#CFC9BB" stroke-width="2.4"/>
-      <line x1="41" y1="113" x2="86" y2="113" stroke="#CFC9BB" stroke-width="2.4"/>
-      <line x1="41" y1="121" x2="72" y2="121" stroke="#CFC9BB" stroke-width="2.4"/>
-      <rect x="57" y="142" width="12" height="8" fill="#BA7517"/>
-      <rect x="88" y="97" width="9" height="9" fill="#FFE08A"/>
-      <rect x="89" y="108" width="7" height="7" fill="#FFD166"/>
+      ${glow(64, 118, 42, 32)}
+      <rect x="30" y="90" width="68" height="52" rx="6" fill="#FFF8E8" stroke="#C98F5A" stroke-width="1.8"/>
+      <rect x="36" y="96" width="56" height="40" rx="4" fill="#F2EFE6"/>
+      <line x1="42" y1="105" x2="82" y2="105" stroke="#CFC9BB" stroke-width="2.6" stroke-linecap="round"/>
+      <line x1="42" y1="113" x2="86" y2="113" stroke="#CFC9BB" stroke-width="2.6" stroke-linecap="round"/>
+      <line x1="42" y1="121" x2="74" y2="121" stroke="#CFC9BB" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M58 142 h12 l4 8 h-20 Z" fill="#C98F5A"/>
+      <rect x="90" y="95" width="10" height="10" rx="2" fill="#FFE08A" transform="rotate(-6 95 100)"/>
+      <rect x="91" y="108" width="8" height="8" rx="2" fill="#FFD1DC" transform="rotate(7 95 112)"/>
     </g>`;
     props = `
-      <rect x="104" y="140" width="54" height="8" rx="2" fill="#FFFDF6" stroke="#B4B2A9" stroke-width="1"/>
-      <line x1="110" y1="144" x2="152" y2="144" stroke="#DCD6C9" stroke-width="1.6"/>
-      <rect x="160" y="132" width="26" height="16" fill="#F7F4EC" stroke="#B4B2A9" stroke-width="1"/>
-      <line x1="163" y1="137" x2="183" y2="137" stroke="#CFC9BB"/>
-      <line x1="163" y1="142" x2="181" y2="142" stroke="#CFC9BB"/>`;
+      <rect x="104" y="141" width="54" height="9" rx="3" fill="#FFF8E8" stroke="#C98F5A" stroke-width="1.3"/>
+      ${[0,1,2,3,4,5,6,7].map(i => `<circle cx="${110 + i * 6.5}" cy="145.5" r="1.4" fill="#D8C7A8"/>`).join("")}
+      <rect x="164" y="132" width="26" height="17" rx="2.5" fill="#FFFDF4" stroke="#D8CDB8" stroke-width="1.2"/>
+      <line x1="168" y1="138" x2="186" y2="138" stroke="#CFC9BB" stroke-width="1.4"/>
+      <line x1="168" y1="143" x2="183" y2="143" stroke="#CFC9BB" stroke-width="1.4"/>`;
   } else if(y === 2025){
     stamp = "2025.12";
     hot = `<g class="hs-hot${isLevelUnlocked(3) ? "" : " is-locked"}" data-lv="3" role="button" aria-label="点墙上的海报">
-      ${glow(200, 52, 60, 44)}
-      <rect x="150" y="18" width="100" height="68" rx="3" fill="#FBEAF0" stroke="#BA7517" stroke-width="2.2"/>
-      <text x="200" y="41" text-anchor="middle" font-size="17" font-weight="700" fill="#993556">中山春晚</text>
-      <path d="M176 74 L200 52 L224 74 Z" fill="#C77DFF" opacity=".92"/>
-      <circle cx="184" cy="62" r="2" fill="#FFDE59"/>
-      <circle cx="216" cy="64" r="2" fill="#FF9BB5"/>
-      <line x1="176" y1="80" x2="224" y2="80" stroke="#E4A9BE" stroke-width="1.4"/>
+      ${glow(200, 51, 58, 42)}
+      <rect x="150" y="16" width="100" height="70" rx="7" fill="#FBEAF0" stroke="#E39AB5" stroke-width="2.4"/>
+      <path d="M158 16 l7 8 l7 -8 l7 8 l7 -8 l7 8 l7 -8 l7 8 l7 -8 l7 8 l7 -8 l7 8 l7 -8" fill="none" stroke="#E39AB5" stroke-width="1.6"/>
+      <text x="200" y="47" text-anchor="middle" font-size="19" font-weight="800" fill="#993556">中山春晚</text>
+      <path d="M176 76 L200 56 L224 76 Z" fill="#C77DFF" opacity=".92"/>
+      <circle cx="184" cy="66" r="2" fill="#FFDE59"/>
+      <circle cx="216" cy="68" r="2" fill="#FF9BB5"/>
+      <line x1="172" y1="80" x2="228" y2="80" stroke="#E4A9BE" stroke-width="1.6"/>
     </g>`;
     props = `
-      <path d="M18 14 Q50 26 82 14 Q114 26 146 14" fill="none" stroke="#FF9BB5" stroke-width="1.2"/>
-      <circle cx="50" cy="24" r="2.2" fill="#FFDE59"/>
-      <circle cx="82" cy="16" r="2.2" fill="#5DCAA5"/>
-      <circle cx="114" cy="24" r="2.2" fill="#C77DFF"/>
-      <rect x="44" y="120" width="16" height="16" rx="3" fill="#FAC775" stroke="#BA7517" stroke-width="1"/>
-      <path d="M44 124 Q36 126 38 132 Q39 136 44 136" fill="none" stroke="#BA7517" stroke-width="1.4"/>
-      <path d="M60 124 Q68 126 66 132 Q65 136 60 136" fill="none" stroke="#BA7517" stroke-width="1.4"/>
-      <rect x="50" y="136" width="4" height="9" fill="#BA7517"/>
-      <rect x="42" y="145" width="20" height="5" rx="1" fill="#BA7517"/>
-      <path d="M40 224 Q66 212 92 224" fill="none" stroke="#C77DFF" stroke-width="2.6"/>
-      <path d="M104 242 Q132 230 160 242" fill="none" stroke="#FFDE59" stroke-width="2.6"/>
-      <circle cx="130" cy="92" r="9" fill="#FF9BB5"/>
-      <line x1="130" y1="101" x2="130" y2="120" stroke="#B4B2A9"/>
-      <circle cx="145" cy="74" r="7" fill="#5DCAA5"/>
-      <line x1="145" y1="81" x2="145" y2="98" stroke="#B4B2A9"/>`;
+      <path d="M18 12 Q50 25 82 12 Q114 25 146 12" fill="none" stroke="#FF9BB5" stroke-width="1.3"/>
+      <circle cx="50" cy="22" r="2.2" fill="#FFDE59"/>
+      <circle cx="82" cy="14" r="2.2" fill="#5DCAA5"/>
+      <circle cx="114" cy="22" r="2.2" fill="#C77DFF"/>
+      <path d="M44 122 h16 v15 h-16 Z" fill="#F5C64F" stroke="#C98F5A" stroke-width="1.4"/>
+      <path d="M44 126 Q36 128 38 134 Q39 138 44 138" fill="none" stroke="#C98F5A" stroke-width="1.5"/>
+      <path d="M60 126 Q68 128 66 134 Q65 138 60 138" fill="none" stroke="#C98F5A" stroke-width="1.5"/>
+      <rect x="49" y="137" width="6" height="8" fill="#C98F5A"/>
+      <rect x="42" y="145" width="20" height="5" rx="2" fill="#C98F5A"/>
+      <circle cx="130" cy="90" r="9" fill="#FF9BB5"/>
+      <line x1="130" y1="99" x2="130" y2="118" stroke="#B4B2A9" stroke-width="1.2"/>
+      <circle cx="145" cy="72" r="7" fill="#5DCAA5"/>
+      <line x1="145" y1="79" x2="145" y2="96" stroke="#B4B2A9" stroke-width="1.2"/>`;
   } else {
     stamp = "2026.10";
-    hot = `<g class="hs-hot${ready ? "" : " is-locked"}" data-pw="1" role="button" aria-label="那扇门">
-      ${ready ? glow(297, 125, 40, 84) : `<ellipse class="hs-glow" cx="297" cy="125" rx="40" ry="84" style="animation:none;opacity:0"/>`}
-      <rect x="270" y="54" width="54" height="142" rx="2" fill="transparent"/>
-    </g>
-    <g class="hs-hot${ready ? "" : " is-locked"}" data-lv="4" role="button" aria-label="行李箱">
-      ${ready ? glow(68, 228, 40, 42) : `<ellipse class="hs-glow" cx="68" cy="228" rx="40" ry="42" style="animation:none;opacity:0"/>`}
-      <rect x="40" y="196" width="56" height="62" rx="5" fill="#F4F0EA" stroke="#BA7517" stroke-width="1.8"/>
-      <rect x="56" y="186" width="24" height="11" rx="4" fill="none" stroke="#BA7517" stroke-width="1.8"/>
-      <line x1="40" y1="226" x2="96" y2="226" stroke="#B4B2A9" stroke-width="1"/>
+    hot = `<g class="hs-hot${isLevelUnlocked(4) ? "" : " is-locked"}" data-lv="4" role="button" aria-label="行李箱">
+      ${glow(126, 128, 38, 26)}
+      <rect x="100" y="112" width="52" height="38" rx="8" fill="#F2A65A" stroke="#C9823C" stroke-width="2"/>
+      <rect x="112" y="104" width="28" height="10" rx="5" fill="none" stroke="#C9823C" stroke-width="2.2"/>
+      <line x1="100" y1="130" x2="152" y2="130" stroke="#C9823C" stroke-width="1.6"/>
+      <rect x="110" y="118" width="10" height="10" rx="2.5" fill="#FFF3D6"/>
+      <rect x="132" y="118" width="10" height="10" rx="2.5" fill="#FFF3D6"/>
     </g>`;
     props = `
-      <rect x="150" y="18" width="100" height="68" rx="3" fill="#F3EDE1" stroke="#DED7C8" stroke-width="1" stroke-dasharray="4 4"/>
-      <circle cx="64" cy="146" r="3" fill="none" stroke="#8A8377" stroke-width="1.4"/>
-      <line x1="67" y1="146" x2="78" y2="146" stroke="#8A8377" stroke-width="1.4"/>
-      <rect x="110" y="210" width="44" height="48" fill="#EFE9DC" stroke="#B4B2A9" stroke-width="1"/>
-      <line x1="132" y1="210" x2="132" y2="258" stroke="#D3D1C7"/>
-      <text x="114" y="238" font-size="13" fill="#8A8377">谢谢</text>`;
+      <rect x="150" y="16" width="100" height="70" rx="7" fill="#F3EDE1" stroke="#DED7C8" stroke-width="1.2" stroke-dasharray="5 5"/>
+      <circle cx="64" cy="142" r="3.2" fill="none" stroke="#C98F5A" stroke-width="1.6"/>
+      <line x1="67.5" y1="142" x2="80" y2="142" stroke="#C98F5A" stroke-width="1.6" stroke-linecap="round"/>`;
   }
 
-  const doorInHot = (y === 2026);
+  return `<svg class="hs-svg" viewBox="0 0 340 224" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${y} 年的办公室">
+    <rect x="0" y="0" width="340" height="194" fill="#FBF3E4"/>
+    <rect x="0" y="138" width="340" height="56" fill="#F6ECD9"/>
+    <line x1="0" y1="138" x2="340" y2="138" stroke="#EADFC6" stroke-width="1.6"/>
+    <rect x="0" y="194" width="340" height="30" fill="#EBD9BC"/>
+    <line x1="0" y1="203" x2="340" y2="203" stroke="#DEC9A8" stroke-width="1"/>
+    <line x1="0" y1="213" x2="340" y2="213" stroke="#DEC9A8" stroke-width="1"/>
 
-  return `<svg class="hs-svg" viewBox="0 0 340 262" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${y} 年的办公室">
-    <rect x="0" y="0" width="340" height="196" fill="#FBF7F0"/>
-    <rect x="0" y="196" width="340" height="66" fill="#F0EADD"/>
-    <line x1="0" y1="196" x2="340" y2="196" stroke="#DED7C8" stroke-width="1"/>
-    <line x1="0" y1="186" x2="268" y2="186" stroke="#E7E0D1" stroke-width="2"/>
-    <line x1="0" y1="216" x2="340" y2="216" stroke="#E7E0D1" stroke-width="1" opacity=".55"/>
-    <line x1="0" y1="238" x2="340" y2="238" stroke="#E7E0D1" stroke-width="1" opacity=".55"/>
+    <clipPath id="hsWinClip"><rect x="22" y="24" width="62" height="56" rx="3"/></clipPath>
+    <g clip-path="url(#hsWinClip)">${windowSky(y)}</g>
+    <rect x="22" y="24" width="62" height="56" rx="3" fill="none" stroke="#C98F5A" stroke-width="2.6"/>
+    <line x1="53" y1="24" x2="53" y2="80" stroke="#C98F5A" stroke-width="1.6"/>
+    <line x1="22" y1="52" x2="84" y2="52" stroke="#C98F5A" stroke-width="1.6"/>
+    <rect x="17" y="80" width="72" height="5" rx="2.5" fill="#C98F5A"/>
 
-    ${windowSky(y)}
-    <rect x="22" y="26" width="62" height="52" fill="none" stroke="#B4B2A9" stroke-width="2.4"/>
-    <line x1="53" y1="26" x2="53" y2="78" stroke="#B4B2A9" stroke-width="1.6"/>
-    <line x1="22" y1="52" x2="84" y2="52" stroke="#B4B2A9" stroke-width="1.6"/>
-
-    <circle cx="118" cy="50" r="13" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="1.6"/>
+    <circle cx="118" cy="50" r="14" fill="#FFFDF4" stroke="#C98F5A" stroke-width="2"/>
     ${clockHands(y)}
-    <circle cx="118" cy="50" r="1.4" fill="#5F5E5A"/>
+    <circle cx="118" cy="50" r="1.5" fill="#7A5A38"/>
 
-    ${doorInHot ? "" : doorSVG(y, ready)}
-    ${chairSVG(y)}
+    ${doorSVG(y, ready)}
+    ${y === 2026 ? chairSVG(y) : ""}
 
-    <rect x="22" y="150" width="188" height="8" rx="1" fill="#E4DED1" stroke="#B4B2A9" stroke-width="1"/>
-    <rect x="28" y="158" width="6" height="38" fill="#B4B2A9"/>
-    <rect x="192" y="158" width="6" height="38" fill="#B4B2A9"/>
+    <ellipse cx="117" cy="194" rx="95" ry="6" fill="rgba(120,80,40,.08)"/>
+    <rect x="22" y="150" width="190" height="9" rx="3.5" fill="#F0C987" stroke="#C98F5A" stroke-width="1.4"/>
+    <rect x="28" y="159" width="7" height="35" rx="2.5" fill="#D9A56A"/>
+    <rect x="199" y="159" width="7" height="35" rx="2.5" fill="#D9A56A"/>
+
     ${props}
     ${hot}
-    ${doorInHot ? doorSVG(y, ready) : ""}
+    ${y === 2026 ? "" : chairSVG(y)}
 
-    <text x="330" y="252" text-anchor="end" font-size="13" font-family="ui-monospace,monospace" fill="#C8834A" opacity=".85">${stamp}</text>
+    <text x="333" y="218" text-anchor="end" font-size="12" font-family="ui-monospace,monospace" fill="#C8834A" opacity=".85">${stamp}</text>
+  </svg>`;
+}
+
+/* 密码门专属场景：房间消失，一扇门居中 */
+function doorViewSVG(){
+  return `<svg class="hs-svg" viewBox="0 0 340 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="最后的门">
+    <rect x="0" y="0" width="340" height="196" fill="#FBF3E4"/>
+    <rect x="0" y="140" width="340" height="56" fill="#F6ECD9"/>
+    <line x1="0" y1="140" x2="340" y2="140" stroke="#EADFC6" stroke-width="1.6"/>
+    <rect x="0" y="196" width="340" height="34" fill="#EBD9BC"/>
+    <line x1="0" y1="206" x2="340" y2="206" stroke="#DEC9A8" stroke-width="1"/>
+    <line x1="0" y1="217" x2="340" y2="217" stroke="#DEC9A8" stroke-width="1"/>
+
+    <g class="hs-hot" id="dv-door" role="button" aria-label="最后的门">
+      <ellipse class="hs-glow" cx="170" cy="128" rx="72" ry="92"/>
+      <ellipse cx="170" cy="193" rx="66" ry="6" fill="rgba(120,80,40,.10)"/>
+      <path d="M118 196 L118 64 Q118 44 138 44 L202 44 Q222 44 222 64 L222 196 Z" fill="#EDCB92" stroke="#C98F5A" stroke-width="2.4"/>
+      <rect x="128" y="58" width="84" height="52" rx="8" fill="#F7E3BC" stroke="#C98F5A" stroke-width="1.3"/>
+      <rect x="128" y="150" width="84" height="38" rx="8" fill="#F7E3BC" stroke="#C98F5A" stroke-width="1.3"/>
+      <rect x="139" y="112" width="62" height="34" rx="6" fill="#FFFDF4" stroke="#C98F5A" stroke-width="1.6"/>
+      ${[0,1,2,3].map(i => `<rect x="${145.5 + i * 13}" y="119" width="8" height="20" rx="2.5" fill="#C98F5A" opacity=".9"/>`).join("")}
+      <circle cx="212" cy="126" r="3.6" fill="#E5A83B" stroke="#C98F5A" stroke-width="1.2"/>
+    </g>
+
+    <g>
+      <path d="M88 196 v-11 a11 11 0 0 1 22 0 v11 Z" fill="#E58BB0"/>
+      <circle cx="94" cy="172" r="5" fill="#7FBF8A"/><circle cx="103" cy="166" r="6" fill="#5DAF6B"/><circle cx="110" cy="174" r="4.5" fill="#7FBF8A"/>
+    </g>
+    <g>
+      <path d="M230 196 v-11 a11 11 0 0 1 22 0 v11 Z" fill="#8AD1FF"/>
+      <circle cx="236" cy="174" r="5" fill="#7FBF8A"/><circle cx="245" cy="167" r="6" fill="#5DAF6B"/><circle cx="252" cy="175" r="4.5" fill="#7FBF8A"/>
+    </g>
   </svg>`;
 }
 
 function hallHintText(lv, ready){
   const id = lv.id;
-  if(id === 1) return "点那部发光的座机";
+  if(id === 1) return "点桌上那部发光的座机";
   if(id === 2) return "点那台发光的显示器";
-  if(id === 3) return "点墙上那张《中山春晚》";
-  if(ready) return "点那扇门，或行李箱";
+  if(id === 3) return "点墙上那张《中山春晚》海报";
+  if(ready) return "房间收拾好了 —— 点下面的「最后的门」";
   if(!isLevelUnlocked(4)) return "这个房间还空着 —— 先把前面的年份找回来";
-  return "点发光的行李箱；集齐碎片后门也会亮";
+  return "点桌上那只发光的行李箱";
 }
 
 function renderHall(){
   const lv = curHallLevel();
+  const ready = allDone(progress);
+
+  /* —— 密码门专属场景 —— */
+  if(hallDoorView){
+    const c = CONFIG.passwordPage;
+    $("view-hall").innerHTML = `
+      <div class="hall2 dv">
+        <button class="dv-back" id="dv-back" type="button">← 回到房间</button>
+        <div class="hall2-head">
+          <div class="hall2-title">🔐 ${c.title}</div>
+          <div class="hall2-sub">${c.desc.join("　")}</div>
+        </div>
+        <div class="hall2-room dv-room">${doorViewSVG()}</div>
+        <div class="otp-row" id="otp-row">
+          <input class="otp" maxlength="1" inputmode="numeric" pattern="[0-9]*" />
+          <input class="otp" maxlength="1" inputmode="numeric" pattern="[0-9]*" />
+          <input class="otp" maxlength="1" inputmode="numeric" pattern="[0-9]*" />
+          <input class="otp" maxlength="1" inputmode="numeric" pattern="[0-9]*" />
+        </div>
+        <button class="btn btn-primary btn-block" id="btn-unlock" disabled>${c.unlockLabel}</button>
+        <div class="pw-msg" id="pw-msg"></div>
+      </div>`;
+    bindOTP();
+    $("dv-back").addEventListener("click", () => { SFX.flip(); hallDoorView = false; renderHall(); });
+    $("btn-unlock").addEventListener("click", checkPassword);
+    const d = $("dv-door");
+    if(d) d.addEventListener("click", () => { const f = document.querySelector("#otp-row .otp"); if(f) f.focus(); });
+    return;
+  }
+
+  /* —— 房间视图 —— */
   const st = progress["level" + lv.id];
   const done = st.done;
-  const ready = allDone(progress);
+  const darkFrag = isDarkColor(accentOf(lv));
 
   const tabs = CONFIG.levels.map(l => {
     const lvSt = progress["level" + l.id];
@@ -747,10 +817,13 @@ function renderHall(){
           <span class="hall2-name">${lv.title}</span>
         </div>
         <div class="hall2-tag">${lv.tagline}</div>
-        <div class="hall2-frag${done ? " on" : ""}">🧩 ${lv.fragmentName}：${done ? lv.fragment : "未获得"}</div>
+        <div class="hall2-frag${done ? (darkFrag ? " on dark" : " on") : ""}">🧩 ${lv.fragmentName}：${done ? lv.fragment : "未获得"}</div>
       </div>
 
       <div class="hall2-tabs">${tabs}</div>
+      <button class="hall2-doorbtn${ready ? " ready" : ""}" id="hall-door-btn" type="button">
+        ${ready ? "🔐 最后的门" : "🔒 最后的门"}
+      </button>
     </div>`;
 
   /* 年份切换 */
@@ -770,15 +843,19 @@ function renderHall(){
   document.querySelectorAll(".hs-hot").forEach(g => {
     g.addEventListener("click", (e) => {
       e.stopPropagation();
-      if(g.dataset.pw){
-        if(allDone(progress)) openPasswordModal();
-        else showLockedHint();
-        return;
-      }
       const id = parseInt(g.dataset.lv, 10);
       if(!isLevelUnlocked(id)){ showLockedHint(); return; }
       enterLevel(id, e.clientX, e.clientY);
     });
+  });
+
+  /* 最后的门 */
+  $("hall-door-btn").addEventListener("click", () => {
+    if(!allDone(progress)){ showLockedHint(); return; }
+    SFX.flip();
+    hallDoorView = true;
+    renderHall();
+    $("view-hall").scrollTop = 0;
   });
 
   if(justCompleted) justCompleted = null;
@@ -1795,7 +1872,8 @@ function checkPassword(){
     vibrate([30, 40, 30, 40, 60]);
     SFX.unlock();
     setTimeout(()=>{
-      closeModal();
+      if($("overlay").classList.contains("show")) closeModal();
+      if(hallDoorView) hallDoorView = false;
       confettiBurst();
       renderFinal();
     }, 800);
