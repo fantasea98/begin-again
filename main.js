@@ -380,9 +380,9 @@ function lockDateText(){
 function renderLock(){
   const stars = (() => {
     let out = "";
-    for(let i = 0; i < 26; i++){
-      const x = (i * 53) % 330 + 5, y = 14 + (i * 37) % 300;
-      out += `<circle cx="${x}" cy="${y}" r="${(i % 3) * 0.4 + 0.7}" fill="#FFF3DC" opacity="${0.25 + (i % 4) * 0.12}"/>`;
+    for(let i = 0; i < 30; i++){
+      const x = (i * 53) % 330 + 5, y = 12 + (i * 41) % 300;
+      out += `<circle cx="${x}" cy="${y}" r="${(i % 3) * 0.4 + 0.7}" fill="#FFF3DC" opacity="${0.22 + (i % 4) * 0.12}"/>`;
     }
     return out;
   })();
@@ -391,69 +391,86 @@ function renderLock(){
       <svg class="lock-scene" viewBox="0 0 340 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
           <linearGradient id="lgSky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#F9AE62"/><stop offset=".55" stop-color="#F28A4E"/><stop offset="1" stop-color="#E5703F"/>
+            <stop offset="0" stop-color="#F7A95A"/><stop offset=".5" stop-color="#F0813F"/><stop offset="1" stop-color="#DE6234"/>
           </linearGradient>
           <linearGradient id="lgSea" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#DB7A46"/><stop offset="1" stop-color="#9E4A2B"/>
+            <stop offset="0" stop-color="#D2663A"/><stop offset="1" stop-color="#8E3F24"/>
           </linearGradient>
+          <radialGradient id="lgSun" cx=".5" cy=".5" r=".5">
+            <stop offset="0" stop-color="#FFEFC4" stop-opacity=".95"/>
+            <stop offset="1" stop-color="#FFDF9E" stop-opacity="0"/>
+          </radialGradient>
         </defs>
         <rect width="340" height="380" fill="url(#lgSky)"/>
         ${stars}
-        <circle cx="176" cy="150" r="62" fill="#FFEDCB"/>
-        <circle cx="176" cy="150" r="55" fill="none" stroke="#FFE0AE" stroke-width="1.5" opacity=".55"/>
-        <text x="176" y="142" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-style="italic" font-size="23" letter-spacing="1.5" fill="#C9823C">begin</text>
-        <text x="176" y="170" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-style="italic" font-size="23" letter-spacing="1.5" fill="#C9823C">again</text>
-        <path d="M40 206 L264 182" stroke="#FFF6E4" stroke-width="1.1" opacity=".55" stroke-dasharray="7 7"/>
-        <path d="M258 176 l20 -7 -3 12 -8 -2 Z" fill="#FFF6E4"/>
+        <circle cx="62" cy="374" r="58" fill="url(#lgSun)"/>
+        <circle cx="62" cy="374" r="21" fill="#FFEFC8"/>
+        <path d="M34 292 L268 258" stroke="#FFF6E4" stroke-width="1.2" opacity=".55" stroke-dasharray="7 8"/>
+        <path d="M262 251 l24 -8 -3 14 -10 -2 Z" fill="#FFF6E4" opacity=".95"/>
+        <path d="M246 158 q5 -5 9 0 q4 -5 9 0" stroke="#FFF1D6" stroke-width="1.5" fill="none" opacity=".6"/>
+        <path d="M276 138 q4 -4 7 0 q3 -4 7 0" stroke="#FFF1D6" stroke-width="1.3" fill="none" opacity=".45"/>
         <rect y="380" width="340" height="180" fill="url(#lgSea)"/>
-        <rect y="378" width="340" height="3" fill="#FFE3B8" opacity=".55"/>
+        <rect y="378" width="340" height="3" fill="#FFE3B8" opacity=".6"/>
+        <ellipse cx="62" cy="392" rx="34" ry="7" fill="#FFE7B4" opacity=".35"/>
         <path d="M40 424 q26 4 52 0" stroke="#FFDCA8" stroke-width="1.5" fill="none" opacity=".35"/>
         <path d="M236 452 q30 5 60 0" stroke="#FFDCA8" stroke-width="1.5" fill="none" opacity=".3"/>
-        <path d="M92 504 q26 4 52 0" stroke="#FFDCA8" stroke-width="1.5" fill="none" opacity=".25"/>
+        <path d="M92 504 q26 4 52 0" stroke="#FFDCA8" stroke-width="1.5" fill="none" opacity=".22"/>
         <path d="M282 392 q22 3 44 0" stroke="#FFDCA8" stroke-width="1.5" fill="none" opacity=".3"/>
-        <ellipse cx="160" cy="404" rx="80" ry="14" fill="#8A4326"/>
-        <ellipse cx="160" cy="400" rx="80" ry="10" fill="#A85431"/>
-        <circle cx="146" cy="378" r="3.4" fill="#3A2B1E"/>
-        <rect x="141.5" y="382" width="9" height="16" rx="4.5" fill="#3A2B1E"/>
-        <path d="M149 387 q8 -5 10 -12" stroke="#3A2B1E" stroke-width="2.6" stroke-linecap="round" fill="none"/>
-        <circle cx="160" cy="374" r="1.5" fill="#FFE9BF"/>
-        <circle cx="171" cy="379" r="3.4" fill="#3A2B1E"/>
-        <rect x="166.5" y="383" width="9" height="15" rx="4.5" fill="#3A2B1E"/>
-        <rect x="184" y="389" width="8" height="11" rx="2" fill="#5C331F"/>
-        <path d="M186 389 v-2.5 h4 v2.5" stroke="#5C331F" stroke-width="1.4" fill="none"/>
+        <ellipse cx="160" cy="404" rx="80" ry="14" fill="#7E3A21"/>
+        <ellipse cx="160" cy="400" rx="80" ry="10" fill="#9C4B2B"/>
+        <circle cx="146" cy="378" r="3.4" fill="#39291C"/>
+        <rect x="141.5" y="382" width="9" height="16" rx="4.5" fill="#39291C"/>
+        <path d="M149 387 q8 -5 10 -12" stroke="#39291C" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+        <circle cx="160" cy="373" r="1.6" fill="#FFE9BF"/>
+        <circle cx="171" cy="379" r="3.4" fill="#39291C"/>
+        <rect x="166.5" y="383" width="9" height="15" rx="4.5" fill="#39291C"/>
+        <rect x="184" y="389" width="8" height="11" rx="2" fill="#54301C"/>
+        <path d="M186 389 v-2.5 h4 v2.5" stroke="#54301C" stroke-width="1.4" fill="none"/>
       </svg>
 
       <div class="lock-status">
-        <span>中国电信</span>
-        <span class="ls-right"><i></i>🛜 <b>43</b></span>
+        <span class="ls-op">中国电信</span>
+        <span class="ls-right">
+          <span class="ls-bat"><i style="width:78%"></i></span>
+          <b>78%</b>
+        </span>
       </div>
 
       <div class="lock-head">
-        <div class="lock-date">10月30日周五 · 丙午年九月廿一</div>
+        <div class="lock-eyebrow"><span class="dot"></span>10月30日 星期五</div>
         <div class="lock-time">17:00</div>
+        <div class="lock-sub">丙午年九月廿一 · 宜告别，宜重逢</div>
       </div>
 
-      <div class="lock-widgets">
-        <div class="lw-weather">
-          <div class="lw-w1">🌇 21°</div>
-          <div class="lw-w2">晚霞满天</div>
-          <div class="lw-w3">最高 24° 最低 19°</div>
+      <div class="lock-cards">
+        <div class="lc">
+          <span class="lc-ico">🌇</span>
+          <span class="lc-txt"><b>21°</b><span>晚霞满天</span><em>最高 24° / 最低 19°</em></span>
         </div>
-        <div class="lw-right">
-          <div class="lw-circle">💼</div>
-          <div class="lw-circle lw-days"><b>1122天</b><span>一起走过</span></div>
+        <div class="lc">
+          <span class="lc-ico">💼</span>
+          <span class="lc-txt"><b>1122 天</b><span>一起走过</span><em>2023.10.05 — 2026.10.30</em></span>
         </div>
+      </div>
+
+      <div class="lock-word">
+        <div class="lw-row">
+          <span class="lw-line"></span>
+          <span class="lw-text">begin again</span>
+          <span class="lw-line lw-line-r"></span>
+        </div>
+        <div class="lw-sub">one more time</div>
       </div>
 
       <div class="lock-bottom">
         <div class="lock-bar" id="lock-bar">
           <div class="lock-fill" id="lock-fill"></div>
-          <div class="lock-hint" id="lock-hint">向右滑动解锁</div>
+          <div class="lock-hint" id="lock-hint">向右滑动解锁<i class="chev">›››</i></div>
           <div class="lock-knob" id="lock-knob">🔓</div>
         </div>
         <div class="lock-quick">
-          <span class="lq">🔦</span>
-          <span class="lq">📷</span>
+          <span class="lq"><i>🔦</i><em>手电筒</em></span>
+          <span class="lq"><i>📷</i><em>相机</em></span>
         </div>
       </div>
 
@@ -507,11 +524,14 @@ function bindLock(){
 function unlockPhone(){
   if(phoneUnlocked) return;
   phoneUnlocked = true;
-  SFX.init();                 // 这一次是真的用户手势，音频从此畅通
+  // 这一次是真的用户手势：全力解锁（重建 ctx + resume + start 静音源 + 静音 wav）
+  try{ SFX.ensure(); }catch(e){}
+  // 手势的「瞬时激活」还能维持几秒，趁热再补几次，覆盖各内核的异步差异
+  [0, 120, 400, 900].forEach(ms => setTimeout(() => { try{ SFX.ensure(); }catch(e){} }, ms));
   SFX.unlock();
-  setTimeout(()=>{ try{ SFX.init(); }catch(e){} }, 120);   // 双保险：仍处于同一次手势的激活窗口内
   renderOpening();            // 解锁后才开始微信开场动画，音效不会丢
   showView("opening");
+  armSoundNudge();            // 兜底：真没醒就给个一键开启的按钮
 }
 
 /* ==================== ⑦ 穿越预示动画 ==================== */
@@ -2244,13 +2264,73 @@ function initSfxToggle(){
    开场动画是自动播放的，所以早先尝试一次 init（多数环境会被挂起），
    再挂一次性监听 —— 用户第一次触摸/点击屏幕时立刻解锁，
    之后的每一条气泡、点赞、乱码音效就都能响出来了。 */
+/* 音频解锁「大网」：
+   iOS 里只有 touchend / click / mousedown 这类才算真正的用户激活，pointerdown 不算；
+   而微信 WebView、安卓 X5 又各有脾气。所以这里把所有可能的手势事件全挂上，
+   并且 —— 关键 —— 只要音频还没真正 running，就绝不摘掉监听，一次失败下次接着试。 */
+const AUDIO_EV = ["pointerdown","pointerup","touchstart","touchend","mousedown","mouseup","click","keydown"];
+function audioNet(){
+  try{
+    SFX.ensure();
+    const st = SFX._debug && SFX._debug();
+    if(st && st.state === "running"){
+      AUDIO_EV.forEach(ev => {
+        window.removeEventListener(ev, audioNet, true);
+        document.removeEventListener(ev, audioNet, true);
+      });
+      hideSoundNudge();
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
 function armAudioUnlock(){
-  try{ SFX.init(); }catch(e){}
-  const unlock = () => {
-    try{ SFX.init(); }catch(e){}
-    ["pointerdown","touchstart","keydown","click"].forEach(ev => window.removeEventListener(ev, unlock));
+  try{ SFX.ensure(); }catch(e){}
+  AUDIO_EV.forEach(ev => {
+    window.addEventListener(ev, audioNet, { capture:true, passive:true });
+    document.addEventListener(ev, audioNet, { capture:true, passive:true });
+  });
+  // 微信内置浏览器：JSBridge 就绪后可以免手势尝试解锁一次
+  try{
+    if(window.WeixinJSBridge && window.WeixinJSBridge.invoke){
+      window.WeixinJSBridge.invoke("getNetworkType", {}, () => { try{ SFX.ensure(); }catch(e){} });
+    } else {
+      document.addEventListener("WeixinJSBridgeReady", () => { try{ SFX.ensure(); }catch(e){} }, false);
+    }
+  }catch(e){}
+}
+
+/* 兜底：万一滑动之后音频还是没醒（某些机型/静音拨杆），给一个明显的一触即开按钮，
+   音频正常时它根本不会出现。 */
+function hideSoundNudge(){
+  const el = document.getElementById("sound-nudge");
+  if(el) el.remove();
+}
+function armSoundNudge(){
+  let tries = 0;
+  const check = () => {
+    tries++;
+    let ok = false;
+    try{ const st = SFX._debug && SFX._debug(); ok = !!(st && st.state === "running"); }catch(e){}
+    if(ok){ hideSoundNudge(); return; }
+    if(tries >= 4){                      // 约 1.6 秒后仍未解锁才显示
+      if(document.getElementById("sound-nudge")) return;
+      const host = $("screen") || document.body;
+      const el = document.createElement("div");
+      el.id = "sound-nudge";
+      el.className = "sound-nudge";
+      el.innerHTML = '<span class="sn-ic">🔊</span><span>轻触一下，开启声音</span>';
+      el.addEventListener("click", () => {
+        try{ SFX.ensure(); SFX.ensure(); SFX.bubble(false); }catch(e){}
+        setTimeout(() => { try{ SFX.ensure(); }catch(e){} }, 80);
+        hideSoundNudge();
+      }, { passive:true });
+      host.appendChild(el);
+      return;
+    }
+    setTimeout(check, 400);
   };
-  ["pointerdown","touchstart","keydown","click"].forEach(ev => window.addEventListener(ev, unlock, { once:false, passive:true }));
+  setTimeout(check, 400);
 }
 
 function init(){
