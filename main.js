@@ -330,7 +330,7 @@ function showView(name){
   if(sc) sc.classList.toggle("sfx-show", name !== "opening");
 }
 function backToHall(){
-  SFX.droneStop(); SFX.musicBoxStop();   // 离开关卡，停掉所有持续音源
+  SFX.tensionStop(); SFX.musicBoxStop();   // 离开关卡，停掉所有持续音源
   renderHall(); showView("hall");
 }
 
@@ -855,9 +855,11 @@ function pressKey(lvl, k, keyEl){
   renderL1Number(lvl);
   if(lv1.entered.length === lvl.digitLength){
     lv1.dialJudging = true;
-    $("l1-hint").textContent = "正在拨号……";
-    SFX.ringback();   // 嘟……嘟…… 回铃音
-    lv1.judgeTimer = setTimeout(()=>{ lv1.judgeTimer = null; judgeL1(lvl); }, 900);
+    $("l1-hint").textContent = "☎️ 正在拨号……";
+    SFX.ringback();   // 嘟—— 停 ——嘟——，整段 2.4 秒
+    // 等回铃音彻底响完（2.4s）再多留 0.2s 呼吸，然后才判定，
+    // 否则接通/错误提示音会和第二声「嘟——」叠在一起
+    lv1.judgeTimer = setTimeout(()=>{ lv1.judgeTimer = null; judgeL1(lvl); }, 2600);
   }
 }
 function deleteKey(lvl){
@@ -874,16 +876,16 @@ function stopLv1AndBack(){
 function judgeL1(lvl){
   if(lv1.entered === lvl.correctNumber){
     lv1.dialJudging = false;
-    $("l1-hint").textContent = "嘟……接通 ✓";
+    $("l1-hint").textContent = "📞 嘟——接通了 ✓";
     SFX.connected();
-    // 显示接通提示后等 1s 再弹成功窗
-    lv1.judgeTimer = setTimeout(()=>{ lv1.judgeTimer = null; runLevelSuccess(lvl, {}); }, 1000);
+    // 等「叮」的三连音收尾再弹成功窗
+    lv1.judgeTimer = setTimeout(()=>{ lv1.judgeTimer = null; runLevelSuccess(lvl, {}); }, 1200);
   } else {
     lv1.dialJudging = false;
     failCounts[1]++;
-    $("l1-hint").textContent = "嘟……嘟……";
+    $("l1-hint").textContent = "📵 嘟——嘟—— 是空号";
     vibrate(40);
-    SFX.wrong();
+    SFX.wrong();      // 忙音「响 0.4 停 0.35 再响 0.4」= 1.15 秒
     lv1.wrongTimer = setTimeout(()=>{
       lv1.wrongTimer = null;
       if(currentView !== "level1") return;
@@ -891,7 +893,7 @@ function judgeL1(lvl){
       const cheatBtn = failCounts[1] >= 3 ? `<button class="btn btn-accent btn-block" id="btn-cheat" style="margin-top:10px">${CONFIG.cheat.label}</button>` : "";
       openModal(`
         <div class="popup-head">📞</div>
-        <div class="popup-title" style="color:var(--danger)">嘟…… ❌ 好像打错了。</div>
+        <div class="popup-title" style="color:var(--danger)">📵 好像打错了。</div>
         <div class="popup-body">${funny}</div>
         <div class="popup-actions">
           <button class="btn btn-primary btn-block" id="btn-again">好的，再试一次</button>
@@ -901,7 +903,7 @@ function judgeL1(lvl){
       if(failCounts[1] >= 3){
         $("btn-cheat").addEventListener("click", ()=> cheatToSuccess(1));
       }
-    }, 1000);
+    }, 1350);   // 忙音 1.15s 响完再弹窗
   }
 }
 /* 电话簿浮窗（便签 + 3 秒限时） */
@@ -1066,9 +1068,8 @@ function startL2Cd(){
   const bg = $("l2-bg");
   // 太阳开始沿弧线落山（动画时长与倒计时一致）
   if(bg){ bg.style.setProperty("--cd", lvl.countdownSeconds + "s"); bg.classList.add("sun-run"); }
-  let lastSec = null;
-  let lastTick = performance.now();
-  SFX.droneStart();   // 紧张底噪，持续到写完或超时
+  // 紧张感全靠鼓点：底鼓 + 军鼓 + 踩镲，越到后面节奏越密
+  SFX.tensionStart(lvl.countdownSeconds);
   lv2.cdTimer = setInterval(()=>{
     const el = (performance.now() - lv2.t0) / 1000;
     const remain = Math.max(0, lvl.countdownSeconds - el);
@@ -1082,16 +1083,12 @@ function startL2Cd(){
     const cf = $("l2-crt");
     if(cf) cf.classList.toggle("tear", remain > 0 && remain <= 3);
     if(remain <= 1 && bg) bg.classList.add("danger");
-    // 滴答：平时每 0.5 秒一次，最后 3 秒加密到 0.25 秒一次并变调
-    const now = performance.now();
-    const step = remain <= 3 ? 250 : 500;
-    if(remain > 0 && now - lastTick >= step){ lastTick = now; SFX.tick(remain <= 3); }
     if(remain <= 0){ lv2Fail(); }
   }, 30);
 }
 function lv2Win(){
   clearInterval(lv2.cdTimer);
-  SFX.droneStop();
+  SFX.tensionStop();
   lv2.state = "done";
   $("l2-cd").textContent = "🎉";
   // 准点下班：太阳正好沉底、满屏金色
@@ -1103,7 +1100,7 @@ function lv2Win(){
 }
 function lv2Fail(){
   clearInterval(lv2.cdTimer);
-  SFX.droneStop();
+  SFX.tensionStop();
   lv2.state = "fail";
   failCounts[2]++;
   $("l2-cd").textContent = fmtCd(0);
@@ -1141,7 +1138,7 @@ function resetLv2(){
 }
 function stopL2AndBack(){
   if(lv2.cdTimer) clearInterval(lv2.cdTimer);
-  SFX.droneStop();
+  SFX.tensionStop();
   backToHall();
 }
 
