@@ -1346,3 +1346,21 @@ body{
   .lock-word{ min-height:70px; }
   .lock-sub{ margin-top:6px; font-size:12.5px; }
 }
+
+/* 真机音频诊断面板（?diag=1 或连点状态栏 5 次） */
+#ba-diag{
+  position:fixed; left:6px; right:6px; top:6px; bottom:44%; z-index:99999;
+  display:flex; flex-direction:column; padding:10px 10px 8px;
+  background:rgba(24,14,9,.95); color:#FFE6BE; border-radius:14px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:10.5px;
+  box-shadow:0 12px 40px rgba(0,0,0,.5);
+}
+#ba-diag .dg-head{ display:flex; align-items:center; justify-content:space-between; padding-bottom:6px; border-bottom:1px solid rgba(255,230,190,.2); }
+#ba-diag .dg-head b{ font-size:12px; letter-spacing:1px; }
+#ba-diag .dg-x{ padding:2px 8px; border:1px solid rgba(255,230,190,.4); border-radius:8px; }
+#ba-diag .dg-body{ flex:1; overflow:auto; margin:8px 0; white-space:pre-wrap; word-break:break-all; line-height:1.5; }
+#ba-diag .dg-acts{ display:flex; gap:8px; }
+#ba-diag .dg-acts button{
+  flex:1; padding:8px 0; border-radius:10px; border:1px solid rgba(255,230,190,.4);
+  background:rgba(255,230,190,.12); color:#FFE6BE; font-size:11.5px; font-weight:700;
+}
