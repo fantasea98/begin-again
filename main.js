@@ -469,14 +469,44 @@ function renderLock(){
       <div class="lock-bottom">
         <div class="lock-bar" id="lock-bar">
           <div class="lock-fill" id="lock-fill"></div>
-          <div class="lock-hint" id="lock-hint">向右滑动解锁</div>
+          <div class="lock-hint" id="lock-hint">轻触屏幕解锁</div>
           <i class="lock-chev">››</i>
           <div class="lock-knob" id="lock-knob">🔓</div>
         </div>
         <div class="lock-tip">🔊 解锁后请解除静音</div>
       </div>
+
+      <!-- 假的面容 ID 识别框：真正的作用是让用户「点一下」——
+           iOS 只认点按（touchend / click）这一下为用户激活，滑动不算。
+           顺手也把解锁做成一整套仪式：识别框 → 打勾 → 开锁。 -->
+      <div class="faceid" id="faceid" aria-hidden="true">
+        <div class="fid-card">
+          <div class="fid-glyph">
+            <span class="fid-ring"></span>
+            <svg class="fid-svg" viewBox="0 0 120 120" fill="none" stroke="currentColor"
+                 stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <g class="fid-corners">
+                <path pathLength="100" d="M20 46V32a12 12 0 0 1 12-12h14"/>
+                <path pathLength="100" d="M74 20h14a12 12 0 0 1 12 12v14"/>
+                <path pathLength="100" d="M100 74v14a12 12 0 0 1-12 12H74"/>
+                <path pathLength="100" d="M46 100H32a12 12 0 0 1-12-12V74"/>
+              </g>
+              <g class="fid-face">
+                <path d="M45 43v11"/>
+                <path d="M75 43v11"/>
+                <path d="M60 51v16"/>
+                <path d="M47 78c3.2 5.6 7.8 8.6 13 8.6s9.8-3 13-8.6"/>
+              </g>
+              <path class="fid-check" pathLength="100" d="M42 62l13 13 25-28"/>
+            </svg>
+          </div>
+          <div class="fid-title">面容 ID</div>
+          <div class="fid-sub" id="fid-sub">正在识别…</div>
+        </div>
+      </div>
     </div>`;
   bindLock();
+  bindLockTap();
 }
 function bindLock(){
   const bar = $("lock-bar"), knob = $("lock-knob"), fill = $("lock-fill");
@@ -511,7 +541,14 @@ function bindLock(){
   const finish = () => {
     if(!dragging || done) return;
     dragging = false;
-    if(x > maxX() * 0.7 || !moved){ done = true; unlockPhone(); return; }
+    if(x > maxX() * 0.7){
+      done = true;
+      knob.style.transition = "transform .18s ease";
+      setX(maxX());
+      unlockPhone();                       // 拖动解锁：仍走同一条「面容 ID」动画
+      return;
+    }
+    if(!moved) return;                     // 原地轻触交给 bindLockTap，不在这里抢
     knob.style.transition = "transform .3s cubic-bezier(.3,1.5,.5,1)";
     fill.style.transition = "width .3s ease";
     setX(0);
@@ -520,9 +557,46 @@ function bindLock(){
   ["pointerup","pointercancel","pointerleave"].forEach(ev => bar.addEventListener(ev, finish));
   ["touchend","touchcancel"].forEach(ev => bar.addEventListener(ev, finish));
 }
-/* 解锁音效可能会在「上下文还没建好」时被调用（iOS 上 touchend 才是激活事件，
-   而解锁是在 pointerup 时触发的）。所以这里挂一个待播标记：
-   等音频真正 running 的那一刻再补一声，绝不丢。 */
+
+/* ---------- 轻触解锁（核心修复） ----------
+   真机日志已经证明：滑动这一下即使 touchend 触发了，iOS 也不给「用户激活」，
+   play() 依旧 NotAllowedError。所以音频真正被叫醒，只能靠一次干净的「点按」。
+   于是整块锁屏都变成轻触区：点一下 → 弹假的「面容 ID」→ 识别 → 解锁。 */
+function bindLockTap(){
+  const host = document.querySelector("#view-lock .lock");
+  if(!host) return;
+  const pt = (e) => (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e;
+  let sx = 0, sy = 0, moved = 0, downAt = 0, tracking = false;
+
+  const start = (e) => {
+    const p = pt(e); if(!p || p.clientX == null) return;
+    sx = p.clientX; sy = p.clientY; moved = 0; downAt = Date.now(); tracking = true;
+  };
+  const move = (e) => {
+    if(!tracking) return;
+    const p = pt(e); if(!p || p.clientX == null) return;
+    const d = Math.hypot(p.clientX - sx, p.clientY - sy);
+    if(d > moved) moved = d;
+  };
+  const end = (e) => {
+    tracking = false;
+    if(phoneUnlocked || faceIdOn) return;
+    if(moved > 14) return;                       // 拖动 / 滑动，不是轻触
+    if(Date.now() - downAt > 900) return;        // 长按不算轻触
+    const t = e.target;
+    if(t && t.closest && (t.closest("#ba-diag") || t.closest(".lock-status"))) return;  // 状态栏留给诊断面板
+    unlockPhone();
+  };
+
+  host.addEventListener("touchstart", start, { passive:true });
+  host.addEventListener("touchmove",  move,  { passive:true });
+  host.addEventListener("touchend",   end,   { passive:true });
+  host.addEventListener("mousedown",  start, { passive:true });
+  host.addEventListener("mousemove",  move,  { passive:true });
+  host.addEventListener("click",      end,   { passive:true });
+}
+/* 解锁音效可能会在「上下文还没建好」时被调用。
+   所以这里挂一个待播标记：等音频真正 running 的那一刻再补一声，绝不丢。 */
 let unlockChimePending = false;
 function tryUnlockChime(){
   if(!unlockChimePending) return false;
@@ -536,22 +610,55 @@ function tryUnlockChime(){
   return false;
 }
 
-function unlockPhone(){
-  if(phoneUnlocked) return;
-  phoneUnlocked = true;
-  // 这一次是真的用户手势：全力解锁（重建 ctx + resume + start 静音源 + 静音 wav）
-  try{ SFX.wake(); }catch(e){}
-  // 手势的「瞬时激活」还能维持几秒，趁热再补几次 resume（只唤醒，不新建）
-  // 真正的创建/重建交给随后的 touchend / click —— 那是 iOS 唯一认可的激活事件
-  [0, 150, 700, 1400].forEach(ms => setTimeout(() => {
-    try{ SFX.wake(); }catch(e){}
+/* 假的「面容 ID」：0 → 1.0s 识别，1.0s 打勾 + 鸣响，1.46s 收起并进入开场。
+   这套动画还把「点按」和「真正出声」之间撑开了一小段缓冲，
+   等识别框收起来的时候音频早已 running，开场的第一声绝不会丢。 */
+let faceIdOn = false;
+function runFaceId(){
+  const ov = $("faceid");
+  if(!ov || faceIdOn) return;
+  faceIdOn = true;
+  ov.classList.add("on");
+  const beep = () => {
+    try{ if(SFX._debug().state === "running") SFX.tick(false); }catch(e){}
+  };
+  beep();
+  setTimeout(beep, 430);                    // 识别中再轻轻滴一下
+  setTimeout(() => {
+    ov.classList.add("ok");
+    const sub = $("fid-sub");
+    if(sub) sub.textContent = "已识别";
+    unlockChimePending = true;              // 现在才允许响「开锁」那一声
     tryUnlockChime();
-  }, ms));
-  unlockChimePending = true;
-  tryUnlockChime();
+  }, 1000);
+  setTimeout(() => {
+    ov.classList.remove("on");
+    beginStory();
+  }, 1460);
+}
+
+/* 真正进入故事：解锁动画放完才渲染开场，音效时间点才对得上 */
+let storyBegun = false;
+function beginStory(){
+  if(storyBegun) return;
+  storyBegun = true;
   renderOpening();            // 解锁后才开始微信开场动画，音效不会丢
   showView("opening");
   armSoundNudge();            // 兜底：真没醒就给个一键开启的按钮
+}
+
+function unlockPhone(){
+  if(phoneUnlocked) return;
+  phoneUnlocked = true;
+  /* 这一下如果是点按，就是 iOS 认可的用户激活 —— 趁同一个事件栈全力解锁
+     （建上下文 / 重建 / resume / start 一个 1 采样 source / 播静音 wav）。 */
+  try{ SFX.hardUnlock(); }catch(e){}
+  /* 激活只在这一瞬间有效，之后靠温和的 resume 续命；不用重建，免得打断异步 resume。 */
+  [80, 260, 620, 1100, 1800, 2600, 3600].forEach(ms => setTimeout(() => {
+    try{ SFX.wake(); }catch(e){}
+    tryUnlockChime();
+  }, ms));
+  runFaceId();
 }
 
 /* ==================== ⑦ 穿越预示动画 ==================== */
