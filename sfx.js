@@ -486,7 +486,9 @@ function musicBoxStart(){
   if(!can() || _box || _boxBus) return;
   try{
     _boxBus = ctx.createGain();
-    _boxBus.gain.value = 0.52;         // 第 4 关 BGM 单独压低
+    // 第 4 关 BGM 单独压到三分之一，并且缓缓淡入（3.6 秒）
+    _boxBus.gain.setValueAtTime(0.0001, ctx.currentTime);
+    _boxBus.gain.linearRampToValueAtTime(0.175, ctx.currentTime + 3.6);
     _boxBus.connect(master);
   }catch(e){ _boxBus = null; return; }
   var bus = _boxBus;
@@ -516,6 +518,12 @@ function musicBoxStop(){
     b.gain.linearRampToValueAtTime(0, t + 0.5);
     setTimeout(function(){ try{ b.disconnect(); }catch(e){} }, 2400);
   }catch(e){}
+}
+/* 选中物品：一声轻快的木琴「叮」，带一点木头味 */
+function pick(){
+  if(!gate("pick", 55)) return;
+  tone({ freq:1318.5, type:"triangle", dur:0.13, gain:0.15, attack:0.004 });
+  tone({ freq:1975.5, type:"sine",     dur:0.09, gain:0.05, delay:0.012 });
 }
 /* 翻牌：纸张声 */
 function flip(){
@@ -657,7 +665,7 @@ return {
   fragment: fragment, fragmentDrop: fragmentDrop, flip: flip,
   tensionStart: tensionStart, tensionStop: tensionStop,
   musicBoxStart: musicBoxStart, musicBoxStop: musicBoxStop,
-  unlock: unlock, confetti: confetti, stamp: stamp,
+  unlock: unlock, confetti: confetti, stamp: stamp, pick: pick,
   bubble: bubble, sysalert: sysalert, glitch: glitch,
   like: like, thought: thought, portal: portal,
   reveal: reveal, turn: turn, winPop: winPop, failPop: failPop
