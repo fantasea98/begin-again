@@ -540,10 +540,11 @@ function unlockPhone(){
   if(phoneUnlocked) return;
   phoneUnlocked = true;
   // 这一次是真的用户手势：全力解锁（重建 ctx + resume + start 静音源 + 静音 wav）
-  try{ SFX.ensure(false); }catch(e){}
-  // 手势的「瞬时激活」还能维持几秒，趁热再补几次 resume（温和，不重建）
+  try{ SFX.wake(); }catch(e){}
+  // 手势的「瞬时激活」还能维持几秒，趁热再补几次 resume（只唤醒，不新建）
+  // 真正的创建/重建交给随后的 touchend / click —— 那是 iOS 唯一认可的激活事件
   [0, 150, 700, 1400].forEach(ms => setTimeout(() => {
-    try{ SFX.ensure(false); }catch(e){}
+    try{ SFX.wake(); }catch(e){}
     tryUnlockChime();
   }, ms));
   unlockChimePending = true;
@@ -2296,18 +2297,19 @@ function initSfxToggle(){
 const INTENT_EV = ["pointerdown", "touchstart"];
 const ACTION_EV = ["touchend", "click", "mousedown", "mouseup", "keydown"];
 
-function onIntent(){ try{ SFX.gesture(); }catch(e){} }
+function onIntent(e){
+  try{ SFX.gesture(); }catch(err){}
+  try{ if(SFX.log) SFX.log("INTENT " + (e && e.type)); }catch(err){}
+}
 
-function audioNet(){
+function audioNet(e){
+  try{ if(SFX.log) SFX.log("ACTION " + (e && e.type)); }catch(err){}
   try{
     SFX.hardUnlock();                       // 真激活事件里允许重建，成功率最高
     const st = SFX._debug && SFX._debug();
     if(st && st.state === "running"){
       tryUnlockChime();
-      ACTION_EV.forEach(ev => {
-        window.removeEventListener(ev, audioNet, true);
-        document.removeEventListener(ev, audioNet, true);
-      });
+      ACTION_EV.forEach(ev => document.removeEventListener(ev, audioNet, true));
       hideSoundNudge();
       return true;
     }
@@ -2317,14 +2319,8 @@ function audioNet(){
 
 function armAudioUnlock(){
   // 注意：加载时不再创建 AudioContext（惰性创建），只挂监听
-  INTENT_EV.forEach(ev => {
-    window.addEventListener(ev, onIntent, { capture:true, passive:true });
-    document.addEventListener(ev, onIntent, { capture:true, passive:true });
-  });
-  ACTION_EV.forEach(ev => {
-    window.addEventListener(ev, audioNet, { capture:true, passive:true });
-    document.addEventListener(ev, audioNet, { capture:true, passive:true });
-  });
+  INTENT_EV.forEach(ev => document.addEventListener(ev, onIntent, { capture:true, passive:true }));
+  ACTION_EV.forEach(ev => document.addEventListener(ev, audioNet, { capture:true, passive:true }));
   // 微信内置浏览器：JSBridge 就绪后可以免手势尝试解锁一次（微信本身不禁自动播放）
   try{
     if(window.WeixinJSBridge && window.WeixinJSBridge.invoke){
@@ -2354,7 +2350,9 @@ function armSoundNudge(){
       const el = document.createElement("div");
       el.id = "sound-nudge";
       el.className = "sound-nudge";
-      el.innerHTML = '<span class="sn-ic">🔊</span><span>轻触一下，开启声音</span>';
+      let stTxt = "";
+      try{ const st = SFX._debug && SFX._debug(); stTxt = st && st.state ? st.state : "none"; }catch(e){}
+      el.innerHTML = '<span class="sn-ic">🔊</span><span>音频未就绪（' + stTxt + '）· 轻触开启</span>';
       el.addEventListener("click", () => {
         let ok = false;
         try{ ok = SFX.hardUnlock(); }catch(e){}
@@ -2380,11 +2378,63 @@ function armSoundNudge(){
   setTimeout(check, 400);
 }
 
+/* ==================== ⑨ 真机音频诊断面板 ==================== */
+/* 打开方式：在网址后面加 ?diag=1，或者在锁屏上连点左上角状态栏 5 次。
+   面板会把「事件是否触发 / 上下文状态 / resume 是否被拒 / 静音 wav 是否播成功」
+   全部列出来，用来定位 iOS Safari 这类严格内核到底卡在哪一步。 */
+function initDiag(){
+  const show = () => {
+    if(document.getElementById("ba-diag")) return;
+    const el = document.createElement("div");
+    el.id = "ba-diag";
+    el.innerHTML = '<div class="dg-head"><b>音频诊断</b><span id="dg-x" class="dg-x">✕</span></div>'
+      + '<pre class="dg-body" id="dg-body"></pre>'
+      + '<div class="dg-acts"><button id="dg-test" type="button">播测试音</button>'
+      + '<button id="dg-retry" type="button">重试解锁</button>'
+      + '<button id="dg-copy" type="button">复制</button></div>';
+    document.body.appendChild(el);
+
+    const body = document.getElementById("dg-body");
+    const render = () => {
+      let st = {}, log = [];
+      try{ st = (SFX._debug && SFX._debug()) || {}; }catch(e){ st = { err: String(e) }; }
+      try{ log = (SFX._log && SFX._log()) || []; }catch(e){}
+      const ua = navigator.userAgent.replace(/\s+/g, " ");
+      body.textContent =
+        "UA: " + ua + "\n" +
+        "WeixinJSBridge: " + (!!window.WeixinJSBridge) + "   standalone: " + (window.navigator.standalone ? 1 : 0) + "\n" +
+        "state: " + st.state + "  ready: " + st.ready + "  dead: " + st.dead +
+        "  rebuilds: " + st.rebuilds + "  muted: " + st.muted + "\n" +
+        "---------------- 日志（新→旧在最下） ----------------\n" +
+        log.slice(-40).join("\n");
+    };
+    render();
+    setInterval(render, 700);
+
+    document.getElementById("dg-x").onclick = () => el.remove();
+    document.getElementById("dg-test").onclick = () => { try{ SFX.hardUnlock(); SFX.unlock(); }catch(e){} };
+    document.getElementById("dg-retry").onclick = () => { try{ SFX.hardUnlock(); }catch(e){} };
+    document.getElementById("dg-copy").onclick = () => {
+      try{ navigator.clipboard.writeText(body.textContent); }catch(e){}
+      try{ const r = document.createRange(); r.selectNode(body); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }catch(e){}
+    };
+  };
+
+  if(/[?&]diag=1/.test(location.search)){ show(); return; }
+  let taps = 0;
+  document.addEventListener("click", (e) => {
+    if(!e.target || !e.target.closest || !e.target.closest(".lock-status")) return;
+    taps++;
+    if(taps >= 5) show();
+  }, true);
+}
+
 function init(){
   initSfxToggle();
   armAudioUnlock();
   renderLock();
   showView("lock");
+  initDiag();
 }
 document.addEventListener("DOMContentLoaded", init);
 
