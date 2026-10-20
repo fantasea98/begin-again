@@ -37,7 +37,7 @@ const CONFIG = {
     liftShadow: "0 14px 34px rgba(26,26,26,0.16)",
   },
 
-  password: [1, 1, 2, 2],   // 最终密码（按关卡顺序）
+  password: [5, 1, 4, 7],   // 最终密码（按关卡顺序 = 工号 5147）
   workDays: 1122,           // 在岗天数
   workDates: { start: "2023.10.05", end: "2026.10.30" },
 
@@ -128,7 +128,7 @@ const CONFIG = {
   levels: [
     {
       id: 1, year: 2023, emoji: "📞", title: "初来乍到",
-      fragment: 1, fragmentName: "入职碎片",
+      fragment: 5, fragmentName: "入职碎片",
       tagline: "入职第一天，他是何方神圣？",
       accentIndex: 0,
       intro: ["👂 听说<b class=\"orange-flash\">组织部</b>来了个年轻人。", "📞 快打电话问问看是谁吧。"],
@@ -182,7 +182,7 @@ const CONFIG = {
     },
     {
       id: 3, year: 2025, emoji: "🕺", title: "像你这样的朋友",
-      fragment: 2, fragmentName: "唱跳碎片",
+      fragment: 4, fragmentName: "唱跳碎片",
       tagline: "中山每年都有新的朋友，对新来的好朋友 say hello～",
       accentIndex: 2,
       awardName: "最受观众喜爱节目奖",
@@ -199,7 +199,7 @@ const CONFIG = {
     },
     {
       id: 4, year: 2026, emoji: "🧳", title: "最终任务",
-      fragment: 2, fragmentName: "未来碎片",
+      fragment: 7, fragmentName: "未来碎片",
       tagline: "离开以前，替我做选择。",
       accentIndex: 3,
       intro: [
@@ -778,8 +778,10 @@ function runOpening(){
     if(box) box.insertAdjacentHTML("beforeend", `<p>${th2.a}<span class="mono-b fade-in">${th2.b}</span></p>`);
   }, th2At);
   setTimeout(()=>{
-    const el = document.querySelector(".mono-b"); if(el) el.classList.add("on");
-  }, th2At + 700);
+    const el = document.querySelector(".mono-b");
+    if(el){ el.classList.add("on"); }
+    try{ SFX.fragment(); }catch(e){}      // 「我穿越了？」浮出来的那一下
+  }, th2At + 900);
 
   // 7. 引导 + 按钮
   setTimeout(()=>{
@@ -833,6 +835,16 @@ function isDarkColor(hex){
   const n = parseInt(hex.slice(1), 16);
   const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
   return (r * .299 + g * .587 + b * .114) < 150;
+}
+/* 把浅色主题色压深一点，好让白色文字站得住 */
+function mixDark(hex, k){
+  const n = parseInt(hex.slice(1), 16);
+  const t = parseInt("6B4520", 16);
+  const mix = (a, b) => Math.round(a * (1 - k) + b * k);
+  const r = mix((n >> 16) & 255, (t >> 16) & 255);
+  const g = mix((n >> 8) & 255, (t >> 8) & 255);
+  const b = mix(n & 255, t & 255);
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
 /* 挂钟：四年指四个时刻 —— 8:00 / 16:30 / 21:00 / 5:00 */
@@ -1236,7 +1248,7 @@ function renderHall(){
           <span class="hall2-emoji">${lv.emoji}</span>
         </div>
         <div class="hall2-tag">${lv.tagline}</div>
-        <div class="hall2-frag${done ? (darkFrag ? " on dark" : " on") : ""}">🧩 ${done ? lv.fragmentName + " ×" + lv.fragment : "碎片：未获得"}</div>
+        <div class="hall2-frag${done ? " on" : ""}"${done ? ` style="background:${darkFrag ? accentOf(lv) : mixDark(accentOf(lv), .5)}"` : ""}>🧩 ${done ? lv.fragmentName + "：" + lv.fragment : "碎片：未获得"}</div>
       </div>
 
       <div class="hall2-tabs">${tabs}</div>
@@ -1476,19 +1488,23 @@ function levelHeader(lvl){
 }
 
 /* ---------- 通用：结算结果 + 碎片 + 收下 ---------- */
-function playResult(lvl, lines){
+function playResult(lvl, lines, opts){
+  const o = opts || {};
   const card = $("modal");
   card.innerHTML = `<div id="result-lines"></div><div id="result-tail" style="display:none"></div>`;
   const box = $("result-lines");
-  // 空弹窗先出来，停 1 秒；之后每 1 秒说一句（逐句淡入，不抢拍）
+  // 空弹窗先出来，停 1 秒；之后每 1 秒说一句（逐句淡入 + 每句一记音）
   const GAP = 1000, LEAD = 1000;
   lines.forEach((ln, i) => {
+    const isLast = i === lines.length - 1;
     setTimeout(()=>{
       const d = document.createElement("div");
-      d.className = "result-line";
+      d.className = "result-line" + (o.slowLast && isLast ? " slow" : "");
       d.innerHTML = ln;
       box.appendChild(d);
       requestAnimationFrame(()=> d.classList.add("on"));
+      // 逐行配音；最后一行若是「碎片缓缓掉落」，用慢上扬的铃音
+      try{ (o.slowLast && isLast) ? SFX.fragment() : SFX.flip(); }catch(e){}
     }, LEAD + i * GAP);
   });
   setTimeout(()=>{
@@ -1496,7 +1512,7 @@ function playResult(lvl, lines){
     SFX.fragmentDrop();   // 碎片落入手中：就在「获得 xx 碎片」出现这一刻
     $("result-tail").innerHTML = `
       <hr class="popup-divider">
-      <div class="frag-big">🧩 获得${lvl.fragmentName} ×${lvl.fragment}</div>
+      <div class="frag-big">🧩 获得${lvl.fragmentName}：${lvl.fragment}</div>
       <button class="btn btn-accent btn-block" id="btn-collect">${CONFIG.collectLabel}</button>`;
     $("btn-collect").addEventListener("click", ()=> collect(lvl.id));
   }, LEAD + lines.length * GAP + 600);
@@ -1519,10 +1535,10 @@ function cheatToSuccess(id){
 }
 
 /* ==================== ⑪ 关卡 1：拨号 ==================== */
-let lv1 = { entered:"", dialJudging:false, judgeTimer:null, wrongTimer:null };
+let lv1 = { entered:"", dialJudging:false, judgeTimer:null, wrongTimer:null, ringTimer:null };
 function renderLevel1(lvl){
   setLevelAccent("level1", lvl);
-  lv1 = { entered:"", dialJudging:false, judgeTimer:null, wrongTimer:null, pbOpens:0 };
+  lv1 = { entered:"", dialJudging:false, judgeTimer:null, wrongTimer:null, ringTimer:null, pbOpens:0 };
   const keys = ["1","2","3","4","5","6","7","8","9","*","0","#"];
   const keyHtml = keys.map(k =>
     `<button class="key${(k === "*" || k === "#") ? " ghost" : ""}" data-k="${k}">${k}</button>`
@@ -1577,11 +1593,16 @@ function pressKey(lvl, k, keyEl){
   renderL1Number(lvl);
   if(lv1.entered.length === lvl.digitLength){
     lv1.dialJudging = true;
-    $("l1-hint").textContent = "☎️ 正在拨号……";
-    SFX.ringback();   // 嘟—— 停 ——嘟——，整段 2.4 秒
-    // 等回铃音彻底响完（2.4s）再多留 0.2s 呼吸，然后才判定，
-    // 否则接通/错误提示音会和第二声「嘟——」叠在一起
-    lv1.judgeTimer = setTimeout(()=>{ lv1.judgeTimer = null; judgeL1(lvl); }, 2600);
+    $("l1-hint").textContent = "☎️ 拨号中……";
+    // 按完最后一个数字先静一秒（像真的在等线路），再起回铃音
+    if(lv1.ringTimer) clearTimeout(lv1.ringTimer);
+    lv1.ringTimer = setTimeout(()=>{
+      lv1.ringTimer = null;
+      $("l1-hint").textContent = "☎️ 正在拨号……";
+      SFX.ringback();   // 嘟—— 停 ——嘟——，整段 2.4 秒
+      // 回铃音响完（2.4s）再留 1s 呼吸，然后才判定
+      lv1.judgeTimer = setTimeout(()=>{ lv1.judgeTimer = null; judgeL1(lvl); }, 3400);
+    }, 1000);
   }
 }
 function deleteKey(lvl){
@@ -1591,6 +1612,7 @@ function deleteKey(lvl){
 }
 /* 返回大厅前取消尚未执行的拨号判定和错误弹窗延时 */
 function stopLv1AndBack(){
+  if(lv1.ringTimer){ clearTimeout(lv1.ringTimer); lv1.ringTimer = null; }
   if(lv1.judgeTimer){ clearTimeout(lv1.judgeTimer); lv1.judgeTimer = null; }
   if(lv1.wrongTimer){ clearTimeout(lv1.wrongTimer); lv1.wrongTimer = null; }
   backToHall();
@@ -1939,7 +1961,8 @@ function l3BeginAction(){
   if(lv3.actionIdx >= lvl.actions.length){ l3Win(); return; }
   const emoji = lvl.actions[lv3.actionIdx];
   // 八个动作八种环色（色表走 THEME，换肤同步）；四个角的气泡位置循环复用
-  const colors = [T.accents[0], T.cyan, T.accents[2], T.neon, T.purple, T.accents[3], "#FF9BB5", "#FFD08A"];
+  // 八个亮色（红 / 黄 / 蓝 / 绿 / 粉 / 米白 / 橙 / 薰衣草），深色舞台上要跳得出来
+  const colors = ["#FF5A5F", "#FFD93D", "#4D9BFF", "#5BE37D", "#FF8FC7", "#FFF3D6", "#FF9F45", "#9B8CFF"];
   const corners = ["corner-tr","corner-tl","corner-br","corner-bl"];
   const cur = colors[lv3.actionIdx % colors.length];
   lv3.corner = corners[lv3.actionIdx % corners.length];
@@ -2176,6 +2199,7 @@ function addChoice(lvl, i){
   if(lv4.chosen.length >= lvl.maxSelect) return;
   if(lv4.chosen.includes(i)) return;
   lv4.chosen.push(i);
+  try{ SFX.pick(); }catch(e){}
   renderLv4(lvl);
 }
 function removeChoice(lvl, i){
@@ -2219,9 +2243,10 @@ function lv4Success(lvl){
   const nameStr = names.length === 3
     ? `<b class="hl-word">${names[0]}</b>、<b class="hl-word">${names[1]}</b>和<b class="hl-word">${names[2]}</b>`
     : names.map(n => `<b class="hl-word">${n}</b>`).join("、");
-  const lines = [ `${lvl.thanksPrefix}${nameStr}`, lvl.thanksTail, lvl.dropText ];
+  // 第一行只到「谢谢你留给我」，三个东西单独一行，避免一行太长
+  const lines = [ lvl.thanksPrefix, nameStr, lvl.thanksTail, lvl.dropText ];
   openModal("");
-  playResult(lvl, lines);
+  playResult(lvl, lines, { slowLast:true });
 }
 
 /* ---------- 关卡成功统一入口 ---------- */
