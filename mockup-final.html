@@ -62,8 +62,8 @@
   @keyframes cardIn{ from{ opacity:0; transform:translateY(14px) scale(.985);} to{ opacity:1; transform:none; } }
 
   .top{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
-  .top b{ font-size:15px; letter-spacing:2px; }
-  .top span{ font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:1.2px; color:#A98F72; }
+  .top b{ font-size:16px; letter-spacing:2px; }
+  .top span{ font-family:ui-monospace,Menlo,monospace; font-size:12.5px; letter-spacing:1px; color:#8C6A45; }
   .rule{ border-top:2px solid var(--brown); margin:11px 0 0; }
 
   /* 信息区：左字段 + 右工牌照片 */
@@ -72,15 +72,15 @@
   .f{ opacity:0; transform:translateY(10px); transition:opacity .9s cubic-bezier(.22,.61,.36,1), transform .9s cubic-bezier(.22,.61,.36,1); }
   .f.on{ opacity:1; transform:none; }
   .f span{
-    display:block; font-family:ui-monospace,Menlo,monospace; font-size:9px;
-    letter-spacing:2px; color:#AA9070; margin-bottom:2px;
+    display:block; font-family:ui-monospace,Menlo,monospace; font-size:10px;
+    letter-spacing:2px; color:#AA9070; margin-bottom:3px;
   }
-  .f b{ display:block; font-size:15px; letter-spacing:.4px; font-weight:800; }
-  .f b.big{ font-size:17px; }
+  .f b{ display:block; font-size:17px; letter-spacing:.4px; font-weight:500; }
+  .f b.big{ font-size:19px; }
 
   /* 工牌照片 */
   .photo{
-    flex:none; width:104px;
+    flex:none; width:86px;
     border:1.6px solid var(--brown); border-radius:10px; overflow:hidden;
     background:linear-gradient(180deg,#F3E7D4,#E8DAC3);
     box-shadow:3px 3px 0 rgba(107,69,32,.16);
@@ -105,8 +105,10 @@
   .cell.on{ opacity:1; transform:none; }
   .cell span{ display:block; font-family:ui-monospace,Menlo,monospace; font-size:8.5px; letter-spacing:2px; color:#AA9070; }
   .cell b{ display:block; margin-top:3px; font-size:12px; letter-spacing:.3px; font-weight:800; white-space:nowrap; }
-  .cell.date{ flex:1.55; }
-  .cell.date b{ font-size:11.4px; letter-spacing:.2px; font-family:ui-monospace,Menlo,monospace; }
+  .cell.date{ flex:2.05; }
+  .cell.date b{ font-size:11.6px; letter-spacing:.2px; font-weight:400; font-family:ui-monospace,Menlo,monospace; }
+  .cell.days{ flex:.95; }
+  .cell.days b{ font-weight:800; }
   .cell b i{ font-style:normal; font-size:10px; color:#8C6A45; margin-left:3px; }
 
   /* 信 */
@@ -120,15 +122,15 @@
 
   .sign{
     text-align:right; font-size:15px; letter-spacing:3px; color:var(--brown);
-    padding:10px 4px 60px 0;
+    padding:12px 6px 14px 0;
     opacity:0; transform:translateY(8px); transition:opacity .9s ease, transform .9s ease;
   }
   .sign.on{ opacity:1; transform:none; }
 
   /* 红色盖章 */
   .seal{
-    position:absolute; right:10px; bottom:2px;
-    width:74px; height:74px; border-radius:50%;
+    position:absolute; right:12px; bottom:2px;
+    width:78px; height:78px; border-radius:50%;
     border:2.6px double var(--seal); color:var(--seal);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     background:rgba(255,252,248,.34);
@@ -200,40 +202,65 @@
             <div class="cap">ID PHOTO</div>
             <!-- 简笔画：卷发、大眼镜、咧嘴笑 -->
             <svg viewBox="0 0 104 128" aria-hidden="true">
-              <g fill="none" stroke="#4A3320" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <!-- 肩膀 + 脖子 -->
-                <path d="M45 100v13h14v-13" fill="#F0C9A4"/>
-                <path d="M16 128c0-17 15-26 36-26s36 9 36 26" fill="#F6E3C8"/>
-                <!-- 耳朵 -->
-                <circle cx="25" cy="67" r="5.4" fill="#F7D2B0"/>
-                <circle cx="79" cy="67" r="5.4" fill="#F7D2B0"/>
-                <!-- 脸 -->
-                <ellipse cx="52" cy="66" rx="27" ry="28" fill="#F7D2B0"/>
-                <!-- 卷发：帽形底 + 边缘小卷 -->
-                <path d="M26 60c-2-14 4-24 13-28 4-4 8-5 13-5s9 1 13 5c9 4 15 14 13 28-2-7-5-11-9-13-4 4-9 6-17 6s-13-2-17-6c-4 2-7 6-9 13z" fill="#3A2A1E" stroke="none"/>
-                <g fill="#3A2A1E" stroke="none">
-                  <circle cx="36" cy="42" r="7.6"/>
-                  <circle cx="47" cy="35" r="8.2"/>
-                  <circle cx="58" cy="35" r="8.2"/>
-                  <circle cx="69" cy="42" r="7.6"/>
-                  <circle cx="30" cy="52" r="6.4"/>
-                  <circle cx="74" cy="52" r="6.4"/>
+              <defs>
+                <!-- 一个小卷：大圈套小圈的螺旋 -->
+                <g id="curl" fill="none" stroke="#3A2A1E" stroke-width="2" stroke-linecap="round">
+                  <path d="M-9 0a9 9 0 1 1 8.6 2.7"/>
+                  <path d="M-5.2 0a5.2 5.2 0 1 1 5 1.7"/>
                 </g>
-                <!-- 大眼镜 -->
-                <circle cx="41" cy="65" r="11.6" fill="rgba(255,255,255,.62)" stroke-width="2.7"/>
-                <circle cx="63" cy="65" r="11.6" fill="rgba(255,255,255,.62)" stroke-width="2.7"/>
-                <path d="M52.6 64.4h-1.2" stroke-width="2.7"/>
-                <path d="M29.4 63l-4.6-1.6" stroke-width="2.2"/>
-                <path d="M74.6 63l4.6-1.6" stroke-width="2.2"/>
+              </defs>
+              <g fill="none" stroke="#4A3320" stroke-linecap="round" stroke-linejoin="round">
+                <!-- 脖子（短） -->
+                <path d="M45 80v16h14V80" fill="#F0C9A4" stroke-width="2"/>
+                <!-- 白大褂 -->
+                <path d="M8 128c0-20 19-32 44-32s44 12 44 32z" fill="#FFFFFF" stroke-width="2.2"/>
+                <!-- 衬衫领口 -->
+                <path d="M45 96l7 13 7-13" fill="#F4EADA" stroke-width="2"/>
+                <!-- 翻领 -->
+                <path d="M45 96c-6.5 2-9.5 8-10.5 15" stroke-width="2"/>
+                <path d="M59 96c6.5 2 9.5 8 10.5 15" stroke-width="2"/>
+                <!-- 口袋 + 笔 -->
+                <path d="M69 111h15v12H69z" fill="#FFFFFF" stroke-width="1.7"/>
+                <path d="M72.5 111v-6" stroke="#C0392B" stroke-width="2.4"/>
+                <!-- 耳朵 -->
+                <circle cx="26" cy="60" r="5" fill="#F7D2B0" stroke-width="2"/>
+                <circle cx="78" cy="60" r="5" fill="#F7D2B0" stroke-width="2"/>
+                <!-- 脸 -->
+                <ellipse cx="52" cy="58" rx="26" ry="27" fill="#F7D2B0" stroke-width="2.1"/>
+                <!-- 卷发：浅棕底 + 一圈一圈的螺旋线，不涂黑 -->
+                <path d="M52 15c-15.5 0-28 11.5-28 26 0 7.5 2.2 13.6 6.2 17.8.8-5.4 3.6-9.6 7.8-11.8 3.4 4.2 8.4 6.6 14 6.6s10.6-2.4 14-6.6c4.2 2.2 7 6.4 7.8 11.8 4-4.2 6.2-10.3 6.2-17.8 0-14.5-12.5-26-28-26z"
+                      fill="#B78C60" stroke="#3A2A1E" stroke-width="2.1"/>
+                <g stroke="#3A2A1E" stroke-width="1.8" stroke-linecap="round" fill="none">
+                  <path d="M41 29a6 6 0 1 1 5.6 1.8"/>
+                  <path d="M41 29a3.1 3.1 0 1 1 2.9 1"/>
+                  <path d="M55 27a6 6 0 1 1 5.6 1.8"/>
+                  <path d="M55 27a3.1 3.1 0 1 1 2.9 1"/>
+                  <path d="M65 33a5.6 5.6 0 1 1 5.2 1.7"/>
+                  <path d="M65 33a2.9 2.9 0 1 1 2.7 .9"/>
+                  <path d="M33 36a5.6 5.6 0 1 1 5.2 1.7"/>
+                  <path d="M33 36a2.9 2.9 0 1 1 2.7 .9"/>
+                  <path d="M47 38a5.2 5.2 0 1 1 4.8 1.6"/>
+                  <path d="M47 38a2.7 2.7 0 1 1 2.5 .8"/>
+                  <path d="M38 47a4.6 4.6 0 1 1 4.3 1.4"/>
+                  <path d="M62 45a4.8 4.8 0 1 1 4.4 1.5"/>
+                  <path d="M27 47a4.4 4.4 0 1 1 4.1 1.3"/>
+                  <path d="M73 44a4.4 4.4 0 1 1 4.1 1.3"/>
+                </g>
+                <!-- 小圆眼镜 -->
+                <circle cx="42" cy="63" r="8.4" fill="rgba(255,255,255,.7)" stroke-width="2.3"/>
+                <circle cx="62" cy="63" r="8.4" fill="rgba(255,255,255,.7)" stroke-width="2.3"/>
+                <path d="M50.6 62.6h2.8" stroke-width="2.3"/>
+                <path d="M33.6 61.4l-4-1.4" stroke-width="2"/>
+                <path d="M70.4 61.4l4-1.4" stroke-width="2"/>
                 <!-- 眼睛 -->
-                <circle cx="41" cy="65" r="2.4" fill="#2E2118" stroke="none"/>
-                <circle cx="63" cy="65" r="2.4" fill="#2E2118" stroke="none"/>
+                <circle cx="42" cy="63" r="1.9" fill="#2E2118" stroke="none"/>
+                <circle cx="62" cy="63" r="1.9" fill="#2E2118" stroke="none"/>
                 <!-- 咧嘴笑 -->
-                <path d="M38.5 78.5q13.5 13 27 0q-13.5 5.5-27 0z" fill="#8C3A2E" stroke-width="2.1"/>
-                <path d="M40.6 79.2q11.4 4 22.8 0q-11.4 2.6-22.8 0z" fill="#FFFFFF" stroke="none"/>
+                <path d="M42 75q10 9.5 20 0q-10 4-20 0z" fill="#8C3A2E" stroke-width="2"/>
+                <path d="M43.6 75.6q8.4 2.9 16.8 0q-8.4 1.8-16.8 0z" fill="#FFFFFF" stroke="none"/>
                 <!-- 腮红 -->
-                <ellipse cx="32.5" cy="76" rx="5" ry="3.1" fill="#F2A48F" stroke="none" opacity=".72"/>
-                <ellipse cx="71.5" cy="76" rx="5" ry="3.1" fill="#F2A48F" stroke="none" opacity=".72"/>
+                <ellipse cx="33" cy="72" rx="4.6" ry="2.9" fill="#F2A48F" stroke="none" opacity=".7"/>
+                <ellipse cx="71" cy="72" rx="4.6" ry="2.9" fill="#F2A48F" stroke="none" opacity=".7"/>
               </g>
             </svg>
           </div>
@@ -241,7 +268,7 @@
 
         <div class="cells">
           <div class="cell date" id="c1"><span>在职日期</span><b>2023.10.05 — 2026.10.30</b></div>
-          <div class="cell" id="c2"><span>在职天数</span><b>1122<i>天</i></b></div>
+          <div class="cell days" id="c2"><span>在职天数</span><b>1122<i>天</i></b></div>
         </div>
 
         <div class="letter" id="letter">
