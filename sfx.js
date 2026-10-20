@@ -8,7 +8,7 @@ window.SFX = (function(){
 "use strict";
 
 var MUTE_KEY = "beginAgain.muted";
-var VOLUME   = 0.525;         // 主音量（比上一版整体 +50%）
+var VOLUME   = 1.0;           // 主音量（2026-10-20 再上调：0.525 → 0.79 → 1.0）
 
 var ctx = null, master = null, ready = false, dead = false;
 var muted = false;
@@ -486,12 +486,25 @@ function unlock(){
   tone({ freq:300, to:1200, type:"sine", dur:0.42, gain:0.22 });
   tone({ freq:600, to:2400, type:"sine", dur:0.42, gain:0.08, delay:0.05 });
 }
-/* 彩带：长噪声扫频 + 5 声随机小爆 */
+/* 彩带：礼花炸开 —— 先一声「咻」，再一记闷响 + 高频碎屑，后面几颗铃声零星飘落 */
 function confetti(){
-  noise({ dur:0.9, filter:"bandpass", freq:600, to:3600, gain:0.14 });
-  for(var i = 0; i < 5; i++){
-    noise({ dur:0.05, filter:"highpass", freq:5200, gain:0.1, delay:0.15 + Math.random() * 1.1 });
+  noise({ dur:0.42, filter:"bandpass", freq:380, to:3600, gain:0.13 });          // 咻——
+  tone ({ freq:160, to:760, type:"sine", dur:0.28, gain:0.10 });
+  noise({ dur:0.26, filter:"highpass", freq:2200, gain:0.15, delay:0.16 });      // 炸开
+  tone ({ freq:120, to:46, type:"sine", dur:0.36, gain:0.22, delay:0.16 });
+  [1046.5, 1318.5, 1568, 2093].forEach(function(f, i){                            // 四颗小铃
+    tone({ freq:f, type:"sine", dur:0.55, gain:0.085, delay:0.22 + i * 0.075 });
+  });
+  for(var i = 0; i < 7; i++){                                                     // 零星的碎屑
+    noise({ dur:0.05, filter:"highpass", freq:5200, gain:0.075, delay:0.45 + Math.random() * 1.5 });
   }
+}
+/* 盖章：一记闷响 + 纸面摩擦，收尾很短促 */
+function stamp(){
+  if(!gate("stamp", 300)) return;
+  noise({ dur:0.11, filter:"lowpass", freq:1500, to:170, gain:0.26 });
+  tone ({ freq:165, to:48, type:"sine", dur:0.24, gain:0.36 });
+  noise({ dur:0.045, filter:"highpass", freq:3200, gain:0.10, delay:0.035 });
 }
 
 /* ---------- 开场微信群聊专用 ---------- */
@@ -603,7 +616,7 @@ return {
   fragment: fragment, fragmentDrop: fragmentDrop, flip: flip,
   tensionStart: tensionStart, tensionStop: tensionStop,
   musicBoxStart: musicBoxStart, musicBoxStop: musicBoxStop,
-  unlock: unlock, confetti: confetti,
+  unlock: unlock, confetti: confetti, stamp: stamp,
   bubble: bubble, sysalert: sysalert, glitch: glitch,
   like: like, thought: thought, portal: portal,
   reveal: reveal, turn: turn, winPop: winPop, failPop: failPop
