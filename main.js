@@ -403,21 +403,26 @@ function renderLock(){
           <filter id="lb18" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="18"/></filter>
           <filter id="lb26" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="26"/></filter>
           <filter id="lb10" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="10"/></filter>
+          <filter id="lb7"  x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7"/></filter>
+          <linearGradient id="lgHorizon" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#FFE9C2" stop-opacity="0"/>
+            <stop offset=".5" stop-color="#FFEBC6" stop-opacity=".5"/>
+            <stop offset="1" stop-color="#FFDCA8" stop-opacity="0"/>
+          </linearGradient>
         </defs>
         <rect width="390" height="844" fill="url(#lgSky2)"/>
         <ellipse cx="110" cy="84" rx="190" ry="30" fill="#F4B49C" opacity=".32" filter="url(#lb26)"/>
         <ellipse cx="290" cy="158" rx="150" ry="24" fill="#FFDDB8" opacity=".5" filter="url(#lb26)"/>
         <ellipse cx="120" cy="228" rx="160" ry="26" fill="#FFD3A6" opacity=".42" filter="url(#lb26)"/>
         <ellipse cx="260" cy="320" rx="190" ry="22" fill="#FAC294" opacity=".34" filter="url(#lb26)"/>
-        <circle cx="248" cy="500" r="130" fill="url(#lgSunGlow)"/>
-        <circle cx="248" cy="500" r="36" fill="#FFEEC6"/>
-        <rect y="520" width="390" height="324" fill="url(#lgSea2)"/>
-        <rect y="518.5" width="390" height="3" fill="#FFE3B4" opacity=".7"/>
-        <polygon points="222,523 276,523 306,724 192,724" fill="url(#lgCol)" filter="url(#lb10)" opacity=".62"/>
-        <rect x="196" y="546" width="106" height="5" rx="2.5" fill="#FFE7B6" opacity=".5" filter="url(#lb10)"/>
-        <rect x="214" y="580" width="80" height="4.5" rx="2.2" fill="#FFE2AC" opacity=".4" filter="url(#lb10)"/>
-        <rect x="188" y="624" width="118" height="5" rx="2.5" fill="#FFD9A2" opacity=".3" filter="url(#lb10)"/>
-        <rect x="206" y="672" width="90" height="4.5" rx="2.2" fill="#FFD29A" opacity=".22" filter="url(#lb10)"/>
+        <circle cx="330" cy="418" r="102" fill="url(#lgSunGlow)"/>
+        <circle cx="330" cy="418" r="30" fill="#FFEEC6"/>
+        <circle cx="330" cy="418" r="30" fill="#FFEEC6" opacity=".55" filter="url(#lb7)"/>
+        <rect y="520" width="390" height="328" fill="url(#lgSea2)"/>
+        <rect x="-20" y="513" width="430" height="17" fill="url(#lgHorizon)" filter="url(#lb7)"/>
+        <ellipse cx="196" cy="612" rx="150" ry="9" fill="#FFDCA8" opacity=".22" filter="url(#lb10)"/>
+        <ellipse cx="206" cy="664" rx="122" ry="7" fill="#FFD29A" opacity=".16" filter="url(#lb10)"/>
+        <ellipse cx="214" cy="716" rx="96" ry="6" fill="#FFC993" opacity=".12" filter="url(#lb10)"/>
       </svg>
 
       <div class="lock-status">
@@ -436,7 +441,7 @@ function renderLock(){
 
       <div class="lock-cards">
         <div class="lc lc-weather">
-          <span class="lc-top">
+          <span class="lc-row1">
             <svg class="lc-ico" viewBox="0 0 48 48" aria-hidden="true">
               <circle cx="30" cy="17" r="8.5" fill="#FFD98A"/>
               <g stroke="#FFD98A" stroke-width="2.6" stroke-linecap="round">
@@ -447,8 +452,8 @@ function renderLock(){
               <path d="M13 37h22.5a7 7 0 0 0 .9-13.9A10.5 10.5 0 0 0 16.4 20.4 7.8 7.8 0 0 0 13 37z" fill="#FFF4DC"/>
             </svg>
             <b>21°</b>
+            <span class="lc-mid">晚霞满天</span>
           </span>
-          <span class="lc-mid">晚霞满天</span>
           <em>最高 24° / 最低 19°</em>
         </div>
         <div class="lc lc-face">
@@ -463,7 +468,6 @@ function renderLock(){
           <path d="M8 30 C 92 8, 188 36, 250 17 q15 -5 28 3" stroke="#FFF6E4" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".85"/>
           <path d="M60 24 C 120 14, 190 26, 236 18" stroke="#FFF6E4" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".4"/>
         </svg>
-        <div class="lw-tag">新的旅程 · 从这里开始</div>
       </div>
 
       <div class="lock-bottom">
@@ -473,7 +477,7 @@ function renderLock(){
           <i class="lock-chev">››</i>
           <div class="lock-knob" id="lock-knob">🔓</div>
         </div>
-        <div class="lock-tip">🔊 解锁后请解除静音</div>
+        <div class="lock-tip">建议关闭静音模式</div>
       </div>
 
       <!-- 假的面容 ID 识别框：真正的作用是让用户「点一下」——
@@ -2486,7 +2490,7 @@ function armSoundNudge(){
 }
 
 /* ==================== ⑨ 真机音频诊断面板 ==================== */
-/* 打开方式：在网址后面加 ?diag=1，或者在锁屏上连点左上角状态栏 5 次。
+/* 打开方式：在锁屏上连点左上角状态栏 5 次。
    面板会把「事件是否触发 / 上下文状态 / resume 是否被拒 / 静音 wav 是否播成功」
    全部列出来，用来定位 iOS Safari 这类严格内核到底卡在哪一步。 */
 function initDiag(){
@@ -2527,7 +2531,8 @@ function initDiag(){
     };
   };
 
-  if(/[?&]diag=1/.test(location.search)){ show(); return; }
+  // 注意：不再支持 ?diag=1 自动弹出（旧链接会一直带着参数，看着像 bug）。
+  // 只保留「连点状态栏 5 次」这一种显式操作。
   let taps = 0;
   document.addEventListener("click", (e) => {
     if(!e.target || !e.target.closest || !e.target.closest(".lock-status")) return;
