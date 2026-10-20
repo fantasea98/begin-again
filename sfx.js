@@ -38,6 +38,16 @@ function live(){
 }
 function markGesture(){ _gestureUntil = Date.now() + 500; }
 var _audEl = null;
+var _lastWav = 0;
+var _diag = [];
+function dlog(msg){
+  try{
+    var d = new Date();
+    var ts = String(d.getMinutes()).padStart(2,"0") + ":" + String(d.getSeconds()).padStart(2,"0") + "." + String(d.getMilliseconds()).padStart(3,"0");
+    _diag.push(ts + " " + msg);
+    if(_diag.length > 90) _diag.shift();
+  }catch(e){}
+}
 var _lastResume = 0;
 var _rebuilds = 0;
 var _lastRebuild = 0;
@@ -58,7 +68,16 @@ function silentWavUrl(){
     dv.setUint32(28, sr * 2, true);                 dv.setUint16(32, 2, true);
     dv.setUint16(34, 16, true);
     s(36,"data"); dv.setUint32(40, n * 2, true);
-    for(var i = 0; i < n; i++) dv.setInt16(44 + i * 2, 0, true);
+    /* 注意：全是 0 的「静音」在 iOS 上有被判为「无播放」的风险，音频会话激活不了。
+       这里改成前 40ms 静音 + 后 40ms 一声极轻的 1kHz 衰减滴声（约 -30dB，几乎听不见）。 */
+    for(var i = 0; i < n; i++){
+      var v = 0;
+      if(i > 320){
+        var k = (i - 320) / 320;
+        v = Math.sin(2 * Math.PI * 1000 * (i - 320) / sr) * 900 * (1 - k);
+      }
+      dv.setInt16(44 + i * 2, v, true);
+    }
     _wavUrl = URL.createObjectURL(new Blob([buf], { type:"audio/wav" }));
   }catch(e){ _wavUrl = null; }
   return _wavUrl;
@@ -97,27 +116,38 @@ function closeCtx(){
 /* 播放静音 wav：iOS 上它能把音频会话切到 playback（顺带绕过静音拨杆的一部分限制）。
    注意三点：①绝对不能设 muted（muted 播放不算解锁）；
    ②元素要插进 DOM 才稳定；③任何失败都不许影响 dead。 */
-function playSilentWav(){
+function playSilentWav(tag){
   try{
+    // 600ms 内不重复播，避免每个手势都滴一声
+    var now = Date.now();
+    if(now - _lastWav < 600) return;
+    _lastWav = now;
+
     if(!_audEl){
       var url = silentWavUrl();
-      if(!url) return;
+      if(!url){ dlog("wav: no url"); return; }
       _audEl = new Audio();
       _audEl.src = url;
       _audEl.preload = "auto";
       _audEl.loop = false;
-      _audEl.volume = 0.02;
+      _audEl.volume = 0.5;              // 波形本身已经很轻（约 -30dB）
       try{
         _audEl.setAttribute("playsinline", "");
         _audEl.style.cssText = "position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;";
         document.body.appendChild(_audEl);
-      }catch(e){}
+      }catch(e){ dlog("wav: append failed"); }
     }
     try{ _audEl.currentTime = 0; }catch(e){}
     var pr = _audEl.play();
-    if(pr && pr.then) pr.then(function(){}, function(){});
-    else if(pr && pr.catch) pr.catch(function(){});
-  }catch(e){}
+    if(pr && pr.then){
+      pr.then(function(){ dlog("wav play OK (" + (tag||"") + ")"); },
+              function(err){
+                dlog("wav play REJECT " + ((err && (err.name + ":" + err.message)) || "?") + " (" + (tag||"") + ")");
+                // 被拒了就把元素丢掉，下次重建重试
+                try{ _audEl = null; }catch(e){}
+              });
+    } else if(pr && pr.catch){ pr.catch(function(){}); }
+  }catch(e){ dlog("wav THROW " + (e && e.name)); }
 }
 
 function registerVisibility(){
@@ -135,16 +165,26 @@ function registerVisibility(){
    - force=false：温和补 resume（不重建，避免打断异步 resume）
    - force=true ：允许「关掉再重建」（iOS 上被污染的 ctx 只能靠重建救活），
                   但总共最多 3 次、且两次之间至少间隔 250ms，避免抖动 */
-function ensure(force){
+function ensure(force, noCreate){
   markGesture();
-  if(dead) return false;
-  if(!supported()){ dead = true; return false; }
+  if(dead){ dlog("ensure: dead"); return false; }
+  if(!supported()){ dead = true; dlog("ensure: unsupported"); return false; }
 
   if(ctx && ctx.state === "closed"){ ctx = null; master = null; ready = false; }
 
+  var before = ctx ? ctx.state : "none";
+
+  if(!ctx && noCreate){
+    dlog("ensure: no ctx & noCreate -> skip");
+    return false;
+  }
+
   if(!ctx){
+    /* 顺序很重要：先用 <audio> 争到「媒体播放」许可，再建 AudioContext。
+       两个都在同一个手势的同步栈里，iOS 上这样成功率最高。 */
+    playSilentWav("beforeCreate");
     try{ createCtx(); }
-    catch(e){ dead = true; ctx = null; master = null; return false; }   // 只有这里才算真死
+    catch(e){ dead = true; ctx = null; master = null; dlog("createCtx THROW " + (e && e.name)); return false; }
     ready = true;
     registerVisibility();
   }
@@ -153,20 +193,29 @@ function ensure(force){
     var canRebuild = !!force && _rebuilds < 3 && (Date.now() - _lastRebuild) > 250;
     if(canRebuild){
       closeCtx();
+      playSilentWav("beforeRebuild");
       try{ createCtx(); }
-      catch(e){ dead = true; return false; }
+      catch(e){ dead = true; dlog("rebuild THROW"); return false; }
       ready = true;
       _rebuilds++;
       _lastRebuild = Date.now();
       registerVisibility();
     }
+    if(ctx.state !== "running") playSilentWav("beforeResume");
     _lastResume = Date.now();
-    try{ ctx.resume(); }catch(e){}
+    try{
+      var pr = ctx.resume();
+      if(pr && pr.then){
+        pr.then(function(){ dlog("resume OK -> " + (ctx && ctx.state)); },
+                function(err){ dlog("resume REJECT " + ((err && err.name) || "?")); });
+      } else { dlog("resume (no promise)"); }
+    }catch(e){ dlog("resume THROW " + (e && e.name)); }
   }
 
   ping();                     // 真手势里 start 一个 1 采样 source —— iOS 解锁的关键
-  playSilentWav();
-  return ctx.state === "running";
+  var after = ctx ? ctx.state : "none";
+  dlog("ensure force=" + (force ? 1 : 0) + " " + before + "->" + after + " rb=" + _rebuilds);
+  return after === "running";
 }
 
 /* 兼容旧调用 */
@@ -503,7 +552,10 @@ return {
   init: init,
   ensure: ensure,
   hardUnlock: function(){ return ensure(true); },
+  wake: function(){ return ensure(false, true); },
   gesture: markGesture,
+  _log: function(){ return _diag.slice(); },
+  log: dlog,
   ping: ping,
   isMuted: function(){ return muted; },
   setMuted: setMuted,
