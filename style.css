@@ -781,10 +781,12 @@ body{
 /* 游戏区半透明暖白磨砂底：把背景回忆柔化，物品卡片不被干扰 */
 #view-level4 #l4-game{
   position:relative; z-index:1;
-  background:rgba(255,250,240,.5);
+  background:rgba(255,252,246,.9);
+  border:1px solid rgba(255,255,255,.75);
+  box-shadow:0 10px 26px rgba(6,24,14,.22);
   border-radius:var(--radius-lg);
   padding:14px 10px 10px;
-  -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px);
 }
 
 .ring{
@@ -875,7 +877,7 @@ body{
 .showtime{ font-weight:900; letter-spacing:1px; animation:showtime 1.3s ease-in-out infinite; }
 @keyframes showtime{ 0%,100%{ color:var(--ink); text-shadow:none; } 50%{ color:var(--a3); text-shadow:0 0 14px rgba(255,94,151,.75); } }
 
-.pick-count{ text-align:center; font-size:13px; color:var(--muted); margin:6px 0 12px; }
+.pick-count{ text-align:center; font-size:14px; font-weight:800; color:#3E2B18; letter-spacing:.5px; margin:10px 0 12px; }
 .suitcase{ border:2px dashed rgba(26,26,26,.35); border-radius:16px; padding:12px 12px 10px; position:relative; margin-top:26px; background:rgba(255,255,255,.45); }
 .suitcase-handle{ position:absolute; top:-15px; left:50%; transform:translateX(-50%); width:76px; height:16px; border:2px solid rgba(26,26,26,.35); border-bottom:none; border-radius:12px 12px 0 0; background:var(--bg); }
 .suitcase-label{ text-align:center; font-size:13px; font-weight:700; letter-spacing:1px; margin-bottom:8px; color:var(--faint); }
@@ -939,12 +941,12 @@ body{
 .fin-body{ display:flex; gap:14px; align-items:flex-end; margin-top:14px; }
 .fin-fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:11px; }
 .fin-f{ opacity:0; transform:translateY(10px);
-        transition:opacity .9s cubic-bezier(.22,.61,.36,1), transform .9s cubic-bezier(.22,.61,.36,1); }
+        transition:opacity 1.15s cubic-bezier(.22,.61,.36,1), transform 1.15s cubic-bezier(.22,.61,.36,1); }
 .fin-f.on{ opacity:1; transform:none; }
 .fin-f span{ display:block; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-             font-size:10px; letter-spacing:2px; color:#AA9070; margin-bottom:3px; }
-.fin-f b{ display:block; font-size:15.5px; letter-spacing:.4px; font-weight:500; color:#4A3320; }
-.fin-f b.big{ font-size:19px; }
+             font-size:13px; letter-spacing:2px; color:#A98B68; margin-bottom:4px; }
+.fin-f b{ display:block; font-size:18px; letter-spacing:.4px; font-weight:500; color:#4A3320; }
+.fin-f b.big{ font-size:23px; }
 
 .fin-photo{
   flex:none; width:95px; margin-right:7px;
@@ -970,16 +972,16 @@ body{
 }
 .fin-cell.on{ opacity:1; transform:none; }
 .fin-cell span{ display:block; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-                font-size:9.5px; letter-spacing:2px; color:#AA9070; }
-.fin-cell b{ display:block; margin-top:4px; font-size:13.5px; letter-spacing:.3px;
+                font-size:11.5px; letter-spacing:2px; color:#A98B68; }
+.fin-cell b{ display:block; margin-top:4px; font-size:15px; letter-spacing:.3px;
              font-weight:800; color:#4A3320; white-space:nowrap; }
 .fin-cell b i{ font-style:normal; font-size:11px; color:#8C6A45; margin-left:3px; }
 /* 框先出，里面的数字再一个个落 */
 .fin-cell .fin-v{ opacity:0; transform:translateY(8px);
-  transition:opacity .8s cubic-bezier(.22,.61,.36,1), transform .8s cubic-bezier(.22,.61,.36,1); }
+  transition:opacity 1s cubic-bezier(.22,.61,.36,1), transform 1s cubic-bezier(.22,.61,.36,1); }
 .fin-cell .fin-v.on{ opacity:1; transform:none; }
 .fin-cell.date{ flex:2.05; }
-.fin-cell.date b{ font-size:12.4px; letter-spacing:.2px; font-weight:400;
+.fin-cell.date b{ font-size:13.2px; letter-spacing:.2px; font-weight:400;
                   font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
 .fin-cell.days{ flex:.95; }
 .fin-cell.days b{ font-weight:800; }
@@ -1215,10 +1217,8 @@ body{
 .tea-steam path{ opacity:0; animation:steamRise 3.8s ease-in-out infinite; }
 .tea-steam path:nth-child(2){ animation-delay:1.5s; }
 @keyframes steamRise{
-  0%{ opacity:0; transform:translateY(4px); }
-  30%{ opacity:.85; }
-  70%{ opacity:.5; }
-  100%{ opacity:0; transform:translateY(-9px); }
+  0%,100%{ opacity:.30; transform:translateY(2px); }
+  50%{ opacity:.9; transform:translateY(-6px); }
 }
 .hall2-room{
   position:relative; border-radius:16px; overflow:hidden;
