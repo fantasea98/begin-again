@@ -525,6 +525,12 @@ function pick(){
   tone({ freq:1318.5, type:"triangle", dur:0.13, gain:0.15, attack:0.004 });
   tone({ freq:1975.5, type:"sine",     dur:0.09, gain:0.05, delay:0.012 });
 }
+/* 终页：一声简单的「啵」，不升调、不拖尾 */
+function pop(){
+  if(!gate("pop", 80)) return;
+  tone({ freq:640, to:430, type:"sine", dur:0.17, gain:0.17, attack:0.004 });
+  tone({ freq:1280, type:"sine", dur:0.06, gain:0.035, attack:0.002 });
+}
 /* 终页：柔和的风铃，一级一级往上走（慢进慢出，不抢不脆） */
 var SOFT_SCALE = [523.25, 587.33, 659.26, 783.99, 880, 1046.5];
 function soft(step){
@@ -675,7 +681,7 @@ return {
   fragment: fragment, fragmentDrop: fragmentDrop, flip: flip,
   tensionStart: tensionStart, tensionStop: tensionStop,
   musicBoxStart: musicBoxStart, musicBoxStop: musicBoxStop,
-  unlock: unlock, confetti: confetti, stamp: stamp, pick: pick, soft: soft,
+  unlock: unlock, confetti: confetti, stamp: stamp, pick: pick, soft: soft, pop: pop,
   bubble: bubble, sysalert: sysalert, glitch: glitch,
   like: like, thought: thought, portal: portal,
   reveal: reveal, turn: turn, winPop: winPop, failPop: failPop
