@@ -1317,6 +1317,7 @@ body{
   cursor:pointer; animation:nudgePulse 1.7s ease-in-out infinite;
 }
 .sound-nudge .sn-ic{ font-size:16px; }
+.sound-nudge.is-hint{ animation:none; background:rgba(255,248,238,.98); font-size:12.5px; }
 @keyframes nudgePulse{
   0%,100%{ transform:translateX(-50%) scale(1); }
   50%{ transform:translateX(-50%) scale(1.05); }
