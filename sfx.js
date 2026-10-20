@@ -40,6 +40,7 @@ function markGesture(){ _gestureUntil = Date.now() + 500; }
 var _audEl = null;
 var _lastResume = 0;
 var _rebuilds = 0;
+var _lastRebuild = 0;
 
 /* iOS 静音拨杆打开时 Web Audio 会被系统静音。
    办法：在手势里播一段极短的静音 wav（走 <audio> 通道），
@@ -63,65 +64,113 @@ function silentWavUrl(){
   return _wavUrl;
 }
 
-function init(){
-  markGesture();
-  if(dead) return;
-  if(!supported()){ dead = true; return; }
+/* ---------- 上下文管理 ----------
+   原则：只有「浏览器不支持」和「new AudioContext() 抛错」才算 dead。
+   其它任何小问题（resume 失败、静音 wav 播不动、visibilitychange 注册失败）
+   一律单独 try/catch 吞掉，绝不能让 dead 变 true —— 否则整局永远没声音。 */
+
+function createCtx(){
+  var AC = window.AudioContext || window.webkitAudioContext;
+  var c = new AC();
+  var m = c.createGain();
+  m.gain.value = VOLUME;
+  // 音量整体调大后加一级「只削峰不压整体」的软限幅
   try{
-    /* 关键修复：在「非手势环境」里创建的 AudioContext，在 iOS / 微信 WebView 上
-       有时永远无法 resume（页面加载时 armAudioUnlock 提前建过一次，就是这种情况）。
-       现在既然处于真实手势里，就果断把旧的关掉、现场重建一个 —— 这是 iOS 解锁音频
-       最可靠的做法。ctx 正常运行时这里不会触发，不影响日常使用。 */
-    /* 只有当「已经尝试 resume 超过 1.2 秒还没成功」时才重建。
-       否则会把上一个正在异步 resume 的 ctx 关掉，导致永远解锁不了
-       （Chrome / Safari 严格自动播放策略下会一直卡在 suspended）。 */
-    var stuck = Date.now() - _lastResume > 1200;
-    if(ctx && ctx.state !== "running" && stuck){
-      try{ ctx.close(); }catch(e){}
-      ctx = null; master = null; ready = false; _nb = null;
-      _rebuilds++;
-    }
-    if(!ctx){
-      var AC = window.AudioContext || window.webkitAudioContext;
-      ctx = new AC();
-      master = ctx.createGain();
-      master.gain.value = VOLUME;
-      // 音量整体调大后加一级「只削峰不压整体」的软限幅：
-      // 阈值放到 -6dB，普通音效完全不受影响，只有叠加瞬间才被兜住，避免爆音
-      try{
-        var comp = ctx.createDynamicsCompressor();
-        comp.threshold.value = -6;
-        comp.knee.value = 12;
-        comp.ratio.value = 4;
-        comp.attack.value = 0.002;
-        comp.release.value = 0.18;
-        master.connect(comp);
-        comp.connect(ctx.destination);
-      }catch(e){ master.connect(ctx.destination); }
-    }
-    if(ctx.state !== "running"){ _lastResume = Date.now(); try{ ctx.resume(); }catch(e){} }
-    ready = true;
-    // 切回前台时 ctx 可能又被挂起，这里再补一次 resume
-    try{
-      if(!document.__baVis){
-        document.__baVis = true;
-        document.addEventListener("visibilitychange", function(){
-          if(document.hidden) return;
-          try{ if(ctx && ctx.state !== "running") ctx.resume(); }catch(e){}
-        });
-      }
-    }catch(e){}
-    var url = silentWavUrl();
-    if(url){
-      var a = new Audio(url);
-      a.loop = false; a.preload = "auto";
-      a.volume = 0.02;              // 不能设 muted：iOS 下 muted 播放不算解锁
-      _audEl = a;                   // 留住引用，避免被 GC 掉导致播放中断
-      var pr = a.play();
-      if(pr && pr.catch) pr.catch(function(){});
-    }
-  }catch(e){ dead = true; }
+    var comp = c.createDynamicsCompressor();
+    comp.threshold.value = -6;
+    comp.knee.value = 12;
+    comp.ratio.value = 4;
+    comp.attack.value = 0.002;
+    comp.release.value = 0.18;
+    m.connect(comp);
+    comp.connect(c.destination);
+  }catch(e){ try{ m.connect(c.destination); }catch(e2){} }
+  ctx = c; master = m;
+  return c;
 }
+
+function closeCtx(){
+  try{ if(ctx && ctx.state !== "closed") ctx.close(); }catch(e){}
+  ctx = null; master = null; ready = false; _nb = null;
+}
+
+/* 播放静音 wav：iOS 上它能把音频会话切到 playback（顺带绕过静音拨杆的一部分限制）。
+   注意三点：①绝对不能设 muted（muted 播放不算解锁）；
+   ②元素要插进 DOM 才稳定；③任何失败都不许影响 dead。 */
+function playSilentWav(){
+  try{
+    if(!_audEl){
+      var url = silentWavUrl();
+      if(!url) return;
+      _audEl = new Audio();
+      _audEl.src = url;
+      _audEl.preload = "auto";
+      _audEl.loop = false;
+      _audEl.volume = 0.02;
+      try{
+        _audEl.setAttribute("playsinline", "");
+        _audEl.style.cssText = "position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;";
+        document.body.appendChild(_audEl);
+      }catch(e){}
+    }
+    try{ _audEl.currentTime = 0; }catch(e){}
+    var pr = _audEl.play();
+    if(pr && pr.then) pr.then(function(){}, function(){});
+    else if(pr && pr.catch) pr.catch(function(){});
+  }catch(e){}
+}
+
+function registerVisibility(){
+  try{
+    if(document.__baVis) return;
+    document.__baVis = true;
+    document.addEventListener("visibilitychange", function(){
+      if(document.hidden) return;
+      try{ if(ctx && ctx.state !== "running"){ _lastResume = Date.now(); ctx.resume(); } }catch(e){}
+    });
+  }catch(e){}
+}
+
+/* 对外唯一解锁入口，可放心重复调用：
+   - force=false：温和补 resume（不重建，避免打断异步 resume）
+   - force=true ：允许「关掉再重建」（iOS 上被污染的 ctx 只能靠重建救活），
+                  但总共最多 3 次、且两次之间至少间隔 250ms，避免抖动 */
+function ensure(force){
+  markGesture();
+  if(dead) return false;
+  if(!supported()){ dead = true; return false; }
+
+  if(ctx && ctx.state === "closed"){ ctx = null; master = null; ready = false; }
+
+  if(!ctx){
+    try{ createCtx(); }
+    catch(e){ dead = true; ctx = null; master = null; return false; }   // 只有这里才算真死
+    ready = true;
+    registerVisibility();
+  }
+
+  if(ctx.state !== "running"){
+    var canRebuild = !!force && _rebuilds < 3 && (Date.now() - _lastRebuild) > 250;
+    if(canRebuild){
+      closeCtx();
+      try{ createCtx(); }
+      catch(e){ dead = true; return false; }
+      ready = true;
+      _rebuilds++;
+      _lastRebuild = Date.now();
+      registerVisibility();
+    }
+    _lastResume = Date.now();
+    try{ ctx.resume(); }catch(e){}
+  }
+
+  ping();                     // 真手势里 start 一个 1 采样 source —— iOS 解锁的关键
+  playSilentWav();
+  return ctx.state === "running";
+}
+
+/* 兼容旧调用 */
+function init(){ return ensure(false); }
 
 /* 立刻启动一个 1 采样的静音源 —— iOS 真正「解锁」Web Audio 靠的就是
    在用户手势里 start() 一个 source，光 resume() 有时不够。 */
@@ -134,36 +183,6 @@ function ping(){
     src.connect(master || ctx.destination);
     src.start(0);
   }catch(e){}
-}
-
-/* 对外唯一入口：可以放心重复调用，直到音频真的 running 为止。
-   每次调用都会：标记手势窗口 → 必要时重建 ctx → resume → start 静音源 → 播静音 wav */
-function ensure(){
-  markGesture();
-  if(dead) return false;
-  try{
-    init();
-    if(ctx){
-      if(ctx.state !== "running"){
-        _lastResume = Date.now();
-        try{
-          var pr = ctx.resume();
-          if(pr && pr.then) pr.then(function(){ ping(); }, function(){});
-        }catch(e){}
-      }
-      ping();
-      var url = silentWavUrl();
-      if(url){
-        try{
-          var a = _audEl || new Audio(url);
-          _audEl = a; a.volume = 0.02;
-          var p2 = a.play();
-          if(p2 && p2.catch) p2.catch(function(){});
-        }catch(e){}
-      }
-    }
-  }catch(e){}
-  return !!(ctx && ctx.state === "running");
 }
 
 /* ---------- 基础合成 ---------- */
@@ -483,6 +502,8 @@ function toggle(){ return setMuted(!muted); }
 return {
   init: init,
   ensure: ensure,
+  hardUnlock: function(){ return ensure(true); },
+  gesture: markGesture,
   ping: ping,
   isMuted: function(){ return muted; },
   setMuted: setMuted,
