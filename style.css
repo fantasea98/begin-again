@@ -884,24 +884,24 @@ body{
 .pw-msg{ text-align:center; margin-top:12px; font-weight:700; min-height:24px; font-size:14px; color:var(--muted); }
 
 /* =========================================================
-   页面 D：终页 · 员工档案
+   页面 D：终页 · 员工档案（工牌版）
    ========================================================= */
 #view-final{ padding:0; }
 .final-decor{ position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0; }
-.final-decor i{ position:absolute; display:block; opacity:.16; animation:finalFloat 4s ease-in-out infinite; }
+.final-decor i{ position:absolute; display:block; opacity:.15; animation:finalFloat 5s ease-in-out infinite; }
 @keyframes finalFloat{ 0%,100%{ transform:translateY(0) rotate(-4deg); } 50%{ transform:translateY(-24px) rotate(6deg); } }
 
 .fin-wrap{
   position:relative; z-index:1; min-height:100%;
   display:flex; flex-direction:column; justify-content:center;
-  padding:24px 18px 24px;
+  padding:22px 16px 26px;
 }
 .fin-card{
   position:relative; flex:0 0 auto;
   display:flex; flex-direction:column;
   background:#FFFCF6; border:2px solid #6B4520; border-radius:16px;
   box-shadow:5px 5px 0 #CBB08C;
-  padding:18px 18px 16px; color:#4A3320;
+  padding:16px 16px 14px; color:#4A3320;
   animation:finCardIn .5s cubic-bezier(.2,1.1,.35,1) both;
 }
 @keyframes finCardIn{
@@ -909,85 +909,100 @@ body{
   100%{ opacity:1; transform:none; }
 }
 .fin-top{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
-.fin-top b{ font-size:15px; letter-spacing:2px; white-space:nowrap; color:#4A3320; }
-.fin-top span{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:10px;
-               letter-spacing:1.2px; color:#A98F72; white-space:nowrap; }
+.fin-top b{ font-size:16px; letter-spacing:2px; color:#4A3320; white-space:nowrap; }
+.fin-top span{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px;
+               letter-spacing:1px; color:#8C6A45; white-space:nowrap; }
 .fin-rule{ border-top:2px solid #6B4520; margin:11px 0 0; }
 
-/* 逐段出现：慢一点，像一页页翻过去 */
-.fin-step{ opacity:0; transform:translateY(14px);
-           transition:opacity .95s cubic-bezier(.22,.61,.36,1), transform .95s cubic-bezier(.22,.61,.36,1); }
-.fin-step.on{ opacity:1; transform:none; }
+/* 字段 + 工牌照片 */
+.fin-body{ display:flex; gap:14px; align-items:flex-start; margin-top:14px; }
+.fin-fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:11px; }
+.fin-f{ opacity:0; transform:translateY(10px);
+        transition:opacity .9s cubic-bezier(.22,.61,.36,1), transform .9s cubic-bezier(.22,.61,.36,1); }
+.fin-f.on{ opacity:1; transform:none; }
+.fin-f span{ display:block; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+             font-size:10px; letter-spacing:2px; color:#AA9070; margin-bottom:3px; }
+.fin-f b{ display:block; font-size:15.5px; letter-spacing:.4px; font-weight:500; color:#4A3320; }
+.fin-f b.big{ font-size:19px; }
 
-.fin-num{
-  margin-top:14px;
-  font-family:"Playfair Sub",Georgia,"Noto Serif SC",serif;
-  font-size:74px; font-weight:700; line-height:.92; letter-spacing:-1px;
-  color:#3B2A1B;
+.fin-photo{
+  flex:none; width:86px; margin-right:7px;
+  border:1.6px solid #6B4520; border-radius:10px; overflow:hidden;
+  background:#ECDFCC; box-shadow:3px 3px 0 rgba(107,69,32,.16);
+  opacity:0; transform:translateY(10px) rotate(1.5deg);
+  transition:opacity .9s cubic-bezier(.22,.61,.36,1), transform .9s cubic-bezier(.22,.61,.36,1);
 }
-.fin-num i{ font-style:normal; font-size:19px; font-weight:800; letter-spacing:2px; margin-left:8px; color:#7A5A3C; }
-.fin-date{
-  margin-top:9px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-size:11.5px; letter-spacing:.6px; color:#8C6A45;
-  font-variant-numeric:tabular-nums;
+.fin-photo.on{ opacity:1; transform:none; }
+.fin-photo .cap{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:8px; letter-spacing:2px;
+  color:#FFF8EE; background:#6B4520; text-align:center; padding:3px 0 4px;
 }
+.fin-photo img{ display:block; width:100%; height:auto; }
 
-/* 三格字段 */
-.fin-cells{ display:flex; gap:8px; margin-top:16px; }
+/* 两个小框 */
+.fin-cells{ display:flex; gap:8px; margin-top:14px; }
 .fin-cell{
-  position:relative; flex:1; min-width:0;
-  border:1.4px solid #DFCFB6; border-radius:9px; padding:7px 8px 8px;
-  background:#FBF6EC;
+  flex:1; min-width:0; border:1.4px solid #DFCFB6; border-radius:9px;
+  background:#FBF6EC; padding:8px 9px 9px;
+  opacity:0; transform:translateY(10px);
+  transition:opacity .9s cubic-bezier(.22,.61,.36,1), transform .9s cubic-bezier(.22,.61,.36,1);
 }
-.fin-cell span{ display:block; font-size:8.5px; letter-spacing:2px; color:#AA9070;
-                font-family:ui-monospace,monospace; }
-.fin-cell b{
-  display:block; margin-top:3px; min-height:17px;
-  font-size:12.5px; letter-spacing:.4px; white-space:nowrap; color:#4A3320;
-}
-.fin-cell .fin-val{ opacity:0; transform:translateY(8px); transition:opacity .8s cubic-bezier(.22,.61,.36,1), transform .8s cubic-bezier(.22,.61,.36,1); }
-.fin-cell .fin-val.on{ opacity:1; transform:none; }
+.fin-cell.on{ opacity:1; transform:none; }
+.fin-cell span{ display:block; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+                font-size:8.5px; letter-spacing:2px; color:#AA9070; }
+.fin-cell b{ display:block; margin-top:3px; font-size:12px; letter-spacing:.3px;
+             font-weight:800; color:#4A3320; white-space:nowrap; }
+.fin-cell b i{ font-style:normal; font-size:10px; color:#8C6A45; margin-left:3px; }
+.fin-cell.date{ flex:2.05; }
+.fin-cell.date b{ font-size:11.6px; letter-spacing:.2px; font-weight:400;
+                  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+.fin-cell.days{ flex:.95; }
+.fin-cell.days b{ font-weight:800; }
 
-/* 已离职印章 */
-.fin-stamp{
-  position:absolute; right:1px; bottom:-7px;
-  width:56px; height:56px; border-radius:50%;
-  border:2.2px double #FF5E97; color:#FF5E97;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  background:rgba(255,252,248,.42);
-  opacity:0; transform:rotate(-11deg) scale(2.2);
-  pointer-events:none;
-}
-.fin-stamp.on{ animation:stampHit .34s cubic-bezier(.2,1.6,.35,1) forwards; }
-@keyframes stampHit{
-  0%  { opacity:0; transform:rotate(-11deg) scale(2.2); }
-  55% { opacity:1; transform:rotate(-11deg) scale(.9); }
-  75% { transform:rotate(-11deg) scale(1.05); }
-  100%{ opacity:.92; transform:rotate(-11deg) scale(1); }
-}
-.fin-stamp b{ font-size:10.5px; font-weight:800; letter-spacing:1.4px; }
-.fin-stamp small{ font-family:ui-monospace,monospace; font-size:6.8px; letter-spacing:.3px; margin-top:1px; }
+/* 预留：旧版「状态」印章格已移除，改到落款上盖章 */
 
-/* 留言 */
-.fin-msg{ margin-top:20px; }
+/* 信 */
+.fin-msg{ margin-top:16px; }
 .fin-msg p{
-  margin:0 0 12px; font-size:14px; line-height:1.95; color:#4A3320;
+  margin:0 0 11px; font-size:13.5px; line-height:1.95; color:#4A3320;
   opacity:0; transform:translateY(12px);
   transition:opacity .95s cubic-bezier(.22,.61,.36,1), transform .95s cubic-bezier(.22,.61,.36,1);
 }
 .fin-msg p.on{ opacity:1; transform:none; }
+
 .fin-sign{
-  padding-top:16px; text-align:right; color:#6B4520;
-  font-size:16px; letter-spacing:3px;
-  opacity:0; transform:translateY(10px);
+  text-align:right; font-size:15px; letter-spacing:3px; color:#6B4520;
+  padding:12px 6px 14px 0;
+  opacity:0; transform:translateY(8px);
   transition:opacity .9s cubic-bezier(.22,.61,.36,1), transform .9s cubic-bezier(.22,.61,.36,1);
 }
 .fin-sign.on{ opacity:1; transform:none; }
 
+/* 红章：盖在落款名字上 */
+.fin-seal{
+  position:absolute; right:12px; bottom:2px;
+  width:78px; height:78px; border-radius:50%;
+  border:2.6px double #C8342B; color:#C8342B;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:rgba(255,252,248,.34);
+  opacity:0; transform:rotate(-12deg) scale(2.3);
+  pointer-events:none; mix-blend-mode:multiply;
+}
+.fin-seal b{ font-size:14px; font-weight:900; letter-spacing:2px; }
+.fin-seal small{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+                 font-size:7px; letter-spacing:.3px; margin-top:2px; }
+.fin-seal.on{ animation:stampHit .34s cubic-bezier(.2,1.6,.35,1) forwards; }
+@keyframes stampHit{
+  0%  { opacity:0; transform:rotate(-12deg) scale(2.3); }
+  55% { opacity:1; transform:rotate(-12deg) scale(.9); }
+  75% { transform:rotate(-12deg) scale(1.05); }
+  100%{ opacity:.9; transform:rotate(-12deg) scale(1); }
+}
+
 /* 按钮组 */
 .fin-actions{
-  display:flex; gap:10px; margin-top:16px;
-  opacity:0; transform:translateY(10px); pointer-events:none;
+  display:flex; gap:10px; margin-top:14px;
+  opacity:0; transform:translateY(8px); pointer-events:none;
   transition:opacity .8s ease, transform .8s ease;
 }
 .fin-actions.on{ opacity:1; transform:none; pointer-events:auto; }
