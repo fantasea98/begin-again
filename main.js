@@ -102,7 +102,24 @@ const CONFIG = {
   // 页面 D
   finalPage: {
     unit: "天",
+    fileLabel: "员工档案：🐘🐏",
+    fileNo: "NO. 5147",
+    meta: "4 段记忆 · 全部归档",
+    cells: [
+      { k: "部门", v: "组织部" },
+      { k: "在职", v: "1122 天", dur: true },
+      { k: "状态", v: "", stamp: "已离职" },
+    ],
+    sign: "🐘🐏",
   },
+
+  // 最终留言（逐行淡出，想加几行就加几行）
+  finalMessage: [
+    "2023 年 10 月 5 日，你第一次推开这间办公室的门。",
+    "三年，一千一百二十二天，从「好的，收到」写到了「像你这样的朋友」。",
+    "谢谢你把最好的三年留在这里。",
+    "记得常回来看看，这间房间一直给你留着灯。",
+  ],
 
   // 四个关卡
   levels: [
@@ -209,12 +226,6 @@ const CONFIG = {
     },
   ],
 
-  // 最终纪念文案（占位，作者替换 FINAL_MESSAGE 即可）
-  finalMessage: [
-    "这里是《begin again》的最终留言占位。作者把想对同事们说的话写在这里，逐段替换即可。",
-    "三年，一千一百二十二天，我们从「好的，收到」写到了「像你这样的朋友」。",
-    "谢谢你陪我走过这 1122 天。",
-  ],
 };
 
 /* ==================== ② 主题注入 ==================== */
@@ -2312,44 +2323,79 @@ function confettiBurst(){
 }
 
 /* ==================== ⑯ 页面 D：最终纪念 ==================== */
+/* 一页「员工档案」：抬头 → 横线 → 天数 / 日期 / 元信息 → 三格字段 → 印章 → 留言 → 落款。
+   出场顺序按时间轴排（见 runFinalSequence），每一段都配一个音。 */
 function renderFinal(){
   const c = CONFIG.finalPage;
   const lines = CONFIG.finalMessage;
+  const cells = c.cells.map((x, i) => `
+        <div class="fin-cell">
+          <span>${x.k}</span>
+          <b class="fin-val" id="fin-val-${i}" data-cell="${i}">${x.v || ""}</b>
+          ${x.stamp ? `<i class="fin-stamp" id="fin-stamp"><b>${x.stamp}</b><small>${CONFIG.workDates.end}</small></i>` : ""}
+        </div>`).join("");
+
   $("view-final").innerHTML = `
     <div class="final-decor">${finalDecor()}</div>
-    <div class="final-num">${CONFIG.workDays}</div>
-    <div class="final-unit">${c.unit}</div>
-    <div class="final-date">${CONFIG.workDates.start} → ${CONFIG.workDates.end}</div>
-    <hr class="rule">
-    <div class="final-msg">
-      ${lines.map((l,i)=>`<p class="fade-in" data-i="${i}">${l}</p>`).join("")}
-    </div>
-    <div class="final-replay" id="final-replay" style="display:none">
-      <button class="btn btn-ghost" id="btn-back-lobby">${CONFIG.backLabel}</button>
-      <button class="btn btn-ghost" id="btn-replay">↺ 再玩一次</button>
+    <div class="fin-wrap">
+      <div class="fin-card" id="fin-card">
+        <div class="fin-top"><b>${c.fileLabel}</b><span>${c.fileNo}</span></div>
+        <div class="fin-rule"></div>
+        <div class="fin-step fin-num" id="fin-num">${CONFIG.workDays}<i>${c.unit}</i></div>
+        <div class="fin-step fin-date" id="fin-date">${CONFIG.workDates.start} — ${CONFIG.workDates.end}</div>
+        <div class="fin-step fin-meta" id="fin-meta">${c.meta}</div>
+        <div class="fin-step fin-cells" id="fin-cells">${cells}</div>
+        <div class="fin-msg">
+          ${lines.map((l,i)=>`<p id="fin-line-${i}">${l}</p>`).join("")}
+        </div>
+        <div class="fin-sign" id="fin-sign">—— ${c.sign}</div>
+      </div>
+      <div class="fin-actions" id="fin-actions">
+        <button class="btn btn-ghost" id="btn-back-lobby">${CONFIG.backLabel}</button>
+        <button class="btn btn-ghost" id="btn-replay">↺ 再玩一次</button>
+      </div>
     </div>`;
+
   showView("final");
-  // 逐段淡入，全部出现完再显示按钮组
-  setTimeout(()=>{
-    const ps = document.querySelectorAll(".final-msg .fade-in");
-    ps.forEach((p,i)=>{
-      setTimeout(()=>{
-        p.classList.add("on");
-        if(i === ps.length - 1){
-          setTimeout(()=>{ $("final-replay").style.display = "flex"; }, 1000);
-        }
-      }, i * 2000);
-    });
-  }, 350);
+  runFinalSequence();
+
   // 返回大厅：进度保留
-  $("btn-back-lobby").addEventListener("click", backToHall);
+  $("btn-back-lobby").addEventListener("click", ()=>{ SFX.tap(); backToHall(); });
+  // 再玩一次：清档 → 回到锁屏，从头解锁
   $("btn-replay").addEventListener("click", ()=>{
+    SFX.tap();
     clearRaw();
     progress = defaultProgress();
     failCounts = { 1:0, 2:0, 3:0 };  // 失败计数也必须清零，否则新一局首次失败就会出现作弊按钮
-    renderOpening();
-    showView("opening");
+    SFX.tensionStop(); SFX.musicBoxStop();
+    phoneUnlocked = false; faceIdOn = false; storyBegun = false; unlockChimePending = false;
+    hallDoorView = false; hallYear = 2023;
+    renderLock();
+    showView("lock");
   });
+}
+
+/* 终页出场时间轴：每段都带音 */
+function runFinalSequence(){
+  const show = (id) => { const e = $(id); if(e) e.classList.add("on"); };
+  const snd = (fn) => { try{ fn(); }catch(e){} };
+  const plan = [];
+  plan.push([420,  () => { show("fin-num");   snd(()=>SFX.flip()); }]);
+  plan.push([820,  () => { show("fin-date");  snd(()=>SFX.flip()); }]);
+  plan.push([1120, () => { show("fin-meta");  snd(()=>SFX.flip()); }]);
+  plan.push([1480, () => { show("fin-cells"); snd(()=>SFX.flip()); }]);
+  plan.push([1880, () => { show("fin-val-0"); snd(()=>SFX.tap());  }]);
+  plan.push([2180, () => { show("fin-val-1"); snd(()=>SFX.tap());  }]);
+  // 顿一下，盖章
+  plan.push([2880, () => { show("fin-stamp"); snd(()=>SFX.stamp()); }]);
+  let tl = 4100;
+  CONFIG.finalMessage.forEach((_, i) => {
+    plan.push([tl, () => { show("fin-line-" + i); snd(()=>SFX.flip()); }]);
+    tl += 1200;
+  });
+  plan.push([tl + 300,  () => { show("fin-sign"); snd(()=>SFX.fragment()); }]);
+  plan.push([tl + 950,  () => { show("fin-actions"); }]);
+  plan.forEach(([ms, fn]) => setTimeout(fn, ms));
 }
 
 /* 终页庆祝漂浮 emoji */
