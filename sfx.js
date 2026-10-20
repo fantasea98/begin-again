@@ -51,6 +51,7 @@ function dlog(msg){
 var _lastResume = 0;
 var _rebuilds = 0;
 var _lastRebuild = 0;
+var _lastCreate = 0;
 
 /* iOS 静音拨杆打开时 Web Audio 会被系统静音。
    办法：在手势里播一段极短的静音 wav（走 <audio> 通道），
@@ -179,6 +180,7 @@ function ensure(force, noCreate){
     return false;
   }
 
+  var createdNow = false;
   if(!ctx){
     /* 顺序很重要：先用 <audio> 争到「媒体播放」许可，再建 AudioContext。
        两个都在同一个手势的同步栈里，iOS 上这样成功率最高。 */
@@ -186,11 +188,20 @@ function ensure(force, noCreate){
     try{ createCtx(); }
     catch(e){ dead = true; ctx = null; master = null; dlog("createCtx THROW " + (e && e.name)); return false; }
     ready = true;
+    createdNow = true;
+    _lastCreate = Date.now();
+    dlog("created ctx");
     registerVisibility();
   }
 
   if(ctx.state !== "running"){
-    var canRebuild = !!force && _rebuilds < 3 && (Date.now() - _lastRebuild) > 250;
+    /* 关键防护：刚建出来的上下文 150ms 内绝不重建。
+       否则「document 上的 net」和「锁屏自己的处理」会在同一个事件里先后各调一次
+       hardUnlock，第二次就把第一次刚建好、正在 resume 的那只关掉重建，
+       白白浪费掉这次用户手势（真机日志里就是这样：none->suspended rb=1 紧接着又重建）。
+       150ms 足够挡住同一事件里的重复调用，又不会误伤 300ms 后才到的 click 重试。 */
+    var canRebuild = !!force && !createdNow && (Date.now() - _lastCreate) > 150
+                     && _rebuilds < 3 && (Date.now() - _lastRebuild) > 250;
     if(canRebuild){
       closeCtx();
       playSilentWav("beforeRebuild");
@@ -220,6 +231,27 @@ function ensure(force, noCreate){
 
 /* 兼容旧调用 */
 function init(){ return ensure(false); }
+
+/* 温和唤醒：只对「已经存在的」上下文补一次 resume + ping，
+   绝不新建、也绝不标手势窗口 —— 因为它是被 setTimeout 反复调的，
+   一旦标了窗口，suspended 期间排下的音符会堆在冻结的 currentTime 上，
+   等音频真的醒了就一次性炸出来（就是之前那个"卡几秒后集中播放"的毛病）。 */
+function nudge(){
+  if(dead) return false;
+  if(!ctx) return false;
+  if(ctx.state === "closed"){ ctx = null; master = null; ready = false; return false; }
+  if(ctx.state === "running") return true;
+  _lastResume = Date.now();
+  try{
+    var p = ctx.resume();
+    if(p && p.then){
+      p.then(function(){ dlog("nudge resume OK -> " + (ctx && ctx.state)); },
+             function(err){ dlog("nudge resume REJECT " + ((err && err.name) || "?")); });
+    }
+  }catch(e){ dlog("nudge resume THROW " + (e && e.name)); }
+  try{ ping(); }catch(e){}
+  return ctx.state === "running";
+}
 
 /* 立刻启动一个 1 采样的静音源 —— iOS 真正「解锁」Web Audio 靠的就是
    在用户手势里 start() 一个 source，光 resume() 有时不够。 */
@@ -552,7 +584,8 @@ return {
   init: init,
   ensure: ensure,
   hardUnlock: function(){ return ensure(true); },
-  wake: function(){ return ensure(false, true); },
+  wake: nudge,
+  resume: nudge,
   gesture: markGesture,
   _log: function(){ return _diag.slice(); },
   log: dlog,
