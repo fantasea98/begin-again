@@ -42,7 +42,7 @@ const CONFIG = {
   workDates: { start: "2023.10.05", end: "2026.10.30" },
 
   groupName: "中山大家庭(500)",
-  hallTitle: "🏢 记忆房间",
+  hallTitle: "记忆房间",
   hallSubtitle: "找回 4 枚记忆碎片，修复时间线",
   lockHint: "请按照正确的时间线获取碎片",
 
@@ -104,7 +104,6 @@ const CONFIG = {
     unit: "天",
     fileLabel: "员工档案：🐘🐏",
     fileNo: "NO. 5147",
-    meta: "4 段记忆 · 全部归档",
     cells: [
       { k: "部门", v: "组织部" },
       { k: "在职", v: "1122 天", dur: true },
@@ -113,8 +112,12 @@ const CONFIG = {
     sign: "🐘🐏",
   },
 
-  // 最终留言（逐行淡出，想加几行就加几行）
+  // 最终留言（逐行淡入，想加几行就加几行）
   finalMessage: [
+    "2023 年 10 月 5 日，你第一次推开这间办公室的门。",
+    "三年，一千一百二十二天，从「好的，收到」写到了「像你这样的朋友」。",
+    "谢谢你把最好的三年留在这里。",
+    "记得常回来看看，这间房间一直给你留着灯。",
     "2023 年 10 月 5 日，你第一次推开这间办公室的门。",
     "三年，一千一百二十二天，从「好的，收到」写到了「像你这样的朋友」。",
     "谢谢你把最好的三年留在这里。",
@@ -128,7 +131,7 @@ const CONFIG = {
       fragment: 1, fragmentName: "入职碎片",
       tagline: "入职第一天，他是何方神圣？",
       accentIndex: 0,
-      intro: ["👂 听说组织部来了个年轻人。", "📞 快打电话问问看是谁吧。"],
+      intro: ["👂 听说<b class=\"orange-flash\">组织部</b>来了个年轻人。", "📞 快打电话问问看是谁吧。"],
       hint: "请拨通正确的电话号码",
       correctNumber: "88374924",
       digitLength: 8,
@@ -1477,6 +1480,8 @@ function playResult(lvl, lines){
   const card = $("modal");
   card.innerHTML = `<div id="result-lines"></div><div id="result-tail" style="display:none"></div>`;
   const box = $("result-lines");
+  // 空弹窗先出来，停 1 秒；之后每 1 秒说一句（逐句淡入，不抢拍）
+  const GAP = 1000, LEAD = 1000;
   lines.forEach((ln, i) => {
     setTimeout(()=>{
       const d = document.createElement("div");
@@ -1484,7 +1489,7 @@ function playResult(lvl, lines){
       d.innerHTML = ln;
       box.appendChild(d);
       requestAnimationFrame(()=> d.classList.add("on"));
-    }, 450 + i * 900);
+    }, LEAD + i * GAP);
   });
   setTimeout(()=>{
     $("result-tail").style.display = "block";
@@ -1494,7 +1499,7 @@ function playResult(lvl, lines){
       <div class="frag-big">🧩 获得${lvl.fragmentName} ×${lvl.fragment}</div>
       <button class="btn btn-accent btn-block" id="btn-collect">${CONFIG.collectLabel}</button>`;
     $("btn-collect").addEventListener("click", ()=> collect(lvl.id));
-  }, 450 + lines.length * 900 + 500);
+  }, LEAD + lines.length * GAP + 600);
 }
 function collect(id){
   const lvl = levelById(id);
@@ -2068,11 +2073,36 @@ function l3Miss(){
         <button class="btn btn-primary btn-block" id="btn-ok">时光倒流</button>
         ${cheatBtn}
       </div>`);
-    $("btn-ok").addEventListener("click", ()=>{ closeModal(); l3BeginAction(); });
+    $("btn-ok").addEventListener("click", ()=>{ closeModal(); l3ResetToIntro(); });
     if(lv3.fails >= 3){
       $("btn-cheat").addEventListener("click", ()=> cheatToSuccess(3));
     }
   }, 650);
+}
+/* 失败后回到「开幕前」：幕布重新拉上，动作清零，等玩家再点 MUSIC */
+function l3ResetToIntro(){
+  cancelAnimationFrame(lv3.raf);
+  if(lv3.timeout){ clearTimeout(lv3.timeout); lv3.timeout = null; }
+  if(lv3.stepTimer){ clearTimeout(lv3.stepTimer); lv3.stepTimer = null; }
+  if(lv3.startTimer){ clearTimeout(lv3.startTimer); lv3.startTimer = null; }
+  lv3.running = false;
+  lv3.phase = "intro";
+  lv3.actionIdx = 0;
+  lv3.combo = 0;
+  lv3.results = [];
+  const stage = $("l3-stage");
+  if(stage) stage.classList.remove("opened");     // 幕布落下
+  const bg = $("l3-bg");
+  if(bg){ bg.classList.remove("live"); bg.classList.remove("beam"); }
+  const v = $("l3-verdict");
+  if(v){ v.className = "verdict"; v.textContent = ""; v.style.background = ""; v.style.color = ""; v.style.boxShadow = ""; }
+  const ring = $("l3-ring"); if(ring) ring.style.transform = "";
+  const emo = $("l3-emoji"); if(emo){ emo.classList.remove("dance"); emo.textContent = "🕺"; }
+  updateL3Hud();
+  const prog = $("l3-progress"); if(prog) prog.textContent = "准备";
+  // MUSIC 按钮在舞台下面，幕布落回后把它滚进视野，免得玩家找不到
+  const mb = $("l3-music");
+  if(mb) setTimeout(()=>{ try{ mb.scrollIntoView({ behavior:"smooth", block:"center" }); }catch(e){} }, 420);
 }
 function l3Win(){
   lv3.phase = "done";
@@ -2185,10 +2215,11 @@ function confirmLv4(lvl){
 }
 function lv4Success(lvl){
   const names = lv4.chosen.map(i => lvl.options[i].n);
+  // 三个选中的东西都要绿色高亮闪烁（hl-word = 绿字 + wordGlow）
   const nameStr = names.length === 3
-    ? `${names[0]}、${names[1]}和${names[2]}`
-    : names.join("、");
-  const lines = [ lvl.thanksPrefix, nameStr, lvl.thanksTail, lvl.dropText ];
+    ? `<b class="hl-word">${names[0]}</b>、<b class="hl-word">${names[1]}</b>和<b class="hl-word">${names[2]}</b>`
+    : names.map(n => `<b class="hl-word">${n}</b>`).join("、");
+  const lines = [ `${lvl.thanksPrefix}${nameStr}`, lvl.thanksTail, lvl.dropText ];
   openModal("");
   playResult(lvl, lines);
 }
@@ -2204,7 +2235,13 @@ function runLevelSuccess(lvl, opts){
     const lines = [ "🏆恭喜准点下班！", "这一年，因为你的才华和努力，", "成功解锁成就", `<b class="glow-word">🏅【${lvl.achievementName}】🏅</b>` ];
     playResult(lvl, lines);
   } else if(lvl.id === 3){
-    const lines = [ "🎉 完美的演出！", `恭喜获得<b class="glow-word">「${lvl.awardName}」</b>`, "实至名归！🏆" ];
+    const lines = [
+      "🎉 完美的演出！",
+      "全开麦真唱真跳",
+      "拳打爱豆 脚踢歌手",
+      `恭喜获得<b class="glow-word">「${lvl.awardName}」</b>`,
+      "实至名归！🏆"
+    ];
     playResult(lvl, lines);
   } else if(lvl.id === 4){
     // 作弊不会出现在第 4 关（无失败机制），此分支仅供兜底
@@ -2343,7 +2380,6 @@ function renderFinal(){
         <div class="fin-rule"></div>
         <div class="fin-step fin-num" id="fin-num">${CONFIG.workDays}<i>${c.unit}</i></div>
         <div class="fin-step fin-date" id="fin-date">${CONFIG.workDates.start} — ${CONFIG.workDates.end}</div>
-        <div class="fin-step fin-meta" id="fin-meta">${c.meta}</div>
         <div class="fin-step fin-cells" id="fin-cells">${cells}</div>
         <div class="fin-msg">
           ${lines.map((l,i)=>`<p id="fin-line-${i}">${l}</p>`).join("")}
@@ -2380,21 +2416,21 @@ function runFinalSequence(){
   const show = (id) => { const e = $(id); if(e) e.classList.add("on"); };
   const snd = (fn) => { try{ fn(); }catch(e){} };
   const plan = [];
-  plan.push([420,  () => { show("fin-num");   snd(()=>SFX.flip()); }]);
-  plan.push([820,  () => { show("fin-date");  snd(()=>SFX.flip()); }]);
-  plan.push([1120, () => { show("fin-meta");  snd(()=>SFX.flip()); }]);
-  plan.push([1480, () => { show("fin-cells"); snd(()=>SFX.flip()); }]);
-  plan.push([1880, () => { show("fin-val-0"); snd(()=>SFX.tap());  }]);
-  plan.push([2180, () => { show("fin-val-1"); snd(()=>SFX.tap());  }]);
-  // 顿一下，盖章
-  plan.push([2880, () => { show("fin-stamp"); snd(()=>SFX.stamp()); }]);
-  let tl = 4100;
+  // 每个元素间隔 1 秒，慢慢来；只有落章那一下稍微赶一点
+  plan.push([1000, () => { show("fin-num");   snd(()=>SFX.flip()); }]);
+  plan.push([2000, () => { show("fin-date");  snd(()=>SFX.flip()); }]);
+  plan.push([3000, () => { show("fin-cells"); snd(()=>SFX.flip()); }]);
+  plan.push([4000, () => { show("fin-val-0"); snd(()=>SFX.tap());  }]);
+  plan.push([5000, () => { show("fin-val-1"); snd(()=>SFX.tap());  }]);
+  // 顿一下，盖章（比其它元素快一拍）
+  plan.push([5500, () => { show("fin-stamp"); snd(()=>SFX.stamp()); }]);
+  let tl = 6500;
   CONFIG.finalMessage.forEach((_, i) => {
     plan.push([tl, () => { show("fin-line-" + i); snd(()=>SFX.flip()); }]);
-    tl += 1200;
+    tl += 1000;
   });
-  plan.push([tl + 300,  () => { show("fin-sign"); snd(()=>SFX.fragment()); }]);
-  plan.push([tl + 950,  () => { show("fin-actions"); }]);
+  plan.push([tl + 500,  () => { show("fin-sign"); snd(()=>SFX.fragment()); }]);
+  plan.push([tl + 1100, () => { show("fin-actions"); }]);
   plan.forEach(([ms, fn]) => setTimeout(fn, ms));
 }
 
