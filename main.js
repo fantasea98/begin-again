@@ -28,6 +28,8 @@ const CONFIG = {
     purple: "#C77DFF",
     optionPalette: ["#E0A800","#0E8FA3","#D52E68","#2E9E4F","#DC5F7E","#6F52D6","#2775C9","#E5842A","#259E7B","#A449CC"],
     deep: ["#E0BC2A", "#2691A8", "#E23C79", "#16352A"],  // 各关主题色的「稍微深一点」版本
+    fragInk: ["#6B4520", "#2691A8", "#E23C79", "#16352A"],  // 「获得xx碎片」文字色
+    fragBtn: ["#6B4520", "#38B2C8", "#D8448F", "#16352A"],  // 「收下碎片」按钮底色
     success: "#3DDC84",
     danger: "#E45D54",
     frame: "#26262b",       // 手机外框机身色
@@ -187,7 +189,7 @@ const CONFIG = {
     {
       id: 3, year: 2025, emoji: "🕺", title: "像你这样的朋友",
       fragment: 4, fragmentName: "唱跳碎片",
-      tagline: "中山每年都有新的朋友，对新来的好朋友 say hello～",
+      tagline: "时光偷走遇见转角送来错过，四季飞快像坐过山车。",
       accentIndex: 2,
       awardName: "最受观众喜爱节目奖",
       intro: [
@@ -228,7 +230,7 @@ const CONFIG = {
       startLabel: "开始",
       confirmTitle: "确认带走？",
       thanksPrefix: "💘谢谢你留给我",
-      thanksTail: "你的选择就是<b class=\"glow-word\">唯一的正确答案</b>。🎯",
+      thanksTail: "你的选择就是<b class=\"green-glow\">唯一的正确答案</b>。🎯",
       dropText: "最后一个碎片缓缓掉落。",
     },
   ],
@@ -992,9 +994,13 @@ function roomSVG(){
       <rect x="60" y="114" width="7" height="7" rx="3" fill="#C98F5A"/>
     </g>`;
     props = `
-      <rect x="98" y="134" width="14" height="16" rx="3" fill="#BFE6C9" stroke="#7FBF9A" stroke-width="1.5"/>
-      <path d="M112 138 q6 0 6 4.5 q0 4.5 -6 4.5" fill="none" stroke="#7FBF9A" stroke-width="1.6"/>
-      <path d="M102 130 q0 -3 3 -3 q3 0 3 3" fill="none" stroke="#BFD8C6" stroke-width="1.2"/>`;
+      <rect x="226" y="134" width="15" height="17" rx="3" fill="#BFE6C9" stroke="#7FBF9A" stroke-width="1.5"/>
+      <path d="M241 138 q6.5 0 6.5 4.6 q0 4.6 -6.5 4.6" fill="none" stroke="#7FBF9A" stroke-width="1.6"/>
+      <ellipse cx="233.5" cy="135" rx="6.4" ry="1.8" fill="#8FCBA8" opacity=".55"/>
+      <g class="tea-steam" fill="none" stroke="#9FD3BC" stroke-width="1.3" stroke-linecap="round">
+        <path d="M231 129 c3 -4.6 -3 -6.4 0 -10.5"/>
+        <path d="M236.5 128.5 c3 -4 -3 -5.8 0 -9.5"/>
+      </g>`;
   } else if(y === 2024){
     stamp = "2024.06";
     hot = `<g class="hs-hot${isLevelUnlocked(2) ? "" : " is-locked"}" data-lv="2" role="button" aria-label="特别的物品">
@@ -1253,7 +1259,7 @@ function renderHall(){
           <span class="hall2-emoji">${lv.emoji}</span>
         </div>
         <div class="hall2-tag">${lv.tagline}</div>
-        <div class="hall2-frag${done ? " on" : ""}${darkFrag ? " white" : ""}"${done ? ` style="background:${accentOf(lv)}"` : ""}>🧩 ${done ? lv.fragmentName + "：" + lv.fragment : "碎片：未获得"}</div>
+        <div class="hall2-frag${done ? " on" : ""}"${done ? ` style="background:${accentOf(lv)}"` : ""}>🧩 ${done ? lv.fragmentName + "：" + lv.fragment : "碎片：未获得"}</div>
       </div>
 
       <div class="hall2-tabs">${tabs}</div>
@@ -1508,6 +1514,11 @@ function playResult(lvl, lines, opts){
       d.innerHTML = ln;
       box.appendChild(d);
       requestAnimationFrame(()=> d.classList.add("on"));
+      // 需要「挨个出现」的行：等整行淡入后，再把每个词依次点亮
+      if(o.stagger === i){
+        const items = d.querySelectorAll(".p1,.p2,.p3");
+        items.forEach((el, n) => setTimeout(()=> el.classList.add("in"), 380 + n * 520));
+      }
       // 逐行配音；最后一行若是「碎片缓缓掉落」，用慢上扬的铃音
       try{ (o.slowLast && isLast) ? SFX.fragment() : SFX.flip(); }catch(e){}
     }, LEAD + i * GAP);
@@ -1517,8 +1528,8 @@ function playResult(lvl, lines, opts){
     SFX.fragmentDrop();   // 碎片落入手中：就在「获得 xx 碎片」出现这一刻
     $("result-tail").innerHTML = `
       <hr class="popup-divider">
-      <div class="frag-big" style="color:${deepOf(lvl)}">🧩 获得${lvl.fragmentName}：${lvl.fragment}</div>
-      <button class="btn btn-block frag-collect" id="btn-collect">${CONFIG.collectLabel}</button>`;
+      <div class="frag-big" style="color:${T.fragInk[lvl.accentIndex]}">🧩 获得${lvl.fragmentName}：${lvl.fragment}</div>
+      <button class="btn btn-block frag-collect" id="btn-collect" style="background:${T.fragBtn[lvl.accentIndex]}">${CONFIG.collectLabel}</button>`;
     $("btn-collect").addEventListener("click", ()=> collect(lvl.id));
   }, LEAD + lines.length * GAP + 600);
 }
@@ -2262,14 +2273,14 @@ function runLevelSuccess(lvl, opts){
     const lines = [...lvl.dialLines, lvl.success];
     playResult(lvl, lines);
   } else if(lvl.id === 2){
-    const lines = [ "🏆恭喜准点下班！", "这一年，因为你的才华和努力，", "成功解锁成就", `<b class="glow-word">🏅【${lvl.achievementName}】🏅</b>` ];
+    const lines = [ "🏆恭喜准点下班！", "这一年，因为你的才华和努力，", "成功解锁成就", `<b class="blue-glow">🏅【${lvl.achievementName}】🏅</b>` ];
     playResult(lvl, lines);
   } else if(lvl.id === 3){
     const lines = [
       "🎉 完美的演出！",
       "全开麦真唱真跳",
       "拳打爱豆 脚踢歌手",
-      `恭喜获得<b class="glow-word">「${lvl.awardName}」</b>`,
+      `恭喜获得<b class="pink-glow">「${lvl.awardName}」</b>`,
       "实至名归！🏆"
     ];
     playResult(lvl, lines);
@@ -2402,20 +2413,20 @@ function renderFinal(){
     <div class="final-decor">${finalDecor()}</div>
     <div class="fin-wrap">
       <div class="fin-card" id="fin-card">
-        <div class="fin-top"><b>${c.fileLabel}</b><span>${c.fileNo}</span></div>
-        <div class="fin-rule"></div>
+        <div class="fin-top fin-head" id="fin-head"><b>${c.fileLabel}</b><span>${c.fileNo}</span></div>
+        <div class="fin-rule fin-head" id="fin-rule"></div>
 
         <div class="fin-body">
           <div class="fin-fields">${fields}</div>
           <div class="fin-photo" id="fin-photo">
             <div class="cap">ID PHOTO</div>
-            <img src="id-photo.svg?v=1" alt="工牌照" draggable="false" />
+            <img src="id-photo.svg?v=2" alt="工牌照" draggable="false" />
           </div>
         </div>
 
         <div class="fin-cells">
-          <div class="fin-cell date" id="fin-cell-date"><span>${c.dateLabel}</span><b>${CONFIG.workDates.start} — ${CONFIG.workDates.end}</b></div>
-          <div class="fin-cell days" id="fin-cell-days"><span>${c.daysLabel}</span><b>${CONFIG.workDays}<i>${c.unit}</i></b></div>
+          <div class="fin-cell date" id="fin-cell-date"><span>${c.dateLabel}</span><b class="fin-v" id="fin-v-date">${CONFIG.workDates.start} — ${CONFIG.workDates.end}</b></div>
+          <div class="fin-cell days" id="fin-cell-days"><span>${c.daysLabel}</span><b class="fin-v" id="fin-v-days">${CONFIG.workDays}<i>${c.unit}</i></b></div>
         </div>
 
         <div class="fin-msg">
@@ -2469,31 +2480,34 @@ function runFinalSequence(){
     const e = $(id);
     if(!e) return;
     e.classList.add("on");
-    if(sy !== false) setTimeout(()=> finScrollTo(e), 260);
+    if(sy !== false) setTimeout(()=> finScrollTo(e), 300);
   };
   const snd = (fn) => { try{ fn(); }catch(e){} };
+  const popSnd = () => snd(()=>SFX.pop());
 
   const plan = [];
   let t = 0;
   const step = (gap, fn) => { t += gap; plan.push([t, fn]); };
 
-  // 头的员工档案已经随卡片出现，停一会儿再依次落字段（音效换成柔和风铃）
-  let k = 0;
-  const soft = () => { const n = k++; snd(()=>SFX.soft(n)); };
-  step(1500, () => { show("fin-f-0"); soft(); });
-  step(1500, () => { show("fin-f-1"); soft(); });
-  step(1500, () => { show("fin-f-2"); soft(); });
+  // 礼花先飘一会儿，「员工档案」才出来
+  step(1600, () => { show("fin-head"); popSnd(); });
+  step(1100, () => { show("fin-rule"); });
+  step(1300, () => { show("fin-f-0"); popSnd(); });
+  step(1300, () => { show("fin-f-1"); popSnd(); });
+  step(1300, () => { show("fin-f-2"); popSnd(); });
   // 部门之后才出现工牌照片
-  step(1600, () => { show("fin-photo"); snd(()=>SFX.reveal()); });
-  step(1400, () => { show("fin-cell-date"); soft(); });
-  step(1400, () => { show("fin-cell-days"); soft(); });
-  // 信：逐行，每行 1.4 秒
-  CONFIG.finalMessage.forEach((_, i) => {
-    step(1400, () => { show("fin-line-" + i); soft(); });
+  step(1500, () => { show("fin-photo"); popSnd(); });
+  // 两个小框一起出现，里面的数据再依次落
+  step(1600, () => { show("fin-cell-date"); show("fin-cell-days"); popSnd(); });
+  step(1000, () => { show("fin-v-date"); popSnd(); });
+  step(1000, () => { show("fin-v-days"); popSnd(); });
+  // 留言：再多等一秒才开始，之后一行都不配音
+  step(2200, () => { show("fin-line-0"); });
+  CONFIG.finalMessage.slice(1).forEach((_, i) => {
+    step(1400, () => { show("fin-line-" + (i + 1)); });
   });
-  // 落款
-  step(1500, () => { show("fin-sign"); snd(()=>SFX.fragment()); });
-  // 停两秒盖红章
+  // 落款 + 停两秒盖红章（这两下才出声）
+  step(1500, () => { show("fin-sign"); popSnd(); });
   step(2000, () => { show("fin-seal", false); snd(()=>SFX.stamp()); });
   step(1100, () => { show("fin-actions"); });
 
