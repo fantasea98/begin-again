@@ -210,10 +210,10 @@ body{
 #view-level1 .level-head-title{ color:#6B4520; }
 #view-level1 .level-head-year{ color:#A98F72; }
 #view-level1 #btn-back{ border-color:#6B4520; color:#6B4520; }
-/* 第二关：太阳的亮黄 */
-#view-level2 .level-head-title{ color:#F2A93B; }
-#view-level2 .level-head-year{ color:#E8B86A; }
-#view-level2 #btn-back{ border-color:#F2A93B; color:#F2A93B; }
+/* 第二关：纯白 */
+#view-level2 .level-head-title{ color:#FFFFFF; text-shadow:0 2px 12px rgba(120,90,40,.35); }
+#view-level2 .level-head-year{ color:rgba(255,255,255,.82); }
+#view-level2 #btn-back{ border-color:#FFFFFF; color:#FFFFFF; }
 
 .story-card{
   position:relative; z-index:1; background:var(--card); border-radius:var(--radius-lg);
@@ -721,10 +721,10 @@ body{
 }
 /* Party 底上的页头文字：白色才看得清 */
 #view-level3 .level-head-title{ color:#fff; text-shadow:0 2px 12px rgba(70,0,80,.5); }
-/* 第四关：接近黑的深绿 */
-#view-level4 .level-head-title{ color:#1B3A2E; }
-#view-level4 .level-head-year{ color:#3F6B58; }
-#view-level4 #btn-back{ border-color:#1B3A2E; color:#1B3A2E; }
+/* 第四关：深绿底 + 白字 */
+#view-level4 .level-head-title{ color:#FFFFFF; text-shadow:0 2px 14px rgba(0,0,0,.35); }
+#view-level4 .level-head-year{ color:rgba(220,255,238,.8); }
+#view-level4 #btn-back{ border-color:rgba(255,255,255,.85); color:#FFFFFF; }
 #view-level3 .level-head-year{ color:rgba(255,255,255,.92); }
 #view-level3 .btn-ghost{
   color:#fff; border-color:rgba(255,255,255,.65); background:rgba(255,255,255,.14);
@@ -752,15 +752,15 @@ body{
 }
 
 /* ---------- 第 4 关：黄昏回忆（暖橙夕阳 + 极淡回忆） ---------- */
-.bg-4{ background:linear-gradient(180deg,#FFE9C2 0%,#FBD9AE 38%,#F4C896 72%,#EFB883 100%); }
+.bg-4{ background:linear-gradient(180deg,#26432F 0%,#18301F 45%,#0D1F14 100%); }
 .bg-4 .sun{
   position:absolute; top:4%; right:-10%; width:170px; height:170px; border-radius:50%;
-  background:radial-gradient(circle, rgba(255,246,218,.95), rgba(255,220,150,.35) 55%, transparent 72%);
+  background:radial-gradient(circle, rgba(206,255,226,.34), rgba(150,230,190,.12) 55%, transparent 72%);
 }
 .bg-4 .rays{
   position:absolute; inset:-30% -50%;
   background:repeating-linear-gradient(108deg,
-    rgba(255,255,255,0) 0 70px, rgba(255,255,255,.12) 70px 92px);
+    rgba(255,255,255,0) 0 70px, rgba(198,255,224,.07) 70px 92px);
   animation:bgDrift 24s ease-in-out infinite alternate;
 }
 .bg-4 .memo{
@@ -865,6 +865,12 @@ body{
 @keyframes floaty{ from{ transform:translateY(4px) scale(.96) rotate(var(--rot,0deg)); } to{ transform:translateY(-10px) scale(1.04) rotate(var(--rot,0deg)); } }
 @keyframes optNGlow{ 0%,100%{ text-shadow:0 1px 3px rgba(0,0,0,.3); } 50%{ text-shadow:0 0 5px rgba(255,255,255,.6), 0 1px 3px rgba(0,0,0,.3); } }
 .hl-word{ font-weight:900; color:#137a41; animation:wordGlow 1.1s ease-in-out infinite; }
+.blue-glow{ font-weight:900; color:#0E7C93; animation:blueGlow 1.15s ease-in-out infinite; }
+@keyframes blueGlow{ 0%,100%{ text-shadow:0 0 4px rgba(56,178,200,.45);} 50%{ text-shadow:0 0 14px rgba(56,178,200,.95), 0 0 26px rgba(30,150,180,.5);} }
+.pink-glow{ font-weight:900; color:#FF2F80; animation:pinkGlow 1.15s ease-in-out infinite; }
+@keyframes pinkGlow{ 0%,100%{ text-shadow:0 0 4px rgba(255,47,128,.45);} 50%{ text-shadow:0 0 15px rgba(255,47,128,.95), 0 0 28px rgba(255,120,190,.55);} }
+.green-glow{ font-weight:900; color:#16352A; animation:greenGlow 1.15s ease-in-out infinite; }
+@keyframes greenGlow{ 0%,100%{ text-shadow:0 0 4px rgba(22,53,42,.35);} 50%{ text-shadow:0 0 13px rgba(60,140,105,.85), 0 0 24px rgba(40,110,80,.45);} }
 @keyframes wordGlow{ 0%,100%{ text-shadow:none; } 50%{ text-shadow:0 0 12px rgba(61,220,132,.85); } }
 .showtime{ font-weight:900; letter-spacing:1px; animation:showtime 1.3s ease-in-out infinite; }
 @keyframes showtime{ 0%,100%{ color:var(--ink); text-shadow:none; } 50%{ color:var(--a3); text-shadow:0 0 14px rgba(255,94,151,.75); } }
@@ -920,10 +926,14 @@ body{
   100%{ opacity:1; transform:none; }
 }
 .fin-top{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
-.fin-top b{ font-size:16px; letter-spacing:2px; color:#4A3320; white-space:nowrap; }
+.fin-top b{ font-size:18px; letter-spacing:2px; color:#4A3320; white-space:nowrap; }
 .fin-top span{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px;
                letter-spacing:1px; color:#8C6A45; white-space:nowrap; }
 .fin-rule{ border-top:2px solid #6B4520; margin:11px 0 0; }
+/* 顶部「员工档案」与横线：等礼花飘一会儿再淡入 */
+.fin-head{ opacity:0; transform:translateY(-6px);
+           transition:opacity 1.1s cubic-bezier(.22,.61,.36,1), transform 1.1s cubic-bezier(.22,.61,.36,1); }
+.fin-head.on{ opacity:1; transform:none; }
 
 /* 字段 + 工牌照片 */
 .fin-body{ display:flex; gap:14px; align-items:flex-end; margin-top:14px; }
@@ -960,12 +970,16 @@ body{
 }
 .fin-cell.on{ opacity:1; transform:none; }
 .fin-cell span{ display:block; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-                font-size:8.5px; letter-spacing:2px; color:#AA9070; }
-.fin-cell b{ display:block; margin-top:3px; font-size:12px; letter-spacing:.3px;
+                font-size:9.5px; letter-spacing:2px; color:#AA9070; }
+.fin-cell b{ display:block; margin-top:4px; font-size:13.5px; letter-spacing:.3px;
              font-weight:800; color:#4A3320; white-space:nowrap; }
-.fin-cell b i{ font-style:normal; font-size:10px; color:#8C6A45; margin-left:3px; }
+.fin-cell b i{ font-style:normal; font-size:11px; color:#8C6A45; margin-left:3px; }
+/* 框先出，里面的数字再一个个落 */
+.fin-cell .fin-v{ opacity:0; transform:translateY(8px);
+  transition:opacity .8s cubic-bezier(.22,.61,.36,1), transform .8s cubic-bezier(.22,.61,.36,1); }
+.fin-cell .fin-v.on{ opacity:1; transform:none; }
 .fin-cell.date{ flex:2.05; }
-.fin-cell.date b{ font-size:11.6px; letter-spacing:.2px; font-weight:400;
+.fin-cell.date b{ font-size:12.4px; letter-spacing:.2px; font-weight:400;
                   font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
 .fin-cell.days{ flex:.95; }
 .fin-cell.days b{ font-weight:800; }
@@ -1034,17 +1048,15 @@ body{
 .result-line.on{ animation:lineIn .8s cubic-bezier(.22,.61,.36,1) both; }
 .result-line.slow.on{ animation:lineIn 2.2s cubic-bezier(.22,.61,.36,1) both; }
 /* 第四关：三个物品挨个蹦出来 */
-.result-line .p1, .result-line .p2, .result-line .p3{ display:inline-block; opacity:0; }
-.result-line.stagger.on .p1{ animation:itemIn .55s .10s cubic-bezier(.2,1.5,.5,1) both, wordGlow 1.1s .8s ease-in-out infinite; }
-.result-line.stagger.on .p2{ animation:itemIn .55s .75s cubic-bezier(.2,1.5,.5,1) both, wordGlow 1.1s 1.45s ease-in-out infinite; }
-.result-line.stagger.on .p3{ animation:itemIn .55s 1.4s cubic-bezier(.2,1.5,.5,1) both, wordGlow 1.1s 2.1s ease-in-out infinite; }
-@keyframes itemIn{
-  0%{ opacity:0; transform:scale(.55) translateY(4px); }
-  60%{ opacity:1; transform:scale(1.14) translateY(0); }
-  100%{ opacity:1; transform:scale(1); }
+/* 三个词靠 JS 依次加 .in（比动画更稳，reduced-motion 下也正常） */
+.result-line .p1, .result-line .p2, .result-line .p3{
+  display:inline-block; opacity:0; transform:scale(.55) translateY(4px);
+  transition:opacity .42s cubic-bezier(.2,1.4,.45,1), transform .42s cubic-bezier(.2,1.4,.45,1);
 }
+.result-line .p1.in, .result-line .p2.in, .result-line .p3.in{ opacity:1; transform:none; }
 /* 收下碎片：大厅的棕色 */
 .frag-collect{ background:#6B4520; color:#FFF8EE; }
+.frag-collect:active{ filter:brightness(.94); }
 .frag-collect:active{ transform:scale(.97); }
 @keyframes lineIn{
   0%{ opacity:0; transform:translateY(12px); }
@@ -1199,6 +1211,15 @@ body{
 .hall2-title .title-emoji{ font-size:36px; margin-right:6px; vertical-align:-2px; }
 .hall2-sub{ font-size:12px; color:#96714A; margin-top:4px; letter-spacing:.3px; }
 
+/* 2023 桌上的茶杯：热气缓缓上升 */
+.tea-steam path{ opacity:0; animation:steamRise 3.8s ease-in-out infinite; }
+.tea-steam path:nth-child(2){ animation-delay:1.5s; }
+@keyframes steamRise{
+  0%{ opacity:0; transform:translateY(4px); }
+  30%{ opacity:.85; }
+  70%{ opacity:.5; }
+  100%{ opacity:0; transform:translateY(-9px); }
+}
 .hall2-room{
   position:relative; border-radius:16px; overflow:hidden;
   background:#FBF7F0;
@@ -1253,11 +1274,12 @@ body{
   background:rgba(0,0,0,.045); color:var(--faint);
 }
 .hall2-frag.on{
-  background:var(--lv-accent, #FFE08A); color:#1A1A1A;
+  background:var(--lv-accent, #FFE08A); color:#FFFFFF;
   box-shadow:0 0 0 1px rgba(255,255,255,.5);
   animation:fragPop .5s ease;
 }
 .hall2-frag.on.white{ color:#FFFFFF; }
+/* 2023 黄底也用白字（按作者要求） */
 
 .hall2-tabs{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:18px; }
 .hall2-tab{
