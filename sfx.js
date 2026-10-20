@@ -525,6 +525,16 @@ function pick(){
   tone({ freq:1318.5, type:"triangle", dur:0.13, gain:0.15, attack:0.004 });
   tone({ freq:1975.5, type:"sine",     dur:0.09, gain:0.05, delay:0.012 });
 }
+/* 终页：柔和的风铃，一级一级往上走（慢进慢出，不抢不脆） */
+var SOFT_SCALE = [523.25, 587.33, 659.26, 783.99, 880, 1046.5];
+function soft(step){
+  if(!gate("soft", 110)) return;
+  var k = Math.max(0, Math.min(SOFT_SCALE.length - 1, step | 0));
+  var f = SOFT_SCALE[k];
+  tone({ freq:f,       type:"sine", dur:1.7, gain:0.130, attack:0.055 });
+  tone({ freq:f * 2,   type:"sine", dur:1.0, gain:0.034, attack:0.070, delay:0.02 });
+  tone({ freq:f * 1.5, type:"sine", dur:1.3, gain:0.028, attack:0.090, delay:0.07 });
+}
 /* 翻牌：纸张声 */
 function flip(){
   if(!gate("flip", 60)) return;
@@ -665,7 +675,7 @@ return {
   fragment: fragment, fragmentDrop: fragmentDrop, flip: flip,
   tensionStart: tensionStart, tensionStop: tensionStop,
   musicBoxStart: musicBoxStart, musicBoxStop: musicBoxStop,
-  unlock: unlock, confetti: confetti, stamp: stamp, pick: pick,
+  unlock: unlock, confetti: confetti, stamp: stamp, pick: pick, soft: soft,
   bubble: bubble, sysalert: sysalert, glitch: glitch,
   like: like, thought: thought, portal: portal,
   reveal: reveal, turn: turn, winPop: winPop, failPop: failPop
