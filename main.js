@@ -27,6 +27,7 @@ const CONFIG = {
     neon: "#A3FF73",
     purple: "#C77DFF",
     optionPalette: ["#E0A800","#0E8FA3","#D52E68","#2E9E4F","#DC5F7E","#6F52D6","#2775C9","#E5842A","#259E7B","#A449CC"],
+    deep: ["#E0BC2A", "#2691A8", "#E23C79", "#16352A"],  // 各关主题色的「稍微深一点」版本
     success: "#3DDC84",
     danger: "#E45D54",
     frame: "#26262b",       // 手机外框机身色
@@ -132,7 +133,7 @@ const CONFIG = {
     {
       id: 1, year: 2023, emoji: "📞", title: "初来乍到",
       fragment: 5, fragmentName: "入职碎片",
-      tagline: "入职第一天，他是何方神圣？",
+      tagline: "入职第一天，猜猜他是谁？",
       accentIndex: 0,
       intro: ["👂 听说<b class=\"orange-flash\">组织部</b>来了个年轻人。", "📞 快打电话问问看是谁吧。"],
       hint: "请拨通正确的电话号码",
@@ -266,6 +267,7 @@ const $ = (id) => document.getElementById(id);
 const randi = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
 const levelById = (id) => CONFIG.levels.find(l => l.id === id);
 const accentOf = (lvl) => T.accents[lvl.accentIndex];
+const deepOf   = (lvl) => T.deep[lvl.accentIndex] || accentOf(lvl);
 const vibrate = (ms) => { try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} };
 function shuffle(arr){
   const a = [...arr];
@@ -1251,7 +1253,7 @@ function renderHall(){
           <span class="hall2-emoji">${lv.emoji}</span>
         </div>
         <div class="hall2-tag">${lv.tagline}</div>
-        <div class="hall2-frag${done ? " on" : ""}"${done ? ` style="background:${darkFrag ? accentOf(lv) : mixDark(accentOf(lv), .5)}"` : ""}>🧩 ${done ? lv.fragmentName + "：" + lv.fragment : "碎片：未获得"}</div>
+        <div class="hall2-frag${done ? " on" : ""}${darkFrag ? " white" : ""}"${done ? ` style="background:${accentOf(lv)}"` : ""}>🧩 ${done ? lv.fragmentName + "：" + lv.fragment : "碎片：未获得"}</div>
       </div>
 
       <div class="hall2-tabs">${tabs}</div>
@@ -1502,7 +1504,7 @@ function playResult(lvl, lines, opts){
     const isLast = i === lines.length - 1;
     setTimeout(()=>{
       const d = document.createElement("div");
-      d.className = "result-line" + (o.slowLast && isLast ? " slow" : "");
+      d.className = "result-line" + (o.slowLast && isLast ? " slow" : "") + (o.stagger === i ? " stagger" : "");
       d.innerHTML = ln;
       box.appendChild(d);
       requestAnimationFrame(()=> d.classList.add("on"));
@@ -1515,8 +1517,8 @@ function playResult(lvl, lines, opts){
     SFX.fragmentDrop();   // 碎片落入手中：就在「获得 xx 碎片」出现这一刻
     $("result-tail").innerHTML = `
       <hr class="popup-divider">
-      <div class="frag-big">🧩 获得${lvl.fragmentName}：${lvl.fragment}</div>
-      <button class="btn btn-accent btn-block" id="btn-collect">${CONFIG.collectLabel}</button>`;
+      <div class="frag-big" style="color:${deepOf(lvl)}">🧩 获得${lvl.fragmentName}：${lvl.fragment}</div>
+      <button class="btn btn-block frag-collect" id="btn-collect">${CONFIG.collectLabel}</button>`;
     $("btn-collect").addEventListener("click", ()=> collect(lvl.id));
   }, LEAD + lines.length * GAP + 600);
 }
@@ -2244,12 +2246,12 @@ function lv4Success(lvl){
   const names = lv4.chosen.map(i => lvl.options[i].n);
   // 三个选中的东西都要绿色高亮闪烁（hl-word = 绿字 + wordGlow）
   const nameStr = names.length === 3
-    ? `<b class="hl-word">${names[0]}</b>、<b class="hl-word">${names[1]}</b>和<b class="hl-word">${names[2]}</b>`
-    : names.map(n => `<b class="hl-word">${n}</b>`).join("、");
+    ? `<b class="hl-word p1">${names[0]}</b>、<b class="hl-word p2">${names[1]}</b>和<b class="hl-word p3">${names[2]}</b>`
+    : names.map((n, i) => `<b class="hl-word p${i+1}">${n}</b>`).join("、");
   // 第一行只到「谢谢你留给我」，三个东西单独一行，避免一行太长
   const lines = [ lvl.thanksPrefix, nameStr, lvl.thanksTail, lvl.dropText ];
   openModal("");
-  playResult(lvl, lines, { slowLast:true });
+  playResult(lvl, lines, { slowLast:true, stagger:1 });
 }
 
 /* ---------- 关卡成功统一入口 ---------- */
@@ -2475,23 +2477,25 @@ function runFinalSequence(){
   let t = 0;
   const step = (gap, fn) => { t += gap; plan.push([t, fn]); };
 
-  // 头的员工档案已经随卡片出现，停 1 秒再依次落字段
-  step(1100, () => { show("fin-f-0"); snd(()=>SFX.flip()); });
-  step(1100, () => { show("fin-f-1"); snd(()=>SFX.flip()); });
-  step(1100, () => { show("fin-f-2"); snd(()=>SFX.flip()); });
+  // 头的员工档案已经随卡片出现，停一会儿再依次落字段（音效换成柔和风铃）
+  let k = 0;
+  const soft = () => { const n = k++; snd(()=>SFX.soft(n)); };
+  step(1500, () => { show("fin-f-0"); soft(); });
+  step(1500, () => { show("fin-f-1"); soft(); });
+  step(1500, () => { show("fin-f-2"); soft(); });
   // 部门之后才出现工牌照片
-  step(1200, () => { show("fin-photo"); snd(()=>SFX.reveal()); });
-  step(1100, () => { show("fin-cell-date"); snd(()=>SFX.flip()); });
-  step(1000, () => { show("fin-cell-days"); snd(()=>SFX.flip()); });
-  // 信：逐行，每行 1.1 秒
+  step(1600, () => { show("fin-photo"); snd(()=>SFX.reveal()); });
+  step(1400, () => { show("fin-cell-date"); soft(); });
+  step(1400, () => { show("fin-cell-days"); soft(); });
+  // 信：逐行，每行 1.4 秒
   CONFIG.finalMessage.forEach((_, i) => {
-    step(1100, () => { show("fin-line-" + i); snd(()=>SFX.flip()); });
+    step(1400, () => { show("fin-line-" + i); soft(); });
   });
   // 落款
-  step(1200, () => { show("fin-sign"); snd(()=>SFX.fragment()); });
+  step(1500, () => { show("fin-sign"); snd(()=>SFX.fragment()); });
   // 停两秒盖红章
   step(2000, () => { show("fin-seal", false); snd(()=>SFX.stamp()); });
-  step(1000, () => { show("fin-actions"); });
+  step(1100, () => { show("fin-actions"); });
 
   plan.forEach(([ms, fn]) => setTimeout(fn, ms));
 }
