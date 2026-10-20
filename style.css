@@ -1308,6 +1308,70 @@ body{
   font-size:13.5px; font-weight:600; letter-spacing:1.2px; width:fit-content;
 }
 
+/* —— 假「面容 ID」识别框（借一次点按来激活音频，顺便做成仪式） —— */
+#view-lock .faceid{
+  position:absolute; inset:0; z-index:40;
+  display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(ellipse at 50% 47%, rgba(70,26,9,.20), rgba(34,11,3,.52));
+  -webkit-backdrop-filter:blur(5px) saturate(1.05); backdrop-filter:blur(5px) saturate(1.05);
+  opacity:0; visibility:hidden; pointer-events:none;
+  transition:opacity .24s ease, visibility 0s linear .24s;
+}
+#view-lock .faceid.on{
+  opacity:1; visibility:visible; pointer-events:auto;
+  transition:opacity .24s ease, visibility 0s;
+}
+.fid-card{ display:flex; flex-direction:column; align-items:center; margin-top:-6px; }
+.fid-glyph{
+  position:relative; width:126px; height:126px; border-radius:34px;
+  display:flex; align-items:center; justify-content:center; color:#FFF6E6;
+  background:linear-gradient(160deg, rgba(255,250,240,.22), rgba(255,250,240,.07));
+  border:1.5px solid rgba(255,250,240,.34);
+  box-shadow:0 16px 44px rgba(52,16,4,.34), inset 0 1px 0 rgba(255,255,255,.3);
+  transform:scale(.88); opacity:0;
+  transition:transform .4s cubic-bezier(.2,1.32,.4,1), opacity .26s ease,
+             background .32s ease, border-color .32s ease, box-shadow .32s ease;
+}
+.faceid.on .fid-glyph{ transform:scale(1); opacity:1; }
+.faceid.ok .fid-glyph{
+  background:linear-gradient(160deg, rgba(255,250,240,.32), rgba(255,250,240,.13));
+  border-color:rgba(255,250,240,.66);
+  box-shadow:0 16px 52px rgba(255,214,150,.3), inset 0 1px 0 rgba(255,255,255,.45);
+}
+.fid-svg{ width:96px; height:96px; overflow:visible; }
+.fid-corners path{
+  stroke-dasharray:100; stroke-dashoffset:100;
+  transition:opacity .3s ease;
+}
+.faceid.on .fid-corners path{ animation:fidDraw .52s cubic-bezier(.35,.05,.2,1) forwards; }
+.faceid.on .fid-corners path:nth-child(2){ animation-delay:.05s; }
+.faceid.on .fid-corners path:nth-child(3){ animation-delay:.1s; }
+.faceid.on .fid-corners path:nth-child(4){ animation-delay:.15s; }
+.fid-face{ opacity:0; transition:opacity .2s ease; }
+.faceid.on .fid-face{ opacity:1; transition:opacity .3s ease .14s; }
+.faceid.ok .fid-face{ opacity:0; transition:opacity .16s ease; }
+.fid-check{ stroke:#FFEFC6; stroke-dasharray:100; stroke-dashoffset:100; opacity:0; }
+.faceid.ok .fid-check{ opacity:1; animation:fidDraw .38s cubic-bezier(.4,0,.2,1) .04s forwards; }
+.faceid.ok .fid-corners{ opacity:.34; }
+@keyframes fidDraw{ to{ stroke-dashoffset:0; } }
+.fid-ring{
+  position:absolute; inset:-3px; border-radius:37px; pointer-events:none;
+  border:2px solid rgba(255,240,208,.9); opacity:0;
+}
+.faceid.ok .fid-ring{ animation:fidRing .9s cubic-bezier(.2,.6,.3,1) .04s; }
+@keyframes fidRing{
+  0%{ transform:scale(.97); opacity:.9; }
+  100%{ transform:scale(1.36); opacity:0; }
+}
+.fid-title{
+  margin-top:22px; font-size:17px; font-weight:700; letter-spacing:3.5px;
+  color:#FFF9EE; text-shadow:0 2px 10px rgba(52,16,4,.4);
+}
+.fid-sub{
+  margin-top:9px; font-size:13px; letter-spacing:2.6px;
+  color:rgba(255,246,232,.76);
+}
+
 /* 兜底：音频没醒时的一触即开按钮 */
 .sound-nudge{
   position:absolute; left:50%; bottom:104px; transform:translateX(-50%); z-index:60;
