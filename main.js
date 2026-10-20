@@ -230,7 +230,7 @@ const CONFIG = {
       startLabel: "开始",
       confirmTitle: "确认带走？",
       thanksPrefix: "💘谢谢你留给我",
-      thanksTail: "你的选择就是<b class=\"green-glow\">唯一的正确答案</b>。🎯",
+      thanksTail: "你的选择就是<b class=\"hl-word\">唯一的正确答案</b>。🎯",
       dropText: "最后一个碎片缓缓掉落。",
     },
   ],
@@ -994,12 +994,12 @@ function roomSVG(){
       <rect x="60" y="114" width="7" height="7" rx="3" fill="#C98F5A"/>
     </g>`;
     props = `
-      <rect x="226" y="134" width="15" height="17" rx="3" fill="#BFE6C9" stroke="#7FBF9A" stroke-width="1.5"/>
-      <path d="M241 138 q6.5 0 6.5 4.6 q0 4.6 -6.5 4.6" fill="none" stroke="#7FBF9A" stroke-width="1.6"/>
-      <ellipse cx="233.5" cy="135" rx="6.4" ry="1.8" fill="#8FCBA8" opacity=".55"/>
-      <g class="tea-steam" fill="none" stroke="#9FD3BC" stroke-width="1.3" stroke-linecap="round">
-        <path d="M231 129 c3 -4.6 -3 -6.4 0 -10.5"/>
-        <path d="M236.5 128.5 c3 -4 -3 -5.8 0 -9.5"/>
+      <rect x="186" y="133" width="16" height="17" rx="3" fill="#BFE6C9" stroke="#7FBF9A" stroke-width="1.5"/>
+      <path d="M202 137 q6.5 0 6.5 4.6 q0 4.6 -6.5 4.6" fill="none" stroke="#7FBF9A" stroke-width="1.6"/>
+      <ellipse cx="194" cy="134" rx="6.6" ry="1.9" fill="#8FCBA8" opacity=".55"/>
+      <g class="tea-steam" fill="none" stroke="#7FC3A4" stroke-width="1.8" stroke-linecap="round">
+        <path d="M190.5 129 c3.4 -5.2 -3.4 -7.2 0 -11.8"/>
+        <path d="M197 128.5 c3.4 -4.6 -3.4 -6.6 0 -10.8"/>
       </g>`;
   } else if(y === 2024){
     stamp = "2024.06";
@@ -1506,6 +1506,7 @@ function playResult(lvl, lines, opts){
   const box = $("result-lines");
   // 空弹窗先出来，停 1 秒；之后每 1 秒说一句（逐句淡入 + 每句一记音）
   const GAP = 1000, LEAD = 1000;
+  let extra = 0;
   lines.forEach((ln, i) => {
     const isLast = i === lines.length - 1;
     setTimeout(()=>{
@@ -1521,7 +1522,9 @@ function playResult(lvl, lines, opts){
       }
       // 逐行配音；最后一行若是「碎片缓缓掉落」，用慢上扬的铃音
       try{ (o.slowLast && isLast) ? SFX.fragment() : SFX.flip(); }catch(e){}
-    }, LEAD + i * GAP);
+    }, LEAD + i * GAP + extra);
+    // 这一行是「挨个出现」的话，后面所有行整体往后推，等它播完
+    if(o.stagger === i) extra += (o.staggerHold || 1500);
   });
   setTimeout(()=>{
     $("result-tail").style.display = "block";
@@ -1531,7 +1534,7 @@ function playResult(lvl, lines, opts){
       <div class="frag-big" style="color:${T.fragInk[lvl.accentIndex]}">🧩 获得${lvl.fragmentName}：${lvl.fragment}</div>
       <button class="btn btn-block frag-collect" id="btn-collect" style="background:${T.fragBtn[lvl.accentIndex]}">${CONFIG.collectLabel}</button>`;
     $("btn-collect").addEventListener("click", ()=> collect(lvl.id));
-  }, LEAD + lines.length * GAP + 600);
+  }, LEAD + lines.length * GAP + 600 + extra);
 }
 function collect(id){
   const lvl = levelById(id);
@@ -2262,7 +2265,7 @@ function lv4Success(lvl){
   // 第一行只到「谢谢你留给我」，三个东西单独一行，避免一行太长
   const lines = [ lvl.thanksPrefix, nameStr, lvl.thanksTail, lvl.dropText ];
   openModal("");
-  playResult(lvl, lines, { slowLast:true, stagger:1 });
+  playResult(lvl, lines, { slowLast:true, stagger:1, staggerHold:1500 });
 }
 
 /* ---------- 关卡成功统一入口 ---------- */
@@ -2532,6 +2535,9 @@ function finalDecor(){
 }
 
 /* ==================== ⑰ 启动 ==================== */
+/* 工牌照预热：终页才用到，但图有 160KB，开局就悄悄拉下来 */
+setTimeout(()=>{ try{ const im = new Image(); im.src = "id-photo.svg?v=2"; }catch(e){} }, 1200);
+
 
 /* 全局按钮音：所有 .btn 点击都出一声轻响（各关自己的音效另外叠加） */
 document.addEventListener("click", (e) => {
