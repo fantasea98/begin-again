@@ -254,3 +254,50 @@ iOS Safari / Chrome 仍失败，现已在页面内置诊断面板，用来定位
 - `curl` 必须加 `--noproxy "*"`（本机有代理 `http_proxy=127.0.0.1:8092`）；Python `urllib` 走 api.github.com 会偶发 SSL 错误，不要用
 - base64 内容不要走命令行参数（会 `Argument list too long`），用 Python 写临时 JSON 文件再 `curl -d @file`
 - GitHub MCP 连接器只有**读**权限，写操作会 403，别走 MCP
+
+---
+
+## 五、终页「员工档案」+ 锁屏间距（2026-10-20 第二轮，已上线 `?v=20261020f`）
+
+### 1. 终页改版（方案 A · 员工档案）
+
+进入密码 1122 正确后：800ms → `confettiBurst()`（礼花 + 新音效）→ `renderFinal()`。
+卡片是一张「档案卡」：双线边框 + 烫角阴影，下面挂两个按钮。
+
+出场时间轴（`runFinalSequence()`，全部 setTimeout 排队）：
+
+| 时刻 | 出现 | 音 |
+|---|---|---|
+| 0 | 档案卡（员工档案：🐘🐏 / NO. 5147 / 横线） | — |
+| 420 | `1122 天` | flip |
+| 820 | `2023.10.05 — 2026.10.30` | flip |
+| 1120 | `4 段记忆 · 全部归档` | flip |
+| 1480 | 部门 / 在职 / 状态 三格同时 | flip |
+| 1880 | 「组织部」 | tap |
+| 2180 | 「1122 天」 | tap |
+| 2880 | 状态格盖上「已离职」印章（顿 700ms） | **stamp** |
+| 4100 起 | 留言逐行，每行 +1200ms | flip |
+| 末行 +300 | 落款 `—— 🐘🐏` | fragment |
+| 末行 +950 | 两个按钮 | — |
+
+- 印章：56px 双圈，`right:1px / bottom:-7px`，`rotate(-11deg)`，`stampHit` 弹性落章（2.2 → 0.9 → 1.05 → 1），透明度收到 .92 显得像油墨。
+- 礼花音 `SFX.confetti()`：whoosh → bang + 4 个铃 + 7 个随机高频 sparkle。
+- 印章音 `SFX.stamp()`：带通噪声（1500→170Hz）+ 低频 sine（165→48Hz）+ 一点高频「纸面」噪声，共 0.28s。
+- 「再玩一次」= 清档 → `renderLock()` → `showView("lock")`，回到锁屏从头解锁（不再直接回开场）。
+
+### 2. 锁屏间距
+
+- `.lock-head{padding-top:66px}`：日期「10月30日 星期五」整体下移 24px（正好一个 20px 字号的行高）。原先 34px 时 `.lock-status` 被 flex 挤压了 8px，所以同时给 `.lock-status / .lock-cards / .lock-bottom` 加 `flex:none`，把余量全部留给 `.lock-word`。
+- `.lock-cards{padding-top:22px → 14px}`：腾出 8px，避免挤压。
+- `.lc-ico{margin-bottom:-9px → -11px}`：天气云朵再下移 2px，云底正好落在「21°」基线上。
+- 矮屏媒体查询同步：`max-height:720px` 下 `.lock-head{padding-top:30px}`。
+- 375×667 实测：date 65→86.8、bar 560→622、无溢出（`scrollHeight === 667`）。
+
+### 3. 全局音量
+
+`sfx.js` 的 `VOLUME = 1.0`（0.525 → 0.79 → 1.0），主输出后仍挂 `DynamicsCompressor` 软限幅，不会削波。
+
+### 4. 待办
+
+- 留言文案由作者补齐（当前 4 行占位：`CONFIG.finalMessage`）。
+- 密码页 → 终页还差「碎片合体」过渡（A1 方案，尚未做）。
