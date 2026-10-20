@@ -206,6 +206,10 @@ body{
 .level-head-emoji{ font-size:56px; line-height:1; animation:cardFloat 3s ease-in-out infinite; }
 .level-head-title{ font-size:30px; font-weight:800; margin-top:10px; letter-spacing:.5px; }
 .level-head-year{ font-size:14px; font-weight:700; color:var(--muted); margin-top:4px; letter-spacing:2px; }
+/* 第一、二关：标题与返回按钮沿用大厅的深棕主题色 */
+#view-level1 .level-head-title, #view-level2 .level-head-title{ color:#6B4520; }
+#view-level1 .level-head-year,  #view-level2 .level-head-year{ color:#A98F72; }
+#view-level1 #btn-back, #view-level2 #btn-back{ border-color:#6B4520; color:#6B4520; }
 
 .story-card{
   position:relative; z-index:1; background:var(--card); border-radius:var(--radius-lg);
@@ -221,7 +225,7 @@ body{
 /* 通用弹出动效 / 逐条淡入 */
 .pop{ animation:popIn .5s cubic-bezier(.34,1.56,.64,1) both; }
 @keyframes popIn{ 0%{ opacity:0; transform:translateY(14px) scale(.96); } 100%{ opacity:1; transform:translateY(0) scale(1); } }
-.fade-in{ opacity:0; transform:translateY(12px); transition:opacity .5s ease, transform .5s ease; }
+.fade-in{ opacity:0; transform:translateY(12px); transition:opacity 1.15s cubic-bezier(.22,.61,.36,1), transform 1.15s cubic-bezier(.22,.61,.36,1); }
 .fade-in.on{ opacity:1; transform:none; }
 
 /* 发光 / 闪烁强调词（全局） */
@@ -298,7 +302,7 @@ body{
 .hl{ color:var(--danger); font-weight:900; }
 
 /* 引导：虚线框 + 棕色按钮 */
-.guide{ margin:9px 4px 4px; }
+.guide{ margin:2px 4px 4px; }
 .guide .guide-box{
   background:transparent; border:2px dashed rgba(26,26,26,.35); border-radius:16px;
   padding:16px 14px; text-align:center;
@@ -1002,11 +1006,12 @@ body{
 .popup-actions .btn + .btn{ margin-top:10px; }
 .result-line{ margin:8px 0; font-size:15.5px; color:#3a362f; line-height:1.8; opacity:0; }
 .result-line.on{ animation:lineIn .8s cubic-bezier(.22,.61,.36,1) both; }
+.result-line.slow.on{ animation:lineIn 2.2s cubic-bezier(.22,.61,.36,1) both; }
 @keyframes lineIn{
   0%{ opacity:0; transform:translateY(12px); }
   100%{ opacity:1; transform:none; }
 }
-.frag-big{ font-size:19px; font-weight:900; margin:4px 0 14px; color:var(--ink); }
+.frag-big{ font-size:19px; font-weight:900; margin:4px 0 14px; color:#6B4520; }
 
 /* =========================================================
    彩带飘落（垂直从顶部飘下，铺满宽度）
@@ -1207,11 +1212,10 @@ body{
   background:rgba(0,0,0,.045); color:var(--faint);
 }
 .hall2-frag.on{
-  background:var(--lv-accent, #FFE08A); color:#1A1A1A;
-  box-shadow:0 0 0 1px rgba(255,255,255,.6);
+  background:var(--lv-accent, #FFE08A); color:#FFFFFF;
+  box-shadow:0 0 0 1px rgba(255,255,255,.5);
   animation:fragPop .5s ease;
 }
-.hall2-frag.on.dark{ color:#FFFFFF; }
 
 .hall2-tabs{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:18px; }
 .hall2-tab{
@@ -1315,7 +1319,7 @@ body{
   color:#FFF6E0; text-shadow:0 5px 26px rgba(120,48,16,.38);
 }
 .lock-sub{
-  margin-top:7px;
+  margin-top:18px;
   font-family:"Songti SC","STSong","Noto Serif SC",serif;
   font-size:14px; letter-spacing:2.2px; opacity:.92;
 }
@@ -1325,9 +1329,9 @@ body{
 .lc{
   display:flex; flex-direction:column; justify-content:center;
   padding:10px 15px; border-radius:20px;
-  background:linear-gradient(150deg, rgba(255,250,240,.32), rgba(255,250,240,.1) 55%, rgba(255,250,240,.2));
-  border:1px solid rgba(255,252,244,.42);
-  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  background:linear-gradient(150deg, rgba(255,250,240,.20), rgba(255,250,240,.05) 55%, rgba(255,250,240,.12));
+  border:1px solid rgba(255,252,244,.28);
+  -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px);
   box-shadow:0 8px 24px rgba(120,48,16,.16);
 }
 .lc-weather{ flex:2; align-items:flex-start; }
@@ -1351,14 +1355,14 @@ body{
 }
 .lw-script{
   font-family:"Great Vibes Sub","Snell Roundhand","Segoe Script",cursive;
-  font-size:clamp(64px, 21vw, 84px); line-height:1.02;
+  font-size:clamp(68px, 22.5vw, 92px); line-height:1.02;
   color:#FFF8E9; white-space:nowrap;
   text-shadow:0 3px 22px rgba(120,48,16,.5), 0 1px 3px rgba(120,48,16,.3);
 }
 .lw-swash{ width:min(76%, 300px); margin-top:-6px; overflow:visible; }
 
 /* 底部：加厚拖条 */
-.lock-bottom{ padding:0 22px 38px; flex:none; }
+.lock-bottom{ padding:0 22px 54px; flex:none; }
 .lock-bar{
   position:relative; width:100%; height:70px; border-radius:35px;
   background:rgba(255,247,232,.2); border:1.5px solid rgba(255,247,232,.5);
