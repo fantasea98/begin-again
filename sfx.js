@@ -8,7 +8,7 @@ window.SFX = (function(){
 "use strict";
 
 var MUTE_KEY = "beginAgain.muted";
-var VOLUME   = 1.0;           // 主音量（2026-10-20 再上调：0.525 → 0.79 → 1.0）
+var VOLUME   = 1.5;           // 主音量（2026-10-20 再上调：0.525 → 0.79 → 1.0 → 1.5）
 
 var ctx = null, master = null, ready = false, dead = false;
 var muted = false;
@@ -455,26 +455,67 @@ function tensionStop(){
   }catch(e){}
 }
 
-/* 第 4 关：音乐盒式的回忆单音，五声音阶随机，缓慢飘落 */
-var _box = null;
-var BOX_SCALE = [523.3, 587.3, 659.3, 784, 880, 1046.5, 1174.7];
-/* 第 4 关：只有音乐盒般的单音 / 两三音小乐句，不放任何长鸣低音 */
+/* 第 4 关：一段缓慢抒情的音乐盒小曲（C 大调五声，3/4 拍），
+   单独走一条 0.5 的支线总线，比全局音效明显轻；
+   整段用 ctx 时钟一次性排完，再来一遍时整体后移一个循环长度。 */
+var _box = null, _boxBus = null;
+var BOX_BEAT = 0.78;                 // 一拍 0.78s ≈ 77 BPM
+var BOX_LEN  = 9;                    // 每循环 9 拍
+/* [第几拍, 频率, 余音秒数] */
+var BOX_MELODY = [
+  [0.00, 659.26, 1.70],   // E5
+  [0.75, 880.00, 1.40],   // A5
+  [1.50, 783.99, 1.20],   // G5
+  [2.25, 659.26, 1.90],   // E5
+  [3.00, 587.33, 1.00],   // D5
+  [3.75, 523.25, 2.10],   // C5
+  [4.75, 587.33, 0.95],   // D5
+  [5.25, 659.26, 1.60],   // E5
+  [6.00, 783.99, 1.10],   // G5
+  [6.75, 880.00, 2.00],   // A5
+  [7.75, 783.99, 2.30]    // G5
+];
+/* 低音只做一点暖底，音量极小，长音铺开 */
+var BOX_BASS = [
+  [0.00, 130.81, 3.10],   // C3
+  [3.75, 110.00, 2.60],   // A2
+  [5.25,  87.31, 2.40],   // F2
+  [6.75,  98.00, 2.60]    // G2
+];
 function musicBoxStart(){
-  if(!can() || _box) return;
-  _box = setInterval(function(){
-    var n = Math.random() < 0.45 ? 2 : 1;
-    var idx = Math.floor(Math.random() * BOX_SCALE.length);
-    for(var i = 0; i < n; i++){
-      var f = BOX_SCALE[Math.min(BOX_SCALE.length - 1, idx + i)];
-      var gap = i * 0.34;
-      tone({ freq:f,       type:"sine", dur:1.4,  gain:0.12,  delay:gap });
-      tone({ freq:f * 2,   type:"sine", dur:0.8,  gain:0.038, delay:gap + 0.01 });
-      tone({ freq:f * 1.5, type:"sine", dur:0.95, gain:0.032, delay:gap + 0.12 });
-    }
-  }, 1900);
+  if(!can() || _box || _boxBus) return;
+  try{
+    _boxBus = ctx.createGain();
+    _boxBus.gain.value = 0.52;         // 第 4 关 BGM 单独压低
+    _boxBus.connect(master);
+  }catch(e){ _boxBus = null; return; }
+  var bus = _boxBus;
+  function phrase(){
+    if(!_boxBus || !live()){ return; }
+    BOX_MELODY.forEach(function(n){
+      var at = 0.06 + n[0] * BOX_BEAT;
+      tone({ freq:n[1],     type:"sine",     dur:n[2],      gain:0.115, attack:0.016, delay:at,        bus:bus });
+      tone({ freq:n[1] * 2, type:"sine",     dur:n[2] * 0.5, gain:0.028, attack:0.012, delay:at + 0.012, bus:bus });
+      tone({ freq:n[1] * 3, type:"triangle", dur:0.13,      gain:0.010, attack:0.006, delay:at,        bus:bus });
+    });
+    BOX_BASS.forEach(function(n){
+      tone({ freq:n[1], type:"sine", dur:n[2], gain:0.030, attack:0.42, delay:0.06 + n[0] * BOX_BEAT, bus:bus });
+    });
+    _box = setTimeout(phrase, BOX_LEN * BOX_BEAT * 1000);
+  }
+  phrase();
 }
 function musicBoxStop(){
-  if(_box){ clearInterval(_box); _box = null; }
+  if(_box){ clearTimeout(_box); _box = null; }
+  if(!_boxBus) return;
+  var b = _boxBus; _boxBus = null;
+  try{
+    var t = ctx.currentTime;
+    b.gain.cancelScheduledValues(t);
+    b.gain.setValueAtTime(b.gain.value, t);
+    b.gain.linearRampToValueAtTime(0, t + 0.5);
+    setTimeout(function(){ try{ b.disconnect(); }catch(e){} }, 2400);
+  }catch(e){}
 }
 /* 翻牌：纸张声 */
 function flip(){
