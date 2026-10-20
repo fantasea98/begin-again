@@ -42,13 +42,13 @@ const CONFIG = {
   workDates: { start: "2023.10.05", end: "2026.10.30" },
 
   groupName: "中山大家庭(500)",
-  hallTitle: "🏰 记忆结界",
+  hallTitle: "🏢 记忆房间",
   hallSubtitle: "找回 4 枚记忆碎片，修复时间线",
   lockHint: "请按照正确的时间线获取碎片",
 
   cheat: { label: "😏 我要作弊" },
   collectLabel: "收下碎片",
-  backLabel: "← 返回结界",
+  backLabel: "← 回到房间",
 
   // 开场群聊脚本（定稿版）
   openingChat: {
@@ -63,9 +63,9 @@ const CONFIG = {
       { avatar: "👨‍🎓", text: "大家好，我是今天刚入职的🐘🐏，\n之后大家多多关照！🙏", likes: 3 },
     ],
     innerThought: ["咦？疫情？刚入职？这是哪一年？", { a:"难道……", b:"我<b class=\"hl\">穿越</b>了？⚡" }],
-    guide: "到底发生什么事了？\n勇敢智慧的你，请点击下方按钮，进入结界，\n找回 4 枚<b class=\"glow-word\">【碎片】</b>修复时间线！",
+    guide: "到底发生什么事了？\n勇敢智慧的你，请点击下方按钮，进入房间，\n找回 4 枚<b class=\"glow-word\">【碎片】</b>修复时间线！",
     likeCount: "24人已点赞",
-    enterLabel: "🧙‍♂️ 进入结界 🧙‍♂️",
+    enterLabel: "🏢 进入房间 🏢",
     // 开场时序（毫秒）
     timing: {
       firstMsg: 1500,     // 打开后玩家第一句
@@ -406,7 +406,7 @@ function renderLock(){
           <filter id="lb7"  x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7"/></filter>
           <linearGradient id="lgHorizon" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#FFE9C2" stop-opacity="0"/>
-            <stop offset=".5" stop-color="#FFEBC6" stop-opacity=".5"/>
+            <stop offset=".5" stop-color="#FFEBC6" stop-opacity=".38"/>
             <stop offset="1" stop-color="#FFDCA8" stop-opacity="0"/>
           </linearGradient>
         </defs>
@@ -418,8 +418,8 @@ function renderLock(){
         <circle cx="330" cy="418" r="102" fill="url(#lgSunGlow)"/>
         <circle cx="330" cy="418" r="30" fill="#FFEEC6"/>
         <circle cx="330" cy="418" r="30" fill="#FFEEC6" opacity=".55" filter="url(#lb7)"/>
-        <rect y="520" width="390" height="328" fill="url(#lgSea2)"/>
-        <rect x="-20" y="513" width="430" height="17" fill="url(#lgHorizon)" filter="url(#lb7)"/>
+        <rect y="520" width="390" height="328" fill="url(#lgSea2)" filter="url(#lb10)"/>
+        <rect x="-20" y="502" width="430" height="38" fill="url(#lgHorizon)" filter="url(#lb10)"/>
         <ellipse cx="196" cy="612" rx="150" ry="9" fill="#FFDCA8" opacity=".22" filter="url(#lb10)"/>
         <ellipse cx="206" cy="664" rx="122" ry="7" fill="#FFD29A" opacity=".16" filter="url(#lb10)"/>
         <ellipse cx="214" cy="716" rx="96" ry="6" fill="#FFC993" opacity=".12" filter="url(#lb10)"/>
@@ -473,7 +473,7 @@ function renderLock(){
       <div class="lock-bottom">
         <div class="lock-bar" id="lock-bar">
           <div class="lock-fill" id="lock-fill"></div>
-          <div class="lock-hint" id="lock-hint">轻触屏幕解锁</div>
+          <div class="lock-hint" id="lock-hint">滑动解锁</div>
           <i class="lock-chev">››</i>
           <div class="lock-knob" id="lock-knob">🔓</div>
         </div>
@@ -780,7 +780,7 @@ function runOpening(){
     const b = $("btn-enter");
     if(b) b.addEventListener("click", () => {
       SFX.hardUnlock();         // 这是真点击，允许重建，务必把音频叫醒
-      SFX.portal();             // 进入结界的仪式音效
+      SFX.portal();             // 进入房间的仪式音效
       initHallYear();           // 落在第一个还没通关的年份
       renderHall(); showView("hall");
     });
@@ -797,7 +797,7 @@ function runOpening(){
 let hallYear = 2023;
 let hallDoorView = false;
 
-/* 把标题开头的 emoji 拆出来单独放大（例如「🏰 记忆结界」） */
+/* 把标题开头的 emoji 拆出来单独放大（例如「🏢 记忆房间」） */
 function splitEmoji(t){
   const m = /^(\p{Extended_Pictographic}(?:\u200d\p{Extended_Pictographic})*)\s*([\s\S]*)$/u.exec(t || "");
   return m ? `<span class="title-emoji">${m[1]}</span>${m[2]}` : t;
@@ -1030,23 +1030,27 @@ function roomSVG(){
         <ellipse cx="${bx - r * .35}" cy="${by - r * .35}" rx="${r * .28}" ry="${r * .22}" fill="#FFFFFF" opacity=".55"/>`).join("")}`;
   } else {
     stamp = "2026.10";
-    hot = `<g class="hs-hot${isLevelUnlocked(4) ? "" : " is-locked"}" data-lv="4" role="button" aria-label="特别的物品">
-      ${halo(104, 110, 62, 45, 7)}
-      <rect x="110" y="122" width="50" height="28" rx="4" fill="#B98A4E" stroke="#8A6031" stroke-width="1.6"/>
-      <rect x="126" y="114" width="18" height="9" rx="4.5" fill="none" stroke="#8A6031" stroke-width="1.8"/>
-      <rect x="131" y="137" width="8" height="8" rx="2" fill="#E5C79A"/>
-      <line x1="110" y1="135" x2="160" y2="135" stroke="#8A6031" stroke-width="1.1" opacity=".6"/>
+    hot = `<g class="hs-hot${isLevelUnlocked(4) ? "" : " is-locked"}" data-lv="4" role="button" aria-label="地上的手提箱">
+      ${halo(208, 154, 56, 42, 9)}
+      <rect x="206" y="152" width="60" height="44" fill="#fff" opacity="0"/>
+      <ellipse cx="236" cy="194" rx="24" ry="3.2" fill="rgba(120,80,40,.12)"/>
+      <rect x="228" y="158" width="16" height="9" rx="4.5" fill="none" stroke="#8A6031" stroke-width="1.8"/>
+      <rect x="216" y="166" width="40" height="25" rx="4" fill="#B98A4E" stroke="#8A6031" stroke-width="1.6"/>
+      <line x1="216" y1="178.5" x2="256" y2="178.5" stroke="#8A6031" stroke-width="1.1" opacity=".55"/>
+      <rect x="231" y="175" width="10" height="8" rx="2" fill="#E5C79A" stroke="#8A6031" stroke-width=".9"/>
+      <rect x="220" y="191" width="6" height="3" rx="1.2" fill="#8A6031"/>
+      <rect x="249" y="191" width="6" height="3" rx="1.2" fill="#8A6031"/>
     </g>`;
     props = `
       ${calendarSVG()}
-      <rect x="30" y="128" width="36" height="22" rx="2" fill="#E5C79A" stroke="#C98F5A" stroke-width="1.4"/>
-      <line x1="30" y1="134" x2="66" y2="134" stroke="#D3B183" stroke-width="1" opacity=".8"/>
-      <line x1="48" y1="128" x2="48" y2="150" stroke="#A98A5C" stroke-width="1.6"/>
-      <line x1="30" y1="139" x2="66" y2="139" stroke="#A98A5C" stroke-width="1.6"/>
-      <path d="M48 139 q-7 -4 -9 -1 q-2 3 4 4 q5 1 5 -3 Z" fill="#C98F5A"/>
-      <path d="M48 139 q7 -4 9 -1 q2 3 -4 4 q-5 1 -5 -3 Z" fill="#C98F5A"/>
-      <circle cx="48" cy="139" r="1.8" fill="#E5C79A" stroke="#A98A5C" stroke-width=".8"/>
-      <path d="M52 141 q6 3 9 8" fill="none" stroke="#A98A5C" stroke-width="1"/>
+      <rect x="52" y="128" width="36" height="22" rx="2" fill="#E5C79A" stroke="#C98F5A" stroke-width="1.4"/>
+      <line x1="52" y1="134" x2="88" y2="134" stroke="#D3B183" stroke-width="1" opacity=".8"/>
+      <line x1="70" y1="128" x2="70" y2="150" stroke="#A98A5C" stroke-width="1.6"/>
+      <line x1="52" y1="139" x2="88" y2="139" stroke="#A98A5C" stroke-width="1.6"/>
+      <path d="M70 139 q-7 -4 -9 -1 q-2 3 4 4 q5 1 5 -3 Z" fill="#C98F5A"/>
+      <path d="M70 139 q7 -4 9 -1 q2 3 -4 4 q-5 1 -5 -3 Z" fill="#C98F5A"/>
+      <circle cx="70" cy="139" r="1.8" fill="#E5C79A" stroke="#A98A5C" stroke-width=".8"/>
+      <path d="M74 141 q6 3 9 8" fill="none" stroke="#A98A5C" stroke-width="1"/>
       <circle cx="182" cy="143" r="3.4" fill="none" stroke="#C98F5A" stroke-width="1.6"/>
       <line x1="185.6" y1="143" x2="198" y2="143" stroke="#C98F5A" stroke-width="1.6" stroke-linecap="round"/>
       <line x1="194" y1="140" x2="196" y2="140" stroke="#C98F5A" stroke-width="1.6" stroke-linecap="round"/>
@@ -1101,11 +1105,11 @@ function roomSVG(){
       <g filter="url(#hsFrost)">${roomBody}</g>
       <rect x="0" y="0" width="340" height="224" fill="#FBF4E6" opacity=".65" pointer-events="none"/>
       <g class="hs-lock" pointer-events="none">
-        <circle cx="170" cy="112" r="42" fill="#FFFDF6" opacity=".55" filter="url(#hsSoft)"/>
-        <circle cx="170" cy="112" r="35" fill="#FFFDF6" opacity=".78" filter="url(#hsSoft)"/>
-        <circle cx="170" cy="112" r="30" fill="#FFFDF6" opacity=".82"/>
-        <text x="170" y="113" text-anchor="middle" font-size="27">🔒</text>
-        <text x="170" y="142" text-anchor="middle" font-size="13.5" font-weight="700" fill="#8A7258">未解锁</text>
+        <circle cx="170" cy="112" r="47" fill="#FFFDF6" opacity=".5" filter="url(#hsSoft)"/>
+        <circle cx="170" cy="112" r="40" fill="#FFFDF6" opacity=".74" filter="url(#hsSoft)"/>
+        <circle cx="170" cy="112" r="34" fill="#FFFDF6" opacity=".82"/>
+        <text x="170" y="110" text-anchor="middle" font-size="26.5">🔒</text>
+        <text x="170" y="135" text-anchor="middle" font-size="13.5" font-weight="700" fill="#8A7258">未解锁</text>
       </g>
     </svg>`;
   }
@@ -2321,7 +2325,7 @@ function renderFinal(){
       ${lines.map((l,i)=>`<p class="fade-in" data-i="${i}">${l}</p>`).join("")}
     </div>
     <div class="final-replay" id="final-replay" style="display:none">
-      <button class="btn btn-ghost" id="btn-back-lobby">← 返回结界</button>
+      <button class="btn btn-ghost" id="btn-back-lobby">${CONFIG.backLabel}</button>
       <button class="btn btn-ghost" id="btn-replay">↺ 再玩一次</button>
     </div>`;
   showView("final");
@@ -2461,9 +2465,7 @@ function armSoundNudge(){
       const el = document.createElement("div");
       el.id = "sound-nudge";
       el.className = "sound-nudge";
-      let stTxt = "";
-      try{ const st = SFX._debug && SFX._debug(); stTxt = st && st.state ? st.state : "none"; }catch(e){}
-      el.innerHTML = '<span class="sn-ic">🔊</span><span>音频未就绪（' + stTxt + '）· 轻触开启</span>';
+      el.innerHTML = '<span class="sn-ic">🔊</span><span>音频未就绪 轻触开启</span>';
       el.addEventListener("click", () => {
         let ok = false;
         try{ ok = SFX.hardUnlock(); }catch(e){}
