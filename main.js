@@ -520,16 +520,34 @@ function bindLock(){
   ["pointerup","pointercancel","pointerleave"].forEach(ev => bar.addEventListener(ev, finish));
   ["touchend","touchcancel"].forEach(ev => bar.addEventListener(ev, finish));
 }
+/* 解锁音效可能会在「上下文还没建好」时被调用（iOS 上 touchend 才是激活事件，
+   而解锁是在 pointerup 时触发的）。所以这里挂一个待播标记：
+   等音频真正 running 的那一刻再补一声，绝不丢。 */
+let unlockChimePending = false;
+function tryUnlockChime(){
+  if(!unlockChimePending) return false;
+  let st = null;
+  try{ st = SFX._debug && SFX._debug(); }catch(e){}
+  if(st && st.state === "running"){
+    unlockChimePending = false;
+    try{ SFX.unlock(); }catch(e){}
+    return true;
+  }
+  return false;
+}
+
 function unlockPhone(){
   if(phoneUnlocked) return;
   phoneUnlocked = true;
   // 这一次是真的用户手势：全力解锁（重建 ctx + resume + start 静音源 + 静音 wav）
-  try{ SFX.ensure(); }catch(e){}
-  // 手势的「瞬时激活」还能维持几秒，趁热再补几次，覆盖各内核的异步差异
-  // 注意节奏：前几次只是补 resume（不敢重建，会打断异步 resume），
-  // 1400ms 那一次才允许重建上下文 —— 此时仍在手势的瞬时激活窗口内
-  [0, 150, 700, 1400].forEach(ms => setTimeout(() => { try{ SFX.ensure(); }catch(e){} }, ms));
-  SFX.unlock();
+  try{ SFX.ensure(false); }catch(e){}
+  // 手势的「瞬时激活」还能维持几秒，趁热再补几次 resume（温和，不重建）
+  [0, 150, 700, 1400].forEach(ms => setTimeout(() => {
+    try{ SFX.ensure(false); }catch(e){}
+    tryUnlockChime();
+  }, ms));
+  unlockChimePending = true;
+  tryUnlockChime();
   renderOpening();            // 解锁后才开始微信开场动画，音效不会丢
   showView("opening");
   armSoundNudge();            // 兜底：真没醒就给个一键开启的按钮
@@ -649,7 +667,7 @@ function runOpening(){
     SFX.flip();
     const b = $("btn-enter");
     if(b) b.addEventListener("click", () => {
-      SFX.init();               // 必须在用户手势里初始化（浏览器自动播放策略）
+      SFX.hardUnlock();         // 这是真点击，允许重建，务必把音频叫醒
       SFX.portal();             // 进入结界的仪式音效
       initHallYear();           // 落在第一个还没通关的年份
       renderHall(); showView("hall");
@@ -2254,7 +2272,7 @@ function initSfxToggle(){
   };
   paint();
   btn.addEventListener("click", () => {
-    SFX.init();                 // 万一还没初始化过
+    SFX.hardUnlock();           // 真点击里兜底再解锁一次
     SFX.toggle();
     paint();
     if(!SFX.isMuted()) SFX.tap();   // 打开时给一声确认
@@ -2269,13 +2287,24 @@ function initSfxToggle(){
    iOS 里只有 touchend / click / mousedown 这类才算真正的用户激活，pointerdown 不算；
    而微信 WebView、安卓 X5 又各有脾气。所以这里把所有可能的手势事件全挂上，
    并且 —— 关键 —— 只要音频还没真正 running，就绝不摘掉监听，一次失败下次接着试。 */
-const AUDIO_EV = ["pointerdown","pointerup","touchstart","touchend","mousedown","mouseup","click","keydown"];
+/* 这里把事件分成两类，是本次修复的核心：
+   ① INTENT（pointerdown / touchstart）只用来标记「刚发生手势」，
+      绝对不在这些事件里创建 AudioContext —— iOS 上这样建出来的上下文是「被污染的」，
+      之后怎么 resume 都叫不醒；
+   ② ACTION（touchend / click / mousedown / mouseup / keydown）才是浏览器认可的
+      用户激活事件（iOS 上触摸只认 touchend / click），音频只在这里创建 / 重建。 */
+const INTENT_EV = ["pointerdown", "touchstart"];
+const ACTION_EV = ["touchend", "click", "mousedown", "mouseup", "keydown"];
+
+function onIntent(){ try{ SFX.gesture(); }catch(e){} }
+
 function audioNet(){
   try{
-    SFX.ensure();
+    SFX.hardUnlock();                       // 真激活事件里允许重建，成功率最高
     const st = SFX._debug && SFX._debug();
     if(st && st.state === "running"){
-      AUDIO_EV.forEach(ev => {
+      tryUnlockChime();
+      ACTION_EV.forEach(ev => {
         window.removeEventListener(ev, audioNet, true);
         document.removeEventListener(ev, audioNet, true);
       });
@@ -2285,18 +2314,23 @@ function audioNet(){
   }catch(e){}
   return false;
 }
+
 function armAudioUnlock(){
-  try{ SFX.ensure(); }catch(e){}
-  AUDIO_EV.forEach(ev => {
+  // 注意：加载时不再创建 AudioContext（惰性创建），只挂监听
+  INTENT_EV.forEach(ev => {
+    window.addEventListener(ev, onIntent, { capture:true, passive:true });
+    document.addEventListener(ev, onIntent, { capture:true, passive:true });
+  });
+  ACTION_EV.forEach(ev => {
     window.addEventListener(ev, audioNet, { capture:true, passive:true });
     document.addEventListener(ev, audioNet, { capture:true, passive:true });
   });
-  // 微信内置浏览器：JSBridge 就绪后可以免手势尝试解锁一次
+  // 微信内置浏览器：JSBridge 就绪后可以免手势尝试解锁一次（微信本身不禁自动播放）
   try{
     if(window.WeixinJSBridge && window.WeixinJSBridge.invoke){
-      window.WeixinJSBridge.invoke("getNetworkType", {}, () => { try{ SFX.ensure(); }catch(e){} });
+      window.WeixinJSBridge.invoke("getNetworkType", {}, () => { try{ SFX.ensure(false); }catch(e){} });
     } else {
-      document.addEventListener("WeixinJSBridgeReady", () => { try{ SFX.ensure(); }catch(e){} }, false);
+      document.addEventListener("WeixinJSBridgeReady", () => { try{ SFX.ensure(false); }catch(e){} }, false);
     }
   }catch(e){}
 }
@@ -2322,9 +2356,21 @@ function armSoundNudge(){
       el.className = "sound-nudge";
       el.innerHTML = '<span class="sn-ic">🔊</span><span>轻触一下，开启声音</span>';
       el.addEventListener("click", () => {
-        try{ SFX.ensure(); SFX.ensure(); SFX.bubble(false); }catch(e){}
-        setTimeout(() => { try{ SFX.ensure(); }catch(e){} }, 80);
-        hideSoundNudge();
+        let ok = false;
+        try{ ok = SFX.hardUnlock(); }catch(e){}
+        if(!ok){ try{ SFX.ensure(false); }catch(e){} }
+        setTimeout(() => {
+          let st = null;
+          try{ st = SFX._debug && SFX._debug(); }catch(e){}
+          if(st && st.state === "running"){
+            try{ SFX.bubble(false); }catch(e){}
+            hideSoundNudge();
+          } else {
+            // 还是没醒：多半是设备侧边静音键 / 音量问题，给一句明确提示
+            el.innerHTML = '<span class="sn-ic">🔇</span><span>请检查手机侧边静音键与音量</span>';
+            el.classList.add("is-hint");
+          }
+        }, 120);
       }, { passive:true });
       host.appendChild(el);
       return;
