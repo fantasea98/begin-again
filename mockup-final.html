@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>终页方案 · 员工档案（工牌版）</title>
+<style>
+  :root{
+    --bg:#F4F0EA;
+    --brown:#6B4520;
+    --brown-2:#4A3320;
+    --brown-3:#8C6A45;
+    --line:#DFCFB6;
+    --card:#FFFCF6;
+    --seal:#C8342B;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; }
+  body{
+    margin:0; background:#2A2118; color:#fff;
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    padding:20px 12px;
+  }
+  .bar{ display:flex; align-items:center; gap:10px; }
+  .bar button{
+    font:inherit; font-size:13px; font-weight:700; color:#2A2118; background:#FFE08A;
+    border:none; border-radius:999px; padding:9px 18px; cursor:pointer;
+  }
+  .bar span{ font-size:12px; opacity:.6; }
+
+  /* 手机框 */
+  .phone{
+    width:390px; height:780px; max-height:calc(100vh - 110px);
+    border-radius:40px; background:#1b1712; padding:9px;
+    box-shadow:0 22px 60px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.06);
+  }
+  .screen{
+    position:relative; width:100%; height:100%; overflow-y:auto; overflow-x:hidden;
+    border-radius:32px; background:var(--bg);
+    scrollbar-width:none;
+  }
+  .screen::-webkit-scrollbar{ width:0; }
+
+  .deco{ position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+  .deco i{ position:absolute; display:block; opacity:.15; animation:float 5s ease-in-out infinite; }
+  @keyframes float{ 0%,100%{ transform:translateY(0) rotate(-4deg);} 50%{ transform:translateY(-22px) rotate(6deg);} }
+
+  .wrap{
+    position:relative; z-index:1; min-height:100%;
+    display:flex; flex-direction:column; justify-content:center;
+    padding:22px 16px 26px;
+  }
+
+  .card{
+    position:relative;
+    background:var(--card); border:2px solid var(--brown); border-radius:16px;
+    box-shadow:5px 5px 0 #CBB08C;
+    padding:16px 16px 14px; color:var(--brown-2);
+    animation:cardIn .5s cubic-bezier(.2,1.1,.35,1) both;
+  }
+  @keyframes cardIn{ from{ opacity:0; transform:translateY(14px) scale(.985);} to{ opacity:1; transform:none; } }
+
+  .top{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  .top b{ font-size:15px; letter-spacing:2px; }
+  .top span{ font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:1.2px; color:#A98F72; }
+  .rule{ border-top:2px solid var(--brown); margin:11px 0 0; }
+
+  /* 信息区：左字段 + 右工牌照片 */
+  .body{ display:flex; gap:14px; align-items:flex-start; margin-top:14px; }
+  .fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:11px; }
+  .f{ opacity:0; transform:translateY(10px); transition:opacity .9s cubic-bezier(.22,.61,.36,1), transform .9s cubic-bezier(.22,.61,.36,1); }
+  .f.on{ opacity:1; transform:none; }
+  .f span{
+    display:block; font-family:ui-monospace,Menlo,monospace; font-size:9px;
+    letter-spacing:2px; color:#AA9070; margin-bottom:2px;
+  }
+  .f b{ display:block; font-size:15px; letter-spacing:.4px; font-weight:800; }
+  .f b.big{ font-size:17px; }
+
+  /* 工牌照片 */
+  .photo{
+    flex:none; width:104px;
+    border:1.6px solid var(--brown); border-radius:10px; overflow:hidden;
+    background:linear-gradient(180deg,#F3E7D4,#E8DAC3);
+    box-shadow:3px 3px 0 rgba(107,69,32,.16);
+    opacity:0; transform:translateY(10px) rotate(1.5deg);
+    transition:opacity .9s cubic-bezier(.22,.61,.36,1), transform .9s cubic-bezier(.22,.61,.36,1);
+  }
+  .photo.on{ opacity:1; transform:none; }
+  .photo .cap{
+    font-family:ui-monospace,Menlo,monospace; font-size:8px; letter-spacing:2px;
+    color:#fff; background:var(--brown); text-align:center; padding:3px 0 4px;
+  }
+  .photo svg{ display:block; width:100%; height:auto; }
+
+  /* 两个小框 */
+  .cells{ display:flex; gap:8px; margin-top:14px; }
+  .cell{
+    flex:1; min-width:0; border:1.4px solid var(--line); border-radius:9px;
+    background:#FBF6EC; padding:8px 9px 9px;
+    opacity:0; transform:translateY(10px);
+    transition:opacity .9s cubic-bezier(.22,.61,.36,1), transform .9s cubic-bezier(.22,.61,.36,1);
+  }
+  .cell.on{ opacity:1; transform:none; }
+  .cell span{ display:block; font-family:ui-monospace,Menlo,monospace; font-size:8.5px; letter-spacing:2px; color:#AA9070; }
+  .cell b{ display:block; margin-top:3px; font-size:12px; letter-spacing:.3px; font-weight:800; white-space:nowrap; }
+  .cell.date{ flex:1.55; }
+  .cell.date b{ font-size:11.4px; letter-spacing:.2px; font-family:ui-monospace,Menlo,monospace; }
+  .cell b i{ font-style:normal; font-size:10px; color:#8C6A45; margin-left:3px; }
+
+  /* 信 */
+  .letter{ margin-top:16px; }
+  .letter p{
+    margin:0 0 11px; font-size:13.5px; line-height:1.95; color:var(--brown-2);
+    opacity:0; transform:translateY(12px);
+    transition:opacity .95s cubic-bezier(.22,.61,.36,1), transform .95s cubic-bezier(.22,.61,.36,1);
+  }
+  .letter p.on{ opacity:1; transform:none; }
+
+  .sign{
+    text-align:right; font-size:15px; letter-spacing:3px; color:var(--brown);
+    padding:10px 4px 60px 0;
+    opacity:0; transform:translateY(8px); transition:opacity .9s ease, transform .9s ease;
+  }
+  .sign.on{ opacity:1; transform:none; }
+
+  /* 红色盖章 */
+  .seal{
+    position:absolute; right:10px; bottom:2px;
+    width:74px; height:74px; border-radius:50%;
+    border:2.6px double var(--seal); color:var(--seal);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:rgba(255,252,248,.34);
+    transform:rotate(-12deg) scale(2.3); opacity:0;
+    pointer-events:none; mix-blend-mode:multiply;
+  }
+  .seal b{ font-size:14px; font-weight:900; letter-spacing:2px; }
+  .seal small{ font-family:ui-monospace,Menlo,monospace; font-size:7px; letter-spacing:.3px; margin-top:2px; }
+  .seal.on{ animation:stampHit .36s cubic-bezier(.2,1.6,.35,1) forwards; }
+  @keyframes stampHit{
+    0%{ opacity:0; transform:rotate(-12deg) scale(2.3); }
+    55%{ opacity:1; transform:rotate(-12deg) scale(.9); }
+    75%{ transform:rotate(-12deg) scale(1.05); }
+    100%{ opacity:.9; transform:rotate(-12deg) scale(1); }
+  }
+
+  .actions{
+    display:flex; gap:10px; margin-top:14px;
+    opacity:0; transform:translateY(8px); pointer-events:none;
+    transition:opacity .8s ease, transform .8s ease;
+  }
+  .actions.on{ opacity:1; transform:none; pointer-events:auto; }
+  .actions button{
+    flex:1; min-height:48px; border-radius:999px; background:transparent;
+    border:2px solid var(--brown); color:var(--brown);
+    font:inherit; font-size:15px; font-weight:700; cursor:pointer;
+  }
+  .actions button:active{ transform:scale(.97); }
+
+  .hint{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:8px;
+    font-size:11px; color:rgba(255,255,255,.38);
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <button id="replay">▶ 重播出场</button>
+  <span>向下滚动可查看长信效果</span>
+</div>
+
+<div class="phone">
+  <div class="screen" id="screen">
+
+    <div class="deco">
+      <i style="left:6%;  top:8%;  font-size:22px">🌼</i>
+      <i style="left:82%; top:5%;  font-size:19px; animation-delay:.6s">⭐</i>
+      <i style="left:70%; top:26%; font-size:17px; animation-delay:1.1s">☁️</i>
+      <i style="left:3%;  top:44%; font-size:16px; animation-delay:.3s">💗</i>
+      <i style="left:86%; top:56%; font-size:20px; animation-delay:.9s">🐑</i>
+      <i style="left:12%; top:74%; font-size:18px; animation-delay:1.4s">✨</i>
+    </div>
+
+    <div class="wrap">
+      <div class="card" id="card">
+
+        <div class="top"><b>员工档案</b><span>NO. 5147</span></div>
+        <div class="rule"></div>
+
+        <div class="body">
+          <div class="fields">
+            <div class="f" id="f1"><span>姓名</span><b class="big">🐘🐏</b></div>
+            <div class="f" id="f2"><span>工号</span><b>5147</b></div>
+            <div class="f" id="f3"><span>部门</span><b>组织部（统战部）</b></div>
+          </div>
+
+          <div class="photo" id="photo">
+            <div class="cap">ID PHOTO</div>
+            <!-- 简笔画：卷发、大眼镜、咧嘴笑 -->
+            <svg viewBox="0 0 104 128" aria-hidden="true">
+              <g fill="none" stroke="#4A3320" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <!-- 肩膀 + 脖子 -->
+                <path d="M45 100v13h14v-13" fill="#F0C9A4"/>
+                <path d="M16 128c0-17 15-26 36-26s36 9 36 26" fill="#F6E3C8"/>
+                <!-- 耳朵 -->
+                <circle cx="25" cy="67" r="5.4" fill="#F7D2B0"/>
+                <circle cx="79" cy="67" r="5.4" fill="#F7D2B0"/>
+                <!-- 脸 -->
+                <ellipse cx="52" cy="66" rx="27" ry="28" fill="#F7D2B0"/>
+                <!-- 卷发：帽形底 + 边缘小卷 -->
+                <path d="M26 60c-2-14 4-24 13-28 4-4 8-5 13-5s9 1 13 5c9 4 15 14 13 28-2-7-5-11-9-13-4 4-9 6-17 6s-13-2-17-6c-4 2-7 6-9 13z" fill="#3A2A1E" stroke="none"/>
+                <g fill="#3A2A1E" stroke="none">
+                  <circle cx="36" cy="42" r="7.6"/>
+                  <circle cx="47" cy="35" r="8.2"/>
+                  <circle cx="58" cy="35" r="8.2"/>
+                  <circle cx="69" cy="42" r="7.6"/>
+                  <circle cx="30" cy="52" r="6.4"/>
+                  <circle cx="74" cy="52" r="6.4"/>
+                </g>
+                <!-- 大眼镜 -->
+                <circle cx="41" cy="65" r="11.6" fill="rgba(255,255,255,.62)" stroke-width="2.7"/>
+                <circle cx="63" cy="65" r="11.6" fill="rgba(255,255,255,.62)" stroke-width="2.7"/>
+                <path d="M52.6 64.4h-1.2" stroke-width="2.7"/>
+                <path d="M29.4 63l-4.6-1.6" stroke-width="2.2"/>
+                <path d="M74.6 63l4.6-1.6" stroke-width="2.2"/>
+                <!-- 眼睛 -->
+                <circle cx="41" cy="65" r="2.4" fill="#2E2118" stroke="none"/>
+                <circle cx="63" cy="65" r="2.4" fill="#2E2118" stroke="none"/>
+                <!-- 咧嘴笑 -->
+                <path d="M38.5 78.5q13.5 13 27 0q-13.5 5.5-27 0z" fill="#8C3A2E" stroke-width="2.1"/>
+                <path d="M40.6 79.2q11.4 4 22.8 0q-11.4 2.6-22.8 0z" fill="#FFFFFF" stroke="none"/>
+                <!-- 腮红 -->
+                <ellipse cx="32.5" cy="76" rx="5" ry="3.1" fill="#F2A48F" stroke="none" opacity=".72"/>
+                <ellipse cx="71.5" cy="76" rx="5" ry="3.1" fill="#F2A48F" stroke="none" opacity=".72"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <div class="cells">
+          <div class="cell date" id="c1"><span>在职日期</span><b>2023.10.05 — 2026.10.30</b></div>
+          <div class="cell" id="c2"><span>在职天数</span><b>1122<i>天</i></b></div>
+        </div>
+
+        <div class="letter" id="letter">
+          <p>2023 年 10 月 5 日，你第一次推开这间办公室的门。</p>
+          <p>三年，一千一百二十二天，从「好的，收到」写到了「像你这样的朋友」。</p>
+          <p>谢谢你把最好的三年留在这里。</p>
+          <p>记得常回来看看，这间房间一直给你留着灯。</p>
+          <p>2023 年 10 月 5 日，你第一次推开这间办公室的门。</p>
+          <p>三年，一千一百二十二天，从「好的，收到」写到了「像你这样的朋友」。</p>
+          <p>谢谢你把最好的三年留在这里。</p>
+          <p>记得常回来看看，这间房间一直给你留着灯。</p>
+        </div>
+
+        <div class="sign" id="sign">—— 🐘🐏</div>
+
+        <div class="seal" id="seal"><b>已离职</b><small>2026.10.30</small></div>
+      </div>
+
+      <div class="actions" id="actions">
+        <button>← 回到房间</button>
+        <button>↺ 再玩一次</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="hint">这是样式稿：点上方按钮看一遍出场节奏，滚动手机屏看长信</div>
+
+<script>
+/* ---- 一枚印章音（和游戏里同款） ---- */
+let ctx = null;
+function ensureCtx(){
+  if(!ctx){ try{ ctx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ return null; } }
+  if(ctx.state === "suspended") ctx.resume();
+  return ctx;
+}
+function stampSfx(){
+  const c = ensureCtx(); if(!c) return;
+  const now = c.currentTime + 0.01;
+  // 低频「咚」
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = "sine"; o.frequency.setValueAtTime(165, now);
+  o.frequency.exponentialRampToValueAtTime(48, now + 0.24);
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.exponentialRampToValueAtTime(0.5, now + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+  o.connect(g); g.connect(c.destination); o.start(now); o.stop(now + 0.3);
+  // 噪声「啪」
+  const len = Math.floor(c.sampleRate * 0.2);
+  const buf = c.createBuffer(1, len, c.sampleRate);
+  const d = buf.getChannelData(0);
+  for(let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  const src = c.createBufferSource(); src.buffer = buf;
+  const f = c.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 1500;
+  const ng = c.createGain(); ng.gain.value = 0.3;
+  src.connect(f); f.connect(ng); ng.connect(c.destination);
+  src.start(now); src.stop(now + 0.15);
+}
+
+const $ = id => document.getElementById(id);
+const screenEl = $("screen");
+let timers = [];
+function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+function at(ms, fn){ timers.push(setTimeout(fn, ms)); }
+function reveal(el){
+  if(!el) return;
+  el.classList.add("on");
+  // 内容变长后自动往下带一点，保证新出现的东西看得见
+  try{ el.scrollIntoView({ block:"nearest", behavior:"smooth" }); }catch(err){}
+}
+function on(id){ reveal($(id)); }
+
+function play(){
+  clearTimers();
+  ["f1","f2","f3","photo","c1","c2","sign","actions","seal"].forEach(id => $(id).classList.remove("on"));
+  document.querySelectorAll(".letter p").forEach(p => p.classList.remove("on"));
+  screenEl.scrollTop = 0;
+
+  at(600,  () => on("f1"));
+  at(1500, () => on("f2"));
+  at(2400, () => on("f3"));
+  at(2400, () => on("photo"));
+  at(3200, () => on("c1"));
+  at(4000, () => on("c2"));
+
+  const ps = document.querySelectorAll(".letter p");
+  let t = 5000;
+  ps.forEach(p => { const el = p; at(t, () => reveal(el)); t += 900; });
+
+  at(t + 300, () => on("sign"));
+  // 停顿两秒，盖章
+  at(t + 2300, () => { on("seal"); stampSfx(); });
+  at(t + 3300, () => on("actions"));
+}
+
+$("replay").addEventListener("click", () => { ensureCtx(); play(); });
+play();
+</script>
+</body>
+</html>
