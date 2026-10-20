@@ -1196,7 +1196,7 @@ body{
 .lock-status .ls-bat i{ display:block; height:100%; border-radius:2.5px; background:#FFF9EC; }
 
 /* 日期 + 时间（居中 · 衬线 Didone 风） */
-.lock-head{ padding:8px 26px 0; text-align:center; }
+.lock-head{ padding:14px 26px 0; text-align:center; }
 .lock-date{
   font-family:"Songti SC","STSong","Noto Serif SC",serif;
   font-size:20px; font-weight:600; letter-spacing:3px; line-height:1.2;
@@ -1211,13 +1211,13 @@ body{
   color:#FFF6E0; text-shadow:0 5px 26px rgba(120,48,16,.38);
 }
 .lock-sub{
-  margin-top:8px;
+  margin-top:14px;
   font-family:"Songti SC","STSong","Noto Serif SC",serif;
   font-size:14px; letter-spacing:2.2px; opacity:.92;
 }
 
 /* 组件：天气 2/3 + 颜文字 1/3（各两行，紧凑） */
-.lock-cards{ display:flex; gap:12px; padding:18px 22px 0; }
+.lock-cards{ display:flex; gap:12px; padding:22px 22px 0; }
 .lc{
   display:flex; flex-direction:column; justify-content:center;
   padding:10px 15px; border-radius:20px;
@@ -1228,7 +1228,7 @@ body{
 }
 .lc-weather{ flex:2; align-items:flex-start; }
 .lc-row1{ display:flex; align-items:baseline; gap:9px; white-space:nowrap; }
-.lc-ico{ width:27px; height:27px; flex:none; align-self:baseline; margin-bottom:-5px; }
+.lc-ico{ width:27px; height:27px; flex:none; align-self:baseline; margin-bottom:-7px; }
 .lc-weather b{
   font-family:"Playfair Sub","Didot",Georgia,serif;
   font-size:32px; font-weight:700; line-height:1; letter-spacing:.02em;
@@ -1237,7 +1237,7 @@ body{
 .lc-weather em{ font-style:normal; font-size:14px; opacity:.82; margin-top:5px; letter-spacing:.3px; }
 .lc-face{ flex:1; align-items:center; justify-content:center; gap:3px; padding:10px 6px; }
 .lc-face .face{ font-size:18.5px; font-weight:600; letter-spacing:.2px; line-height:1.15; white-space:nowrap; }
-.lc-face span{ font-size:12px; opacity:.88; letter-spacing:.8px; }
+.lc-face span{ font-size:13.5px; opacity:.9; letter-spacing:.8px; }
 
 /* 花体字标 + 签名式飘线 */
 .lock-word{
@@ -1372,8 +1372,9 @@ body{
 /* 兜底：音频没醒时的一触即开按钮 */
 .sound-nudge{
   position:absolute; left:50%; bottom:104px; transform:translateX(-50%); z-index:60;
-  display:flex; align-items:center; gap:8px; padding:11px 18px; border-radius:24px;
+  display:flex; align-items:center; gap:9px; padding:13px 30px; border-radius:26px;
   background:rgba(255,252,244,.96); color:#8A4520; font-size:13.5px; font-weight:700;
+  white-space:nowrap; letter-spacing:.6px;
   border:1px solid rgba(255,255,255,.85); box-shadow:0 10px 26px rgba(110,42,14,.3);
   cursor:pointer; animation:nudgePulse 1.7s ease-in-out infinite;
 }
