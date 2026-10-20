@@ -101,15 +101,18 @@ const CONFIG = {
 
   // 页面 D
   finalPage: {
-    unit: "天",
-    fileLabel: "员工档案：🐘🐏",
+    fileLabel: "员工档案",
     fileNo: "NO. 5147",
-    cells: [
-      { k: "部门", v: "组织部" },
-      { k: "在职", v: "1122 天", dur: true },
-      { k: "状态", v: "", stamp: "已离职" },
+    fields: [
+      { k: "姓名", v: "🐘🐏", big: true },
+      { k: "工号", v: "5147" },
+      { k: "部门", v: "组织部（统战部）" },
     ],
+    dateLabel: "在职日期",
+    daysLabel: "在职天数",
+    unit: "天",
     sign: "🐘🐏",
+    seal: "已离职",
   },
 
   // 最终留言（逐行淡入，想加几行就加几行）
@@ -2390,12 +2393,8 @@ function confettiBurst(){
 function renderFinal(){
   const c = CONFIG.finalPage;
   const lines = CONFIG.finalMessage;
-  const cells = c.cells.map((x, i) => `
-        <div class="fin-cell">
-          <span>${x.k}</span>
-          <b class="fin-val" id="fin-val-${i}" data-cell="${i}">${x.v || ""}</b>
-          ${x.stamp ? `<i class="fin-stamp" id="fin-stamp"><b>${x.stamp}</b><small>${CONFIG.workDates.end}</small></i>` : ""}
-        </div>`).join("");
+  const fields = c.fields.map((f, i) => `
+        <div class="fin-f" id="fin-f-${i}"><span>${f.k}</span><b${f.big ? ' class="big"' : ""}>${f.v}</b></div>`).join("");
 
   $("view-final").innerHTML = `
     <div class="final-decor">${finalDecor()}</div>
@@ -2403,13 +2402,25 @@ function renderFinal(){
       <div class="fin-card" id="fin-card">
         <div class="fin-top"><b>${c.fileLabel}</b><span>${c.fileNo}</span></div>
         <div class="fin-rule"></div>
-        <div class="fin-step fin-num" id="fin-num">${CONFIG.workDays}<i>${c.unit}</i></div>
-        <div class="fin-step fin-date" id="fin-date">${CONFIG.workDates.start} — ${CONFIG.workDates.end}</div>
-        <div class="fin-step fin-cells" id="fin-cells">${cells}</div>
+
+        <div class="fin-body">
+          <div class="fin-fields">${fields}</div>
+          <div class="fin-photo" id="fin-photo">
+            <div class="cap">ID PHOTO</div>
+            <img src="id-photo.svg?v=1" alt="工牌照" draggable="false" />
+          </div>
+        </div>
+
+        <div class="fin-cells">
+          <div class="fin-cell date" id="fin-cell-date"><span>${c.dateLabel}</span><b>${CONFIG.workDates.start} — ${CONFIG.workDates.end}</b></div>
+          <div class="fin-cell days" id="fin-cell-days"><span>${c.daysLabel}</span><b>${CONFIG.workDays}<i>${c.unit}</i></b></div>
+        </div>
+
         <div class="fin-msg">
           ${lines.map((l,i)=>`<p id="fin-line-${i}">${l}</p>`).join("")}
         </div>
         <div class="fin-sign" id="fin-sign">—— ${c.sign}</div>
+        <div class="fin-seal" id="fin-seal"><b>${c.seal}</b><small>${CONFIG.workDates.end}</small></div>
       </div>
       <div class="fin-actions" id="fin-actions">
         <button class="btn btn-ghost" id="btn-back-lobby">${CONFIG.backLabel}</button>
@@ -2436,26 +2447,52 @@ function renderFinal(){
   });
 }
 
-/* 终页出场时间轴：每段都带音 */
+/* 只上下滚：不能用 scrollIntoView —— 红章从小放大时盒子超出右边，
+   scrollIntoView 会连带把横向滚动条拉开，整页就「往右一抽」 */
+function finScrollTo(el){
+  const view = $("view-final");
+  if(!el || !view) return;
+  const r = el.getBoundingClientRect(), v = view.getBoundingClientRect();
+  const pad = 14;
+  if(r.bottom > v.bottom - pad) view.scrollTop += (r.bottom - v.bottom + pad);
+  else if(r.top < v.top + pad) view.scrollTop -= (v.top + pad - r.top);
+  view.scrollLeft = 0;
+}
+
+/* 终页出场时间轴：一个接一个，慢慢来 */
 function runFinalSequence(){
-  const show = (id) => { const e = $(id); if(e) e.classList.add("on"); };
+  const view = $("view-final");
+  if(view) view.scrollLeft = 0;
+  const show = (id, sy) => {
+    const e = $(id);
+    if(!e) return;
+    e.classList.add("on");
+    if(sy !== false) setTimeout(()=> finScrollTo(e), 260);
+  };
   const snd = (fn) => { try{ fn(); }catch(e){} };
+
   const plan = [];
-  // 每个元素间隔 1 秒，慢慢来；只有落章那一下稍微赶一点
-  plan.push([1000, () => { show("fin-num");   snd(()=>SFX.flip()); }]);
-  plan.push([2000, () => { show("fin-date");  snd(()=>SFX.flip()); }]);
-  plan.push([3000, () => { show("fin-cells"); snd(()=>SFX.flip()); }]);
-  plan.push([4000, () => { show("fin-val-0"); snd(()=>SFX.tap());  }]);
-  plan.push([5000, () => { show("fin-val-1"); snd(()=>SFX.tap());  }]);
-  // 顿一下，盖章（比其它元素快一拍）
-  plan.push([5500, () => { show("fin-stamp"); snd(()=>SFX.stamp()); }]);
-  let tl = 6500;
+  let t = 0;
+  const step = (gap, fn) => { t += gap; plan.push([t, fn]); };
+
+  // 头的员工档案已经随卡片出现，停 1 秒再依次落字段
+  step(1100, () => { show("fin-f-0"); snd(()=>SFX.flip()); });
+  step(1100, () => { show("fin-f-1"); snd(()=>SFX.flip()); });
+  step(1100, () => { show("fin-f-2"); snd(()=>SFX.flip()); });
+  // 部门之后才出现工牌照片
+  step(1200, () => { show("fin-photo"); snd(()=>SFX.reveal()); });
+  step(1100, () => { show("fin-cell-date"); snd(()=>SFX.flip()); });
+  step(1000, () => { show("fin-cell-days"); snd(()=>SFX.flip()); });
+  // 信：逐行，每行 1.1 秒
   CONFIG.finalMessage.forEach((_, i) => {
-    plan.push([tl, () => { show("fin-line-" + i); snd(()=>SFX.flip()); }]);
-    tl += 1000;
+    step(1100, () => { show("fin-line-" + i); snd(()=>SFX.flip()); });
   });
-  plan.push([tl + 500,  () => { show("fin-sign"); snd(()=>SFX.fragment()); }]);
-  plan.push([tl + 1100, () => { show("fin-actions"); }]);
+  // 落款
+  step(1200, () => { show("fin-sign"); snd(()=>SFX.fragment()); });
+  // 停两秒盖红章
+  step(2000, () => { show("fin-seal", false); snd(()=>SFX.stamp()); });
+  step(1000, () => { show("fin-actions"); });
+
   plan.forEach(([ms, fn]) => setTimeout(fn, ms));
 }
 
