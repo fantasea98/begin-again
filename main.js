@@ -1509,25 +1509,27 @@ function playResult(lvl, lines, opts){
   let extra = 0;
   lines.forEach((ln, i) => {
     const isLast = i === lines.length - 1;
+    const isStagger = o.stagger === i;
+    const at = LEAD + i * GAP + extra;
     setTimeout(()=>{
       const d = document.createElement("div");
-      d.className = "result-line" + (o.slowLast && isLast ? " slow" : "") + (o.stagger === i ? " stagger" : "");
+      d.className = "result-line" + (o.slowLast && isLast ? " slow" : "") + (isStagger ? " stagger" : "");
       d.innerHTML = ln;
       box.appendChild(d);
       requestAnimationFrame(()=> d.classList.add("on"));
-      // 需要「挨个出现」的行：等整行淡入后，再把每个词依次点亮
-      if(o.stagger === i){
+      // 「挨个出现」的行：整行和第一个物品同帧出现，之后每 GAP 亮一组
+      if(isStagger){
         const items = d.querySelectorAll(".g1,.g2,.g3");
         items.forEach((el, n) => setTimeout(()=>{
           el.classList.add("in");
           try{ SFX.pick(); }catch(e){}
-        }, 380 + n * 560));
+        }, n * GAP));
+      } else {
+        try{ (o.slowLast && isLast) ? SFX.fragment() : SFX.flip(); }catch(e){}
       }
-      // 逐行配音；最后一行若是「碎片缓缓掉落」，用慢上扬的铃音
-      try{ (o.slowLast && isLast) ? SFX.fragment() : SFX.flip(); }catch(e){}
-    }, LEAD + i * GAP + extra);
-    // 这一行是「挨个出现」的话，后面所有行整体往后推，等它播完
-    if(o.stagger === i) extra += (o.staggerHold || 1500);
+    }, at);
+    // 这一行要占三拍（物品一 / 、二 / 和三），后面的行整体顺延两拍
+    if(isStagger) extra += 2 * GAP;
   });
   setTimeout(()=>{
     $("result-tail").style.display = "block";
@@ -2177,7 +2179,7 @@ function renderLevel4(lvl){
     <div class="view-scroll">
       ${levelHeader(lvl)}
       <div class="story-card">${lvl.intro.map(t=>`<div class="t-body">${t}</div>`).join("")}</div>
-      <div style="text-align:center;margin:2px 0 6px;position:relative;z-index:1"><button class="btn btn-primary" id="l4-start">${lvl.startLabel}</button></div>
+      <div style="text-align:center;margin:2px 0 6px;position:relative;z-index:1"><button class="btn l4-start-btn" id="l4-start">${lvl.startLabel}</button></div>
       <div id="l4-game" style="display:none"></div>
     </div>`;
 
@@ -2505,10 +2507,9 @@ function runFinalSequence(){
   let t = 0;
   const step = (gap, fn) => { t += gap; plan.push([t, fn]); };
 
-  // 礼花先飘一会儿，「员工档案」才出来
-  step(1600, () => { show("fin-head"); popSnd(); });
-  step(1100, () => { show("fin-rule"); });
-  step(1300, () => { show("fin-f-0"); popSnd(); });
+  // 礼花先飘一会儿，「员工档案」和横线一起出来，再停一下才开始落字段
+  step(2600, () => { show("fin-head"); show("fin-rule"); popSnd(); });
+  step(1400, () => { show("fin-f-0"); popSnd(); });
   step(1300, () => { show("fin-f-1"); popSnd(); });
   step(1300, () => { show("fin-f-2"); popSnd(); });
   // 部门之后才出现工牌照片
@@ -2517,13 +2518,13 @@ function runFinalSequence(){
   step(1600, () => { show("fin-cell-date"); show("fin-cell-days"); popSnd(); });
   step(1300, () => { show("fin-v-date"); popSnd(); });
   step(1300, () => { show("fin-v-days"); popSnd(); });
-  // 留言：再多等一秒才开始，之后一行都不配音
-  step(2200, () => { show("fin-line-0"); });
+  // 留言：再多等一秒才开始；第一行单独一记铃声，后面几行不出声
+  step(2200, () => { show("fin-line-0"); snd(()=>SFX.fragment()); });
   CONFIG.finalMessage.slice(1).forEach((_, i) => {
     step(1400, () => { show("fin-line-" + (i + 1)); });
   });
-  // 落款 + 停两秒盖红章（这两下才出声）
-  step(1500, () => { show("fin-sign"); popSnd(); });
+  // 落款：停 2 秒再出现（带音效），然后再盖章
+  step(2000, () => { show("fin-sign"); popSnd(); });
   step(2000, () => { show("fin-seal", false); snd(()=>SFX.stamp()); });
   step(1100, () => { show("fin-actions"); });
 
