@@ -1,8 +1,11 @@
 /* =========================================================
-   SFX —— 纯 Web Audio 合成音效（零素材、零依赖）
-   - 必须在用户手势里调用 SFX.init()（浏览器自动播放策略）
-   - 所有节拍用 ctx.currentTime 前瞻调度，不用 setTimeout
-   - 不支持 AudioContext 时全部静默 no-op，不影响主逻辑
+   SFX —— 纯 Web Audio 合成音效（无音频素材、无第三方依赖）
+   - 浏览器自动播放策略：必须在真实手势里调用 SFX.hardUnlock() / ensure(true)
+   - 节拍类声音全部用 ctx.currentTime 前瞻调度，不依赖 setTimeout 精度
+   - 不支持 AudioContext 时全部静默 no-op，绝不影响主逻辑
+   - 三种「没声音」的成因都在这里兜底：
+       suspended/interrupted 的上下文（切后台、来电、锁屏、插拔耳机）
+     → 前台恢复时自动 resume；另外有 1.2s 看门狗兜底
    ========================================================= */
 window.SFX = (function(){
 "use strict";
@@ -112,6 +115,15 @@ function createCtx(){
 function closeCtx(){
   try{ if(ctx && ctx.state !== "closed") ctx.close(); }catch(e){}
   ctx = null; master = null; ready = false; _nb = null;
+  resetBuses();
+}
+/* 总线是挂在某一只 ctx 上的：ctx 一换，旧总线就是「异界节点」，
+   再往里连新 ctx 的音源会抛 InvalidAccessError（被 catch 吞掉，表现为音乐盒悄悄没了）。
+   所以ctx 一关就一起清掉，并标记「还想要音乐盒」，等新 ctx 起来再自动续上。 */
+function resetBuses(){
+  _beatBus = null;
+  if(_box){ try{ clearTimeout(_box); }catch(e){} _box = null; }
+  _boxBus = null;
 }
 
 /* 播放静音 wav：iOS 上它能把音频会话切到 playback（顺带绕过静音拨杆的一部分限制）。
@@ -144,13 +156,44 @@ function playSilentWav(tag){
       pr.then(function(){ dlog("wav play OK (" + (tag||"") + ")"); },
               function(err){
                 dlog("wav play REJECT " + ((err && (err.name + ":" + err.message)) || "?") + " (" + (tag||"") + ")");
-                // 被拒了就把元素丢掉，下次重建重试
+                // 被拒了就把元素摘掉，下次重建重试（别把废元素留在 DOM 里越堆越多）
+                try{ if(_audEl && _audEl.parentNode) _audEl.parentNode.removeChild(_audEl); }catch(e){}
                 try{ _audEl = null; }catch(e){}
               });
     } else if(pr && pr.catch){ pr.catch(function(){}); }
   }catch(e){ dlog("wav THROW " + (e && e.name)); }
 }
 
+/* 切后台、锁屏、来电、插拔耳机之后，AudioContext 常常停在 suspended / interrupted，
+   而页面并没有「变回可见」这个事件（比如只是断了耳机）。这里补三路兜底：
+     - visibilitychange 回到前台
+     - pageshow（iOS 从 bfcache 恢复）
+     - window focus / mediaDevices.devicechange（耳机插拔）
+   再加一个 1.2 秒的看门狗：页面可见时只要 state 不是 running 就温和唤醒。
+   注意全部走 nudge()（只 resume、不标手势窗口），不会重现「音符堆在冻结时间轴上」的老毛病。 */
+function registerRecovery(){
+  try{
+    if(document.__baRec) return;
+    document.__baRec = true;
+    var back = function(){ try{ nudge(); }catch(e){} };
+    document.addEventListener("visibilitychange", function(){ if(!document.hidden) back(); });
+    window.addEventListener("pageshow", back);
+    window.addEventListener("focus", back);
+    try{
+      if(navigator.mediaDevices && navigator.mediaDevices.addEventListener){
+        navigator.mediaDevices.addEventListener("devicechange", function(){ setTimeout(back, 500); });
+      }
+    }catch(e){}
+    setInterval(function(){
+      try{
+        if(document.hidden || dead || !ctx) return;
+        if(_boxWanted && !_boxBus && ctx.state === "running"){ try{ musicBoxStart(); }catch(e){} }
+        if(ctx.state === "running") return;
+        nudge();
+      }catch(e){}
+    }, 1200);
+  }catch(e){}
+}
 function registerVisibility(){
   try{
     if(document.__baVis) return;
@@ -192,6 +235,7 @@ function ensure(force, noCreate){
     _lastCreate = Date.now();
     dlog("created ctx");
     registerVisibility();
+    registerRecovery();
   }
 
   if(ctx.state !== "running"){
@@ -211,6 +255,7 @@ function ensure(force, noCreate){
       _rebuilds++;
       _lastRebuild = Date.now();
       registerVisibility();
+      if(_boxWanted) setTimeout(function(){ try{ musicBoxStart(); }catch(e){} }, 300);
     }
     if(ctx.state !== "running") playSilentWav("beforeResume");
     _lastResume = Date.now();
@@ -455,10 +500,11 @@ function tensionStop(){
   }catch(e){}
 }
 
-/* 第 4 关：一段缓慢抒情的音乐盒小曲（C 大调五声，3/4 拍），
-   单独走一条 0.5 的支线总线，比全局音效明显轻；
-   整段用 ctx 时钟一次性排完，再来一遍时整体后移一个循环长度。 */
-var _box = null, _boxBus = null;
+/* 第 4 关：一段缓慢抒情的音乐盒小曲（C 大调 3/4 拍），
+   单独走一条 0.13 的支线总线（约为主音效的 1/10），并淡入 3.6 秒；
+   整段用 ctx 时钟一次性排完，再来一遍时整体后移一个循环长度。
+   _boxWanted 记住「这一关想要有背景音乐」，ctx 被重建后由看门狗自动续上。 */
+var _box = null, _boxBus = null, _boxWanted = false;
 var BOX_BEAT = 0.78;                 // 一拍 0.78s ≈ 77 BPM
 var BOX_LEN  = 9;                    // 每循环 9 拍
 /* [第几拍, 频率, 余音秒数] */
@@ -483,6 +529,7 @@ var BOX_BASS = [
   [6.75,  98.00, 2.60]    // G2
 ];
 function musicBoxStart(){
+  _boxWanted = true;
   if(!can() || _box || _boxBus) return;
   try{
     _boxBus = ctx.createGain();
@@ -508,6 +555,7 @@ function musicBoxStart(){
   phrase();
 }
 function musicBoxStop(){
+  _boxWanted = false;
   if(_box){ clearTimeout(_box); _box = null; }
   if(!_boxBus) return;
   var b = _boxBus; _boxBus = null;
@@ -587,7 +635,7 @@ function bubble(self){
     noise({ dur:0.025, filter:"highpass", freq:2400, gain:0.05, delay:0.02 });
   }
 }
-/* 系统提示 pill：两声轻警示 */
+/* 时空乱流的系统提示：高低双音警笛，连响三遍 */
 function sysalert(){
   // 系统警报：高低两音的警笛，连响三遍
   for(var k = 0; k < 3; k++){
