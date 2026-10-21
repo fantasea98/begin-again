@@ -1518,7 +1518,10 @@ function playResult(lvl, lines, opts){
       // 需要「挨个出现」的行：等整行淡入后，再把每个词依次点亮
       if(o.stagger === i){
         const items = d.querySelectorAll(".g1,.g2,.g3");
-        items.forEach((el, n) => setTimeout(()=> el.classList.add("in"), 380 + n * 560));
+        items.forEach((el, n) => setTimeout(()=>{
+          el.classList.add("in");
+          try{ SFX.pick(); }catch(e){}
+        }, 380 + n * 560));
       }
       // 逐行配音；最后一行若是「碎片缓缓掉落」，用慢上扬的铃音
       try{ (o.slowLast && isLast) ? SFX.fragment() : SFX.flip(); }catch(e){}
@@ -2337,7 +2340,7 @@ function adjustOtpForKeyboard(){
 }
 function bindOTP(){
   const boxes = [...document.querySelectorAll("#otp-row .otp")];
-  boxes[0].focus();
+  // 不自动 focus：先让玩家看清这一页，点数字框再唤出键盘
   boxes.forEach((b, i) => {
     b.addEventListener("input", (e)=>{
       b.value = b.value.replace(/\D/g, "").slice(0,1);
