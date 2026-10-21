@@ -11,10 +11,11 @@
 }
 
 /* =========================================================
-   《begin again》样式表（去重整理版）
-   设计语言：米卡其底 + 高饱和撞色，UI 骨架借鉴微信/胶囊
+   《begin again》样式表
+   设计语言：暖棕描边 + 米卡其纸感的手绘插画风；
+   锁屏是黄昏海面，大厅是同一间办公室的四年，终页是一张员工档案卡。
    - 字号阶梯：大头数字 64+ / 标题 24~30 / 正文 15 / 注脚 12~13
-   - 阴影克制：只留柔和环境影
+   - 阴影克制：只留柔和环境影 + 硬边「贴纸」投影
    - 颜色全部走 :root CSS 变量（由 main.js 的 THEME 注入）
    ========================================================= */
 
@@ -45,7 +46,6 @@ body{
 }
 
 /* ---------- 字号阶梯 ---------- */
-.t-h1{ font-size:24px; font-weight:800; letter-spacing:.5px; }
 .t-body{ font-size:15px; font-weight:400; line-height:1.9; color:#3a362f; }
 .t-caption{ font-size:12px; font-weight:400; color:var(--muted); line-height:1.5; }
 
@@ -315,115 +315,10 @@ body{
 .guide #btn-enter{ background:linear-gradient(135deg,#A9743B 0%,#7E5428 100%); color:#fff; border:none; }
 
 /* =========================================================
-   页面 B：回忆大厅（2×2 网格，撞色卡片）
+   通用小动画（旧大厅删掉后，这两个仍在用）
    ========================================================= */
-.hall{ position:relative; padding-top:30px; }
-/* 三个大小不同、位置不同的光晕 */
-.hall-glow{
-  position:absolute; top:-46px; left:50%; transform:translateX(-50%);
-  width:130%; height:230px; background:radial-gradient(ellipse at top, var(--a3) 0%, rgba(255,94,151,0) 62%);
-  opacity:.16; pointer-events:none;
-}
-.hall-glow.g2{
-  top:30%; left:15%; transform:none;
-  width:200px; height:200px; border-radius:50%;
-  background:radial-gradient(circle, var(--a1) 0%, rgba(255,216,89,0) 65%);
-  opacity:.1;
-  animation:glowDrift 14s ease-in-out infinite alternate;
-}
-.hall-glow.g3{
-  top:50%; right:10%; transform:none;
-  width:260px; height:260px; border-radius:50%;
-  background:radial-gradient(circle, var(--purple) 0%, rgba(180,120,255,0) 65%);
-  opacity:.08;
-  animation:glowDrift 18s ease-in-out infinite alternate-reverse;
-}
-@keyframes glowDrift{ from{ transform:translate(0,0);} to{ transform:translate(20px,-15px);} }
-.hall-decor{ position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0; }
-.hall-decor i{
-  position:absolute; border-radius:50%; opacity:.32; animation:drift 6s ease-in-out infinite;
-  box-shadow:0 0 10px rgba(0,0,0,.05);
-}
-@keyframes drift{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-18px); } }
-.hall-title, .hall-sub, .lvl-grid, .hall-door{ position:relative; z-index:1; }
-.hall-title{ text-align:center; margin:0 0 8px; font-size:30px; font-weight:900; }
-.hall-sub{ text-align:center; margin:0 0 22px; }
-.lvl-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
-.level-card{
-  border-radius:var(--radius-lg); padding:24px 12px 20px;
-  display:flex; flex-direction:column; align-items:center; text-align:center; gap:9px;
-  background:var(--lv-accent); color:var(--ink); cursor:pointer;
-  box-shadow:var(--soft-shadow); border:1px solid rgba(255,255,255,.35);
-  transition:transform .18s cubic-bezier(.34,1.56,.64,1), background .25s ease, box-shadow .2s ease;
-}
-.level-card.open:hover, .level-card.done:hover{ transform:translateY(-5px); box-shadow:var(--lift-shadow); }
-.level-card:active{ transform:scale(.97); }
-.level-card.locked{
-  background:#ece9e3; color:#b0aaa0; cursor:not-allowed; box-shadow:none; border-color:rgba(0,0,0,.05);
-  background-image:repeating-linear-gradient(45deg, rgba(0,0,0,.03) 0 6px, transparent 6px 12px);
-}
-.level-card.locked:active{ transform:none; }
-.level-card.done{ background:var(--lv-accent); border-color:rgba(255,255,255,.65); }
-.level-card.just-done{ animation:donePop .55s cubic-bezier(.34,1.56,.64,1); }
-@keyframes donePop{ 0%{ transform:scale(1.14); box-shadow:var(--lift-shadow); } 100%{ transform:scale(1); } }
-.lc-year{ font-size:12px; font-weight:700; letter-spacing:1px; color:rgba(26,26,26,.5); margin-top:-10px; }
-.level-card.locked .lc-year{ color:rgba(176,170,160,.9); }
-/* 第四关深绿底，年份用灰白色 */
-.level-card:nth-child(4) .lc-year{ color:rgba(255,255,255,.75); }
-.level-card:nth-child(4).done .lc-year{ color:rgba(255,255,255,.8); }
-.level-card:nth-child(4).locked .lc-year{ color:rgba(176,170,160,.9); }
-.lc-emoji{ font-size:47px; line-height:1; animation:cardFloat 3s ease-in-out infinite; }
-.level-card.locked .lc-emoji{ animation:none; opacity:.9; }
-.level-card.done .lc-emoji{ filter:none; animation:cardFloat 3s ease-in-out infinite; }
-.level-card:nth-child(1) .lc-emoji{ animation-delay:0s; }
-.level-card:nth-child(2) .lc-emoji{ animation-delay:.4s; }
-.level-card:nth-child(3) .lc-emoji{ animation-delay:.8s; }
-.level-card:nth-child(4) .lc-emoji{ animation-delay:1.2s; }
 @keyframes cardFloat{ 0%,100%{ transform:translateY(0) rotate(-2deg); } 50%{ transform:translateY(-10px) rotate(2deg); } }
-.lc-title{ font-size:16px; font-weight:800; color:var(--ink); }
-/* 各关标题与碎片文字颜色：与主题色适配 */
-.level-card:nth-child(1) .lc-title,
-.level-card:nth-child(1) .lc-frag{ color:#1A1A1A; }
-.level-card:nth-child(2) .lc-title,
-.level-card:nth-child(2) .lc-frag{ color:#08304F; }
-.level-card:nth-child(3) .lc-title,
-.level-card:nth-child(3) .lc-frag{ color:#6B0A28; }
-.level-card:nth-child(4) .lc-title,
-.level-card:nth-child(4) .lc-frag{ color:#fff; }
-.level-card.locked .lc-title{ color:#b0aaa0; }
-.lc-frag{
-  display:inline-flex; align-items:center; gap:3px; font-size:11.5px; font-weight:700;
-  background:var(--lv-accent); border-radius:999px; padding:4px 11px;
-  box-shadow:0 0 0 1px rgba(255,255,255,.5);
-}
-.level-card.done .lc-frag{ animation:fragPop .5s ease; }
 @keyframes fragPop{ 0%{ transform:scale(.5); } 60%{ transform:scale(1.18); } 100%{ transform:scale(1); } }
-
-/* 终极密码门：轻盈神秘风 */
-.hall-door{
-  margin-top:22px; text-align:center; padding:20px 16px; border-radius:var(--radius-lg);
-  border:2px dashed rgba(140,100,220,.3); background:linear-gradient(135deg,rgba(250,248,255,.6),rgba(248,244,252,.5));
-  transition:all .3s ease; cursor:not-allowed;
-  position:relative; overflow:hidden;
-}
-.hall-door::before{
-  content:""; position:absolute; inset:0;
-  background:radial-gradient(circle at 50% 0%, rgba(160,120,255,.06), transparent 70%);
-  pointer-events:none;
-}
-.hall-door .door-ico{ font-size:30px; line-height:1; filter:drop-shadow(0 0 4px rgba(140,100,220,.25)); }
-.hall-door .door-title{ font-size:15px; font-weight:700; margin-top:6px; color:rgba(120,90,180,.45); letter-spacing:1px; }
-.hall-door .door-sub{ font-size:12px; color:rgba(130,110,170,.35); margin-top:2px; }
-.hall-door.ready{
-  border:2px solid rgba(140,100,220,.45);
-  background:linear-gradient(135deg,rgba(252,250,255,.85),rgba(245,240,252,.75));
-  cursor:pointer;
-  box-shadow:0 4px 16px rgba(140,100,220,.12), inset 0 0 20px rgba(160,120,255,.04);
-}
-.hall-door.ready .door-title{ color:rgba(110,70,180,.7); text-shadow:0 0 6px rgba(160,120,255,.2); }
-.hall-door.ready .door-sub{ color:rgba(130,100,180,.5); }
-.hall-door.ready .door-ico{ animation:doorPulse 1.4s ease-in-out infinite; filter:drop-shadow(0 0 8px rgba(160,120,255,.4)); }
-@keyframes doorPulse{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.1);} }
 
 /* =========================================================
    关卡 1：拨号
@@ -751,7 +646,7 @@ body{
   100%{ opacity:0; transform:translate(-50%,-50%) translateY(-95px) translateX(var(--nx,0)) scale(1.2);}
 }
 
-/* ---------- 第 4 关：黄昏回忆（暖橙夕阳 + 极淡回忆） ---------- */
+/* ---------- 第 4 关：深绿夜幕（淡回忆浮标 + 薄荷光晕） ---------- */
 .bg-4{ background:linear-gradient(180deg,#26432F 0%,#18301F 45%,#0D1F14 100%); }
 .bg-4 .sun{
   position:absolute; top:4%; right:-10%; width:170px; height:170px; border-radius:50%;
@@ -871,8 +766,6 @@ body{
 @keyframes blueGlow{ 0%,100%{ text-shadow:0 0 4px rgba(56,178,200,.45);} 50%{ text-shadow:0 0 14px rgba(56,178,200,.95), 0 0 26px rgba(30,150,180,.5);} }
 .pink-glow{ font-weight:900; color:#FF2F80; animation:pinkGlow 1.15s ease-in-out infinite; }
 @keyframes pinkGlow{ 0%,100%{ text-shadow:0 0 4px rgba(255,47,128,.45);} 50%{ text-shadow:0 0 15px rgba(255,47,128,.95), 0 0 28px rgba(255,120,190,.55);} }
-.green-glow{ font-weight:900; color:#16352A; animation:greenGlow 1.15s ease-in-out infinite; }
-@keyframes greenGlow{ 0%,100%{ text-shadow:0 0 4px rgba(22,53,42,.35);} 50%{ text-shadow:0 0 13px rgba(60,140,105,.85), 0 0 24px rgba(40,110,80,.45);} }
 @keyframes wordGlow{ 0%,100%{ text-shadow:none; } 50%{ text-shadow:0 0 12px rgba(61,220,132,.85); } }
 .showtime{ font-weight:900; letter-spacing:1px; animation:showtime 1.3s ease-in-out infinite; }
 @keyframes showtime{ 0%,100%{ color:var(--ink); text-shadow:none; } 50%{ color:var(--a3); text-shadow:0 0 14px rgba(255,94,151,.75); } }
@@ -986,8 +879,6 @@ body{
                   font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
 .fin-cell.days{ flex:.95; }
 .fin-cell.days b{ font-weight:800; }
-
-/* 预留：旧版「状态」印章格已移除，改到落款上盖章 */
 
 /* 信 */
 .fin-msg{ margin-top:16px; }
@@ -1343,7 +1234,7 @@ body{
 }
 
 /* =========================================================
-   锁屏页 v5 · 夕阳海面（纯渐变 SVG）· Didot 系时间 · 花体字标
+   锁屏页 · 夕阳海面（纯渐变 SVG）· Didot 系时间 · 花体字标 · 天气/心情毛玻璃卡
    ========================================================= */
 #view-lock{ padding:0; }
 #view-lock .lock{
