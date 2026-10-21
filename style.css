@@ -1059,6 +1059,9 @@ body{
 .result-line .g1.in, .result-line .g2.in, .result-line .g3.in{ opacity:1; transform:none; }
 /* 收下碎片：大厅的棕色 */
 .frag-collect{ background:#6B4520; color:#FFF8EE; }
+/* 第四关「开始」：白底深绿字 */
+.l4-start-btn{ background:#FFFDF8; color:#1B3A2E; font-weight:800; border:2px solid #1B3A2E; }
+.l4-start-btn:active{ transform:scale(.97); }
 .frag-collect:active{ filter:brightness(.94); }
 .frag-collect:active{ transform:scale(.97); }
 @keyframes lineIn{
