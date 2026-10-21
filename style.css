@@ -938,18 +938,19 @@ body{
 .fin-head.on{ opacity:1; transform:none; }
 
 /* 字段 + 工牌照片 */
-.fin-body{ display:flex; gap:14px; align-items:flex-end; margin-top:14px; }
-.fin-fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:11px; }
+.fin-body{ display:flex; gap:14px; align-items:flex-start; margin-top:14px; }
+.fin-fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
 .fin-f{ opacity:0; transform:translateY(10px);
         transition:opacity 1.15s cubic-bezier(.22,.61,.36,1), transform 1.15s cubic-bezier(.22,.61,.36,1); }
 .fin-f.on{ opacity:1; transform:none; }
 .fin-f span{ display:block; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-             font-size:13px; letter-spacing:2px; color:#A98B68; margin-bottom:4px; }
-.fin-f b{ display:block; font-size:18px; letter-spacing:.4px; font-weight:500; color:#4A3320; }
-.fin-f b.big{ font-size:23px; }
+             font-size:12.5px; letter-spacing:2px; color:#A98B68; margin-bottom:2px; }
+.fin-f b{ display:block; font-size:15px; letter-spacing:.4px; font-weight:500; color:#4A3320; line-height:1.35; }
+.fin-f b.big{ font-size:21px; }
 
 .fin-photo{
-  flex:none; width:95px; margin-right:7px;
+  flex:none; width:114px; margin-right:6px;
+  display:flex; flex-direction:column;
   border:1.6px solid #6B4520; border-radius:10px; overflow:hidden;
   background:#ECDFCC; box-shadow:3px 3px 0 rgba(107,69,32,.16);
   opacity:0; transform:translateY(10px) rotate(1.5deg);
@@ -960,7 +961,7 @@ body{
   font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:8px; letter-spacing:2px;
   color:#FFF8EE; background:#6B4520; text-align:center; padding:3px 0 4px;
 }
-.fin-photo img{ display:block; width:100%; height:auto; }
+.fin-photo img{ display:block; width:100%; flex:1 1 auto; min-height:0; object-fit:cover; object-position:center top; }
 
 /* 两个小框 */
 .fin-cells{ display:flex; gap:8px; margin-top:14px; }
@@ -1050,12 +1051,12 @@ body{
 .result-line.on{ animation:lineIn .8s cubic-bezier(.22,.61,.36,1) both; }
 .result-line.slow.on{ animation:lineIn 2.2s cubic-bezier(.22,.61,.36,1) both; }
 /* 第四关：三个物品挨个蹦出来 */
-/* 三个词靠 JS 依次加 .in（比动画更稳，reduced-motion 下也正常） */
-.result-line .p1, .result-line .p2, .result-line .p3{
-  display:inline-block; opacity:0; transform:scale(.55) translateY(4px);
+/* 三组靠 JS 依次加 .in：①物品一 ②「、」+物品二 ③「和」+物品三 */
+.result-line .g1, .result-line .g2, .result-line .g3{
+  display:inline-block; opacity:0; transform:scale(.72) translateY(4px);
   transition:opacity .42s cubic-bezier(.2,1.4,.45,1), transform .42s cubic-bezier(.2,1.4,.45,1);
 }
-.result-line .p1.in, .result-line .p2.in, .result-line .p3.in{ opacity:1; transform:none; }
+.result-line .g1.in, .result-line .g2.in, .result-line .g3.in{ opacity:1; transform:none; }
 /* 收下碎片：大厅的棕色 */
 .frag-collect{ background:#6B4520; color:#FFF8EE; }
 .frag-collect:active{ filter:brightness(.94); }
