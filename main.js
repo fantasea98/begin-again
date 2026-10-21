@@ -80,7 +80,7 @@ const CONFIG = {
       likesDelay: 2000,   // 最后一句到点赞的间隔
       thoughtDelay: 2000, // 点赞完成到内心 OS 第一句
       thought2Delay: 2000,// 内心 OS 第一句到第二句
-      guideDelay: 2000,   // 内心 OS 到引导的间隔
+      guideDelay: 3500,   // 「我穿越了」完全浮现后再等 1.5s 才出虚线框
     },
   },
 
@@ -95,7 +95,7 @@ const CONFIG = {
   // 页面 C 文案
   passwordPage: {
     title: "最后的密码",
-    desc: ["你已经收集齐了所有碎片。", "输入它们组成的密码。"],
+    desc: ["你已经集齐所有碎片，试着输入密码吧！"],
     unlockLabel: "解锁",
     wrong: "密码不正确，看看碎片再想想",
     retry: "再试一次",
@@ -165,7 +165,7 @@ const CONFIG = {
         "你这么一打，全院都听见了。",
         "这号码……是你编的吗？",
       ],
-      dialLines: ["☎️ 正在拨号……", "嘟……接通📞", "「您好，组织部。」", "「听说你们来了个年轻人？」"],
+      dialLines: ["嘟……接通📞", "「您好，组织部。」", "「听说你们来了个年轻人？」"],
       success: "<b class=\"glow-word\">🎉 联系成功！</b>",
     },
     {
@@ -1517,8 +1517,8 @@ function playResult(lvl, lines, opts){
       requestAnimationFrame(()=> d.classList.add("on"));
       // 需要「挨个出现」的行：等整行淡入后，再把每个词依次点亮
       if(o.stagger === i){
-        const items = d.querySelectorAll(".p1,.p2,.p3");
-        items.forEach((el, n) => setTimeout(()=> el.classList.add("in"), 380 + n * 520));
+        const items = d.querySelectorAll(".g1,.g2,.g3");
+        items.forEach((el, n) => setTimeout(()=> el.classList.add("in"), 380 + n * 560));
       }
       // 逐行配音；最后一行若是「碎片缓缓掉落」，用慢上扬的铃音
       try{ (o.slowLast && isLast) ? SFX.fragment() : SFX.flip(); }catch(e){}
@@ -2260,8 +2260,10 @@ function lv4Success(lvl){
   const names = lv4.chosen.map(i => lvl.options[i].n);
   // 三个选中的东西都要绿色高亮闪烁（hl-word = 绿字 + wordGlow）
   const nameStr = names.length === 3
-    ? `<b class="hl-word p1">${names[0]}</b>、<b class="hl-word p2">${names[1]}</b>和<b class="hl-word p3">${names[2]}</b>`
-    : names.map((n, i) => `<b class="hl-word p${i+1}">${n}</b>`).join("、");
+    ? `<span class="g1"><b class="hl-word">${names[0]}</b></span>`
+      + `<span class="g2">、<b class="hl-word">${names[1]}</b></span>`
+      + `<span class="g3">和<b class="hl-word">${names[2]}</b></span>`
+    : names.map((n, i) => `<span class="g${i+1}"><b class="hl-word">${n}</b></span>`).join("、");
   // 第一行只到「谢谢你留给我」，三个东西单独一行，避免一行太长
   const lines = [ lvl.thanksPrefix, nameStr, lvl.thanksTail, lvl.dropText ];
   openModal("");
@@ -2445,6 +2447,14 @@ function renderFinal(){
     </div>`;
 
   showView("final");
+  // 让工牌照片的高度和左边「姓名~部门」那一块完全一致（上沿对姓名、下沿对部门）
+  const fitPhoto = () => {
+    const f = document.querySelector(".fin-fields"), p = $("fin-photo");
+    if(f && p) p.style.height = Math.round(f.getBoundingClientRect().height) + "px";
+  };
+  fitPhoto();
+  setTimeout(fitPhoto, 60);
+  window.addEventListener("resize", fitPhoto);
   runFinalSequence();
 
   // 返回大厅：进度保留
@@ -2502,8 +2512,8 @@ function runFinalSequence(){
   step(1500, () => { show("fin-photo"); popSnd(); });
   // 两个小框一起出现，里面的数据再依次落
   step(1600, () => { show("fin-cell-date"); show("fin-cell-days"); popSnd(); });
-  step(1000, () => { show("fin-v-date"); popSnd(); });
-  step(1000, () => { show("fin-v-days"); popSnd(); });
+  step(1300, () => { show("fin-v-date"); popSnd(); });
+  step(1300, () => { show("fin-v-days"); popSnd(); });
   // 留言：再多等一秒才开始，之后一行都不配音
   step(2200, () => { show("fin-line-0"); });
   CONFIG.finalMessage.slice(1).forEach((_, i) => {
