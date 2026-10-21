@@ -485,3 +485,55 @@ iOS Safari / Chrome 仍失败，现已在页面内置诊断面板，用来定位
    - 「员工档案」+ 横线**一起**在 2.6 秒出现，再停 1.4 秒才开始落姓名；
    - 留言第一行配 `SFX.fragment()`（四音铃声），后面各行不出声；
    - 落款前多停 2 秒再出现（带 pop 音），之后才盖章。
+
+---
+
+## 十五、音频自查 + 注释全面校对（2026-10-21，`?v=20261020p`）
+
+### A. 音频链路自查：为什么「切后台 / 锁屏 / 换耳机」之后会没声
+根因是三条，都出在「AudioContext 被系统挂起后没人叫醒」：
+
+1. **只有 visibilitychange 一路兜底**。切后台再回来能恢复；但「拔耳机 / 来电打断 / 锁屏后直接回前台」这类
+   不一定触发 visibilitychange，上下文就停在 `suspended / interrupted`，之后所有 `tone()/noise()` 都被
+   `live()` 丢弃（这是防止「音符堆在冻结时间轴上」的既有保护），听起来就是**彻底静音**。
+2. **手势监听是一次性的**：`audioNet()` 一旦把状态推到 running，就把 ACTION 监听全部 `removeEventListener`。
+   之后上下文再被挂起，玩家点屏幕也不会重新解锁了。
+3. **跨 ctx 的旧总线**：`closeCtx()` 重建上下文时没清理 `_beatBus / _boxBus`。
+   重建后音乐盒 / 倒计时总线还挂在**已经关掉的 ctx** 上，新 ctx 的音源往里连会抛 InvalidAccessError，
+   被 `catch` 吞掉 —— 表现为第 4 关背景音乐「悄悄没了」。
+
+### 修复
+- 新增 `registerRecovery()`：
+  - `visibilitychange`（回到前台）、`pageshow`（iOS bfcache）、`window focus`、
+    `navigator.mediaDevices.devicechange`（插拔耳机，延迟 500ms）四路都调 `nudge()`；
+  - 加一个 **1.2 秒看门狗**：页面可见 + ctx 存在 + 状态不是 running → `nudge()`。
+  - 全部走 `nudge()`（只 resume，不标手势窗口），不会重现「集中爆发」的老毛病。
+- `audioNet()` 不再摘监听：已经在 running 时直接放行（一次 `_debug()` 的代价），
+  一旦被挂起，玩家下一次点按就能秒救回来。
+- 新增 `resetBuses()`：`closeCtx()` 时清掉 `_beatBus/_boxBus/_box`；
+  新增 `_boxWanted` 记住「这一关要有背景音乐」，重建后由看门狗 / 重建回调自动续上。
+- `playSilentWav()` 播放被拒时把 `<audio>` 从 DOM 摘掉，避免反复失败堆积元素。
+- 仍在、且是刻意设计的部分（自查确认没有逻辑冲突）：
+  INTENT（pointerdown/touchstart）只标手势、不在里面建 ctx；ACTION（touchend/click/…）才建/重建；
+  `live()` 在 suspended 期间丢弃排程；`ensure()` 的 150ms 重建保护。
+
+### B. 注释/文档校对（工程大改后遗留的旧描述）
+| 位置 | 旧描述 | 现在 |
+|---|---|---|
+| main.js 文件头 | 「无框架 / 引擎 / **外部素材**」 | 无框架、无第三方库；外部资源只有两个字体子集 + id-photo.svg |
+| main.js THEME | 「新野兽派主干 × 孟菲斯细节」 | 暖棕描边 + 米卡其纸感（手绘插画风） |
+| main.js ⑥ | 「孟菲斯碎屑」 | 背景碎屑（几何/emoji 粒子） |
+| main.js 章节号 | 锁屏页是 `⑧-0`、诊断面板又叫 `⑨` | 按代码顺序重排 ①~⑱ + 附录 |
+| main.js 第 4 关背景 | 「暖橙夕阳」 | 深绿夜幕（薄荷光晕 + 淡回忆浮标） |
+| main.js 锁屏注释 | 「滑动解锁就是那一次手势」 | 轻触 + 假面容 ID（拖动不算用户激活） |
+| main.js 兜底按钮注释 | 「万一滑动之后」 | 「万一解锁之后」 |
+| style.css 文件头 | 「米卡其底 + 高饱和撞色，骨架借鉴微信/胶囊」 | 暖棕描边 + 纸感手绘；锁屏/大厅/终页三段式 |
+| style.css | 「锁屏页 v5」 | 去掉版本号，补上天气卡描述 |
+| style.css | 「第 4 关：黄昏回忆（暖橙夕阳）」 | 深绿夜幕 |
+| style.css | 旧大厅「2×2 撞色卡片」整段（.hall-* / .level-card / .lvl-grid / .lc-* / .hall-door / .door-*，约 6KB） | 整段删除，仅保留仍在用的 `cardFloat` / `fragPop` 两个 keyframes |
+| style.css | `.green-glow`、`.t-h1` | 已无引用的死样式，删除 |
+| sfx.js 文件头 | 「零素材、零依赖…必须在手势里 init()」 | 补充三种「没声音」的成因与兜底 |
+| sfx.js 第 4 关 BGM 注释 | 「0.5 的支线总线」 | 0.13（约主音效的 1/10），淡入 3.6s |
+| sfx.js 系统提示 | 「两声轻警示」 | 高低双音警笛，连响三遍 |
+
+校对后：style.css 花括号 749/749 配平，非引用类只剩 `rank-A~S`（JS 里是字符串拼接）和 `woff2`（字体格式名）两个误报。
