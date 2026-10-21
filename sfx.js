@@ -486,9 +486,9 @@ function musicBoxStart(){
   if(!can() || _box || _boxBus) return;
   try{
     _boxBus = ctx.createGain();
-    // 第 4 关 BGM 单独压到五成，并且缓缓淡入（3.6 秒）
+    // 第 4 关 BGM 单独压到两成半，并且缓缓淡入（3.6 秒）
     _boxBus.gain.setValueAtTime(0.0001, ctx.currentTime);
-    _boxBus.gain.linearRampToValueAtTime(0.26, ctx.currentTime + 3.6);
+    _boxBus.gain.linearRampToValueAtTime(0.13, ctx.currentTime + 3.6);
     _boxBus.connect(master);
   }catch(e){ _boxBus = null; return; }
   var bus = _boxBus;
