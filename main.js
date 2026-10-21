@@ -2,7 +2,8 @@
    《begin again》主逻辑
    - 所有文案 / 参数 / 颜色集中在 CONFIG 对象
    - 进度保存在 localStorage（键 beginAgain.progress）
-   - 原生 HTML + CSS + JS，无框架 / 引擎 / 外部素材
+   - 原生 HTML + CSS + JS，无框架、无第三方库
+   - 外部资源只有三件：两个内嵌子集字体（style.css 里的 @font-face）+ 终页的 id-photo.svg
    ========================================================= */
 (function(){
 "use strict";
@@ -10,7 +11,7 @@
 /* ==================== ① 全局配置区 ==================== */
 const CONFIG = {
 
-  // 主题（新野兽派主干 × 孟菲斯细节）。改这里即可整体换视觉。
+  // 主题：暖棕描边 + 米卡其纸感（手绘插画风）。改这里即可整体换视觉。
   THEME: {
     bg: "#F4F0EA",          // 米卡其背景
     ink: "#1A1A1A",         // 文字主色
@@ -374,7 +375,7 @@ function closeModal(){
   }
 }
 
-/* ==================== ⑥ 孟菲斯碎屑 ==================== */
+/* ==================== ⑥ 背景碎屑（纯装饰的几何/emoji 粒子） ==================== */
 (function decor(){
   const chars = ["〰","×","●","▲","◼","~","✦","·"];
   const box = $("decor");
@@ -390,9 +391,11 @@ function closeModal(){
   box.innerHTML = html;
 })();
 
-/* ==================== ⑧-0 锁屏页（用于拿到「用户手势」解锁音频） ==================== */
-/* 浏览器的自动播放策略：不经过一次真实触摸/点击，Web Audio 永远不出声。
-   所以开场前先放一把「锁屏」，滑动解锁既是仪式感，也是解锁音频的那一次手势。 */
+/* ==================== ⑦ 锁屏页（假面容解锁 —— 主要是为了拿到一次真手势来解锁音频） ==================== */
+/* 浏览器的自动播放策略：不经过一次真实的 touchend / click，Web Audio 永远不出声。
+   而且 iOS 只认「点按」这一下 —— 拖动滑块（touchmove 起）不算用户激活，
+   所以这一页做成「轻触任意位置 → 假的面容 ID 动画 → 解锁」，
+   那一下轻触既是仪式感，也是真正把音频叫醒的那次手势。 */
 let phoneUnlocked = false;
 function lockDateText(){
   const d = (CONFIG.workDates.end || "").split(".");
@@ -686,7 +689,7 @@ function unlockPhone(){
   runFaceId();
 }
 
-/* ==================== ⑦ 穿越预示动画 ==================== */
+/* ==================== ⑧ 穿越预示动画（闪现 + 扭曲） ==================== */
 
 function playGlitch(){
   const flash = $("flash");
@@ -697,7 +700,7 @@ function playGlitch(){
   setTimeout(()=>{ frame.classList.remove("glitch"); }, 760);
 }
 
-/* ==================== ⑧ 页面 A：开场叙事 ==================== */
+/* ==================== ⑨ 页面 A：开场微信群聊叙事 ==================== */
 function renderOpening(){
   const c = CONFIG.openingChat;
   const html = `
@@ -810,7 +813,7 @@ function runOpening(){
   }, guideAt);
 }
 
-/* ==================== ⑨ 页面 B：回忆大厅（同一间办公室 · 四年） ==================== */
+/* ==================== ⑩ 页面 B：回忆大厅（同一间办公室 · 四年） ==================== */
 /* 设计要点：
    - 四屏共用同一套「墙 / 窗 / 门 / 桌 / 椅 / 地板」，这是「同一间房」的锚点
    - 年份靠两条隐藏线索读出来：墙上挂钟的时刻 + 窗外的天色
@@ -1402,7 +1405,7 @@ function bgLevel3(){
   </div>`;
 }
 
-/* 第 4 关：暖橙夕阳 + 极透明的前三关回忆（透明度 .08~.12） */
+/* 第 4 关：深绿夜幕 + 极淡的前三关回忆浮标（透明度 .11） */
 function bgLevel4(){
   const memos = ["📞","💻","🕺","🏆","🎤","☎️","⌨️","🎵","💃","🧳","📎","☕"];
   let s = "";
@@ -1436,7 +1439,7 @@ function spawnEffectAt(el, cls, html){
   return fx;
 }
 
-/* ==================== ⑩ 关卡渲染与进入 ==================== */
+/* ==================== ⑪ 关卡渲染与进入 ==================== */
 function setLevelAccent(name, lvl){
   $("view-" + name).style.setProperty("--lv-accent", accentOf(lvl));
 }
@@ -1558,7 +1561,7 @@ function cheatToSuccess(id){
   runLevelSuccess(levelById(id), {});
 }
 
-/* ==================== ⑪ 关卡 1：拨号 ==================== */
+/* ==================== ⑫ 关卡 1：拨号 ==================== */
 let lv1 = { entered:"", dialJudging:false, judgeTimer:null, wrongTimer:null, ringTimer:null };
 function renderLevel1(lvl){
   setLevelAccent("level1", lvl);
@@ -1724,7 +1727,7 @@ function closePhonebook(){
   closeModal();
 }
 
-/* ==================== ⑫ 关卡 2：敲键盘 ==================== */
+/* ==================== ⑬ 关卡 2：敲键盘 ==================== */
 const LV2_CAP = 168; // 稿纸约 6 行方块字符（标题 1 行 + 正文 6 行 = 7 行）
 const fmtCd = (sec) => "⏰ " + sec.toFixed(2) + "秒";
 let lv2 = {};
@@ -1912,7 +1915,7 @@ function stopL2AndBack(){
   backToHall();
 }
 
-/* ==================== ⑬ 关卡 3：节拍点击 ==================== */
+/* ==================== ⑭ 关卡 3：节拍点击 ==================== */
 let lv3 = {};
 function renderLevel3(lvl){
   setLevelAccent("level3", lvl);
@@ -2168,7 +2171,7 @@ function cancelL3(){
   if(bg) bg.classList.remove("beam");
 }
 
-/* ==================== ⑭ 关卡 4：打包 ==================== */
+/* ==================== ⑮ 关卡 4：打包 ==================== */
 let lv4 = {};
 function renderLevel4(lvl){
   setLevelAccent("level4", lvl);
@@ -2300,7 +2303,7 @@ function runLevelSuccess(lvl, opts){
   }
 }
 
-/* ==================== ⑮ 页面 C：终极密码（弹窗） ==================== */
+/* ==================== ⑯ 页面 C：终极密码 ==================== */
 function openPasswordModal(){
   const c = CONFIG.passwordPage;
   $("modal").innerHTML = `
@@ -2410,7 +2413,7 @@ function confettiBurst(){
   setTimeout(() => container.remove(), 4300);
 }
 
-/* ==================== ⑯ 页面 D：最终纪念 ==================== */
+/* ==================== ⑰ 页面 D：终页 · 员工档案（工牌版） ==================== */
 /* 一页「员工档案」：抬头 → 横线 → 天数 / 日期 / 元信息 → 三格字段 → 印章 → 留言 → 落款。
    出场顺序按时间轴排（见 runFinalSequence），每一段都配一个音。 */
 function renderFinal(){
@@ -2548,7 +2551,7 @@ function finalDecor(){
   return s;
 }
 
-/* ==================== ⑰ 启动 ==================== */
+/* ==================== ⑱ 启动 ==================== */
 /* 工牌照预热：终页才用到，但图有 160KB，开局就悄悄拉下来 */
 setTimeout(()=>{ try{ const im = new Image(); im.src = "id-photo.svg?v=2"; }catch(e){} }, 1200);
 
@@ -2600,13 +2603,17 @@ function onIntent(e){
 }
 
 function audioNet(e){
+  // 已经 running 就立刻放行（监听常驻，不再摘除）：
+  // 切后台 / 锁屏 / 插拔耳机之后上下文可能被挂起，留着监听才能在玩家下次一点时秒救回来。
+  let st = null;
+  try{ st = SFX._debug && SFX._debug(); }catch(err){}
+  if(st && st.state === "running"){ hideSoundNudge(); return true; }
   try{ if(SFX.log) SFX.log("ACTION " + (e && e.type)); }catch(err){}
   try{
     SFX.hardUnlock();                       // 真激活事件里允许重建，成功率最高
-    const st = SFX._debug && SFX._debug();
+    st = SFX._debug && SFX._debug();
     if(st && st.state === "running"){
       tryUnlockChime();
-      ACTION_EV.forEach(ev => document.removeEventListener(ev, audioNet, true));
       hideSoundNudge();
       return true;
     }
@@ -2628,8 +2635,8 @@ function armAudioUnlock(){
   }catch(e){}
 }
 
-/* 兜底：万一滑动之后音频还是没醒（某些机型/静音拨杆），给一个明显的一触即开按钮，
-   音频正常时它根本不会出现。 */
+/* 兜底：万一解锁之后音频还是没醒（某些机型 / 静音拨杆 / 被系统打断），
+   给一个明显的一触即开按钮；音频正常时它根本不会出现。 */
 function hideSoundNudge(){
   const el = document.getElementById("sound-nudge");
   if(el) el.remove();
@@ -2673,7 +2680,7 @@ function armSoundNudge(){
   setTimeout(check, 400);
 }
 
-/* ==================== ⑨ 真机音频诊断面板 ==================== */
+/* ==================== 附录：真机音频诊断面板（锁屏状态栏连点 5 次打开） ==================== */
 /* 打开方式：在锁屏上连点左上角状态栏 5 次。
    面板会把「事件是否触发 / 上下文状态 / resume 是否被拒 / 静音 wav 是否播成功」
    全部列出来，用来定位 iOS Safari 这类严格内核到底卡在哪一步。 */
