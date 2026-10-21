@@ -589,16 +589,26 @@ function bubble(self){
 }
 /* 系统提示 pill：两声轻警示 */
 function sysalert(){
-  tone({ freq:1244.5, type:"square", dur:0.10, gain:0.09, delay:0    });
-  tone({ freq:1244.5, type:"square", dur:0.10, gain:0.09, delay:0.20 });
+  // 系统警报：高低两音的警笛，连响三遍
+  for(var k = 0; k < 3; k++){
+    var t = k * 0.44;
+    tone({ freq:988, type:"square", dur:0.13, gain:0.10, delay:t });
+    tone({ freq:740, type:"square", dur:0.13, gain:0.10, delay:t + 0.15 });
+    tone({ freq:988, type:"square", dur:0.10, gain:0.085, delay:t + 0.30 });
+  }
+  tone({ freq:1568, to:880, type:"sawtooth", dur:0.22, gain:0.05, delay:1.32 });
 }
 /* 时空乱流：下扫 + 宽频噪声 + 回弹上行（画面 glitch 同帧触发） */
 function glitch(){
-  tone({ freq:1200, to:110, type:"sawtooth", dur:0.55, gain:0.15 });
-  tone({ freq:1760, to:660, type:"square",   dur:0.55, gain:0.05, delay:0.04 });
-  noise({ dur:0.5, filter:"bandpass", freq:400, to:4200, gain:0.13 });
-  noise({ dur:0.3, filter:"highpass", freq:3200, gain:0.07, delay:0.5 });
-  tone({ freq:160, to:1500, type:"sine", dur:0.34, gain:0.13, delay:0.52 });
+  // 时空撕裂：低频冲击 + 磁带停转 + 电流噪声 + 高空金属余响
+  tone({ freq:92,   to:30,   type:"sine",     dur:0.72, gain:0.30 });
+  tone({ freq:1800, to:58,   type:"sawtooth", dur:0.95, gain:0.20, delay:0.02 });
+  tone({ freq:2500, to:320,  type:"square",   dur:0.80, gain:0.075, delay:0.05 });
+  noise({ dur:0.80, filter:"bandpass", freq:280, to:5400, gain:0.20 });
+  noise({ dur:0.40, filter:"lowpass",  freq:620, gain:0.16, delay:0.06 });
+  noise({ dur:0.45, filter:"highpass", freq:2900, gain:0.11, delay:0.46 });
+  tone({ freq:150,  to:1900, type:"sine",     dur:0.42, gain:0.15, delay:0.62 });  // 收尾上扬
+  tone({ freq:3140, to:1180, type:"triangle", dur:0.50, gain:0.055, delay:0.64 });
 }
 /* 点赞：清脆小铃（连点时逐个错开，不糊成一团） */
 function like(){
