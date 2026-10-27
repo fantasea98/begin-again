@@ -238,6 +238,14 @@ body{
 .red-flash{ font-weight:900; color:#D32F2F; animation:redFlash 1s ease-in-out infinite; }
 @keyframes redFlash{ 0%,100%{ text-shadow:0 0 4px rgba(211,47,47,.4); } 50%{ text-shadow:0 0 14px rgba(255,60,60,.9), 0 0 26px rgba(255,30,30,.5); } }
 .orange-flash{ font-weight:900; color:#FF7A18; animation:orangeFlash 1s ease-in-out infinite; }
+/* 比 .red-flash(#D32F2F) 再沉一档的红，专门给第一关的「组织部」用 */
+.deep-red-flash{ font-weight:900; color:#B3231C; animation:deepRedFlash 1.8s ease-in-out infinite; }
+@keyframes deepRedFlash{
+  0%,100%{ text-shadow:0 0 4px rgba(179,35,28,.40); }
+  50%{ text-shadow:0 0 13px rgba(214,46,36,.85), 0 0 24px rgba(179,35,28,.45); }
+}
+/* 彩蛋文案里的加重字（「爽朗」的爽） */
+.egg-strong{ font-weight:900; font-size:1.06em; color:#B3231C; letter-spacing:.5px; }
 @keyframes orangeFlash{
   0%,100%{ text-shadow:0 0 4px rgba(255,122,24,.45); }
   50%{ text-shadow:0 0 14px rgba(255,150,40,.95), 0 0 26px rgba(255,110,0,.55); }
@@ -357,7 +365,6 @@ body{
 }
 @keyframes noteIn{ 0%{ transform:scale(.55) rotate(-8deg); opacity:0; } 100%{ transform:scale(1) rotate(-1.2deg); opacity:1; } }
 .note .tape{ position:absolute; top:-9px; left:50%; transform:translateX(-50%); width:66px; height:18px; background:rgba(247,232,192,.9); border:1px solid rgba(26,26,26,.12); border-radius:3px; }
-.note .pin{ position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:16px; z-index:3; line-height:1; }
 .note-close{ position:absolute; top:8px; right:10px; font-size:20px; cursor:pointer; background:none; border:none; color:var(--ink); padding:2px 6px; }
 .note-title{ text-align:center; font-weight:800; font-size:16px; margin:0 0 6px; }
 .note-timer{ position:relative; width:40px; height:40px; border-radius:50%; margin:4px auto 6px; }
@@ -816,7 +823,7 @@ body{
   padding:22px 16px 26px;
 }
 .fin-card{
-  position:relative; flex:0 0 auto;
+  position:relative; flex:1 1 auto;
   display:flex; flex-direction:column;
   background:#FFFCF6; border:2px solid #6B4520; border-radius:16px;
   box-shadow:5px 5px 0 #CBB08C;
@@ -940,12 +947,13 @@ body{
 }
 
 /* 按钮组 */
+/* 还没出现时不能占位：否则「员工档案」那张卡会短一截，屏幕底下空一条 */
 .fin-actions{
-  display:flex; gap:10px; margin-top:14px;
+  display:flex; gap:10px; margin-top:0; height:0; overflow:hidden;
   opacity:0; transform:translateY(8px); pointer-events:none;
   transition:opacity .8s ease, transform .8s ease;
 }
-.fin-actions.on{ opacity:1; transform:none; pointer-events:auto; }
+.fin-actions.on{ height:auto; margin-top:14px; opacity:1; transform:none; pointer-events:auto; }
 .fin-actions .btn{ flex:1; }
 #view-final .btn-ghost{ border-color:#6B4520; color:#6B4520; }
 
@@ -1115,7 +1123,7 @@ body{
 @media(prefers-reduced-motion: reduce){
   .phone-frame.glitch{ animation:none; }
   .fin-msg p.on{ animation:none; }
-  .glow-word, .red-flash, .showtime, .hl-word{ animation:none !important; }
+  .glow-word, .red-flash, .deep-red-flash, .showtime, .hl-word{ animation:none !important; }
   /* 关掉动画时，第四关三个物品要直接显示出来，别停在 opacity:0 */
   .result-line.stagger .p1, .result-line.stagger .p2, .result-line.stagger .p3{ opacity:1 !important; }
   .bg-4 .memo, .bg-1 .dust{ animation-duration:40s !important; }

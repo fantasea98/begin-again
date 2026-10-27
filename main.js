@@ -146,7 +146,7 @@ const CONFIG = {
       fragment: 5, fragmentName: "入职碎片",
       tagline: "入职第一天，猜猜他是谁？",
       accentIndex: 0,
-      intro: ["👂 听说<b class=\"orange-flash\">组织部</b>来了个年轻人。", "📞 快打电话问问看是谁吧。"],
+      intro: ["👂 听说<b class=\"deep-red-flash\">组织部</b>来了个年轻人。", "📞 快打电话问问看是谁吧。"],
       hint: "请拨通正确的电话号码",
       correctNumber: "88374924",
       digitLength: 8,
@@ -176,6 +176,53 @@ const CONFIG = {
       ],
       dialLines: ["嘟……接通📞", "「您好，组织部。」", "「听说你们来了个年轻人？」"],
       success: "<b class=\"glow-word\">🎉 联系成功！</b>",
+      /* 彩蛋：这四个号码也会「接通」，但弹出的是专属文案。
+         排版、逐句出现、音效都跟成功弹窗一致，结尾按钮仍然是「好的，再试一次」，
+         而且照样计入失败次数（三次后照样出作弊按钮）。 */
+      easterEggs: [
+        {
+          dept: "宣传部", num: "88374900",
+          lines: [
+            "嘟……接通📞",
+            "「宣传部。」",
+            "「中午健身吗？跳舞吗？」",
+            "「都不。」",
+            "「那食堂牛肉粉，我来叫你们。」",
+          ],
+        },
+        {
+          dept: "神经内科", num: "88888888",
+          lines: [
+            "「神内科。」",
+            "「抱歉，我打错了。」",
+            "「呵呵呵呵呵呵呵呵」",
+            "背景里传来一阵<b class=\"egg-strong\">爽</b>朗的笑声。",
+          ],
+        },
+        {
+          dept: "消化内科", num: "88393583",
+          lines: [
+            "「……」",
+            "「大医生在吗？」",
+            "「……」",
+            "「大医生 aka Rain 老师在吗？」",
+            "「……」",
+            "奇怪，怎么没声音？",
+          ],
+        },
+        {
+          dept: "质管部", num: "88374923",
+          lines: [
+            "「你好，%&@*#部。」",
+            "「哪里？」",
+            "「*&%#@#%*$！」",
+            "「说啥？」",
+            "「#%*&...#@$...！」",
+            "「听不懂。秀？」",
+            "「对哒。」",
+          ],
+        },
+      ],
     },
     {
       id: 2, year: 2024, emoji: "💻", title: "好的，收到",
@@ -1628,6 +1675,19 @@ function judgeL1(lvl){
   } else {
     lv1.dialJudging = false;
     failCounts[1]++;
+    // 先看是不是彩蛋号码：是的话「接通」的提示照常，但弹窗走专属文案
+    const egg = (lvl.easterEggs || []).find(e => e.num === lv1.entered);
+    if(egg){
+      $("l1-hint").textContent = "📞 嘟——接通了 ✓";
+      vibrate(20);
+      SFX.connected();
+      lv1.wrongTimer = setTimeout(()=>{
+        lv1.wrongTimer = null;
+        if(currentView !== "level1") return;
+        playEggResult(lvl, egg);
+      }, 1200);
+      return;
+    }
     $("l1-hint").textContent = "📵 嘟——嘟—— 打错了";
     vibrate(40);
     SFX.wrong();      // 忙音「响 0.4 停 0.35 再响 0.4」= 1.15 秒
@@ -1652,6 +1712,45 @@ function judgeL1(lvl){
     }, 1350);   // 忙音 1.15s 响完再弹窗
   }
 }
+/* 彩蛋弹窗：排版、逐句出现、音效都对齐成功弹窗（playResult），
+   只是没有碎片、结尾换回「好的，再试一次」，并且照样算一次失败。 */
+function playEggResult(lvl, egg){
+  openModal("");
+  SFX.winPop();
+  const card = $("modal");
+  card.innerHTML = `<div id="result-lines"></div><div id="result-tail" style="display:none"></div>`;
+  const box = $("result-lines");
+  const GAP = 1000, LEAD = 1000;
+  egg.lines.forEach((ln, i) => {
+    setTimeout(()=>{
+      const d = document.createElement("div");
+      d.className = "result-line";
+      d.innerHTML = ln;
+      box.appendChild(d);
+      requestAnimationFrame(()=> d.classList.add("on"));
+      try{ SFX.flip(); }catch(e){}
+    }, LEAD + i * GAP);
+  });
+  setTimeout(()=>{
+    const tail = $("result-tail");
+    if(!tail) return;
+    tail.style.display = "block";
+    try{ SFX.pop(); }catch(e){}
+    const cheatBtn = failCounts[1] >= 3
+      ? `<button class="btn btn-accent btn-block" id="btn-cheat" style="margin-top:10px">${CONFIG.cheat.label}</button>`
+      : "";
+    tail.innerHTML = `<hr class="popup-divider">
+      <button class="btn btn-block frag-collect" id="btn-egg-again" style="background:${T.fragBtn[lvl.accentIndex]};color:#fff">好的，再试一次</button>${cheatBtn}`;
+    $("btn-egg-again").addEventListener("click", ()=>{
+      closeModal();
+      lv1.entered = "";
+      $("l1-hint").textContent = "";
+      renderL1Number(lvl);
+    });
+    if(cheatBtn) $("btn-cheat").addEventListener("click", ()=> cheatToSuccess(1));
+  }, LEAD + egg.lines.length * GAP + 600);
+}
+
 /* 电话簿浮窗（便签 + 3 秒限时） */
 let pbTimer = null;
 function openPhonebook(lvl){
@@ -1665,7 +1764,6 @@ function openPhonebook(lvl){
   $("modal").innerHTML = `
     <div class="note">
       <span class="tape"></span>
-      <span class="pin">📌</span>
       <button class="note-close" id="pb-close">×</button>
       <div class="note-title">${lvl.phonebookTitle}</div>
       <div class="note-timer" id="pb-timer">
@@ -2473,11 +2571,10 @@ function finScrollTo(el){
   view.scrollLeft = 0;
 }
 
-/* 终页出场时间轴：一个接一个，慢慢来。
-   告别信不再「每段固定 1.4 秒」—— 那会让长段落一闪而过。
-   现在按这段文字实际渲染出来的行数算停留时间（每行约 1.3 秒 + 0.8 秒收尾），
-   所以短句不拖沓、长段落能读完；段落之间靠一条「下一步」队列串起来，
-   上一步的宽度/高度只有渲染完才量得准，所以用函数式等待而不是提前排死时间。 */
+/* 终页出场时间轴。
+   前半段（档案卡）还是一样一个一个落；到告别信这里换了做法：
+   整篇一次性出现（每段错开 80ms 淡入），然后页面从上往下自动滚动，
+   像有人替你慢慢把信读下去。手指 / 滚轮一碰就暂停 4 秒，停手后从你停的地方接着走。 */
 function runFinalSequence(){
   const view = $("view-final");
   if(view) view.scrollLeft = 0;
@@ -2489,19 +2586,6 @@ function runFinalSequence(){
   };
   const snd = (fn) => { try{ fn(); }catch(e){} };
   const popSnd = () => snd(()=>SFX.pop());
-
-  const LINE_MS = 1300;     // 每行停留（约等于每秒 15 个字的阅读速度）
-  const HOLD_MS = 800;      // 每段收尾
-  const linesOf = (el) => {
-    if(!el) return 1;
-    const lh = parseFloat(getComputedStyle(el).lineHeight) || 26;
-    return Math.max(1, Math.round(el.offsetHeight / lh));
-  };
-  /* 这一段该停多久：行数 × 每行时间 + 收尾，夹在 2.1s ~ 13s 之间 */
-  const holdOf = (i) => {
-    const n = linesOf($("fin-line-" + i));
-    return Math.min(13000, Math.max(2100, HOLD_MS + n * LINE_MS));
-  };
 
   const steps = [];
   const step = (wait, fn) => steps.push({ wait, fn });
@@ -2518,43 +2602,89 @@ function runFinalSequence(){
   step(1600, () => { show("fin-cell-date"); show("fin-cell-days"); popSnd(); });
   step(1300, () => { show("fin-v-date"); popSnd(); });
   step(1300, () => { show("fin-v-days"); popSnd(); });
-
-  // 告别信：第一段出来时起音乐（原创抒情小曲，淡入 3.2s）
-  step(2200, () => {
-    show("fin-line-0");
-    snd(()=>SFX.fragment());
-    snd(()=>SFX.letterMusicStart());
-  });
-  const last = CONFIG.finalMessage.length - 1;
-  const tailGap = (CONFIG.finalTail && CONFIG.finalTail.gap) || 1500;
-  CONFIG.finalMessage.slice(1).forEach((_, i) => {
-    const idx = i + 1;
-    // 最后一段只等 1.5 秒就补后半句，不能按行数拖
-    step(() => (idx === last ? tailGap : holdOf(idx - 1)), () => show("fin-line-" + idx));
-  });
-
-  // 最后一句分两次落：先「下次见」，1.5 秒后补上「，在更广阔的天地。」
-  step(2600, () => {
-    const b = $("fin-tail-b");
-    if(b) b.classList.add("on");
-    const p = $("fin-line-" + last);
-    if(p) setTimeout(()=> finScrollTo(p), 300);
-    snd(()=>SFX.soft(6));               // 一声很轻的风铃，落在「天地」上
-  });
-  // 落款：停一下再出现（带音效），然后再盖章
-  step(2000, () => { show("fin-sign"); popSnd(); });
-  step(2000, () => { show("fin-seal", false); snd(()=>SFX.stamp()); });
-  step(1100, () => { show("fin-actions"); });
+  step(2200, null);          // 空一拍，再开始读信
 
   let i = 0;
   const run = () => {
-    if(i >= steps.length) return;
+    if(i >= steps.length){ startLetter(); return; }
     const s = steps[i++];
     if(s.fn) s.fn();
-    const w = typeof s.wait === "function" ? s.wait() : s.wait;
-    setTimeout(run, w);
+    setTimeout(run, s.wait);
   };
   run();
+
+  /* 信：全部段落一次性铺出来 */
+  function startLetter(){
+    if(currentView !== "final") return;
+    const box = document.querySelector(".fin-msg");
+    const ps = box ? Array.prototype.slice.call(box.querySelectorAll("p")) : [];
+    ps.forEach((p, n) => {
+      p.style.animationDelay = (n * 80) + "ms";
+      p.classList.add("on");
+    });
+    snd(()=>SFX.fragment());          // 四音铃声：信开始了
+    snd(()=>SFX.letterMusicStart());  // 配乐同时起来
+    // 最后一句的后半段：等它那一段淡入完，再停 1.5 秒才补上
+    const tailDelay = (ps.length ? (ps.length - 1) * 80 : 0) + ((CONFIG.finalTail && CONFIG.finalTail.gap) || 1500);
+    setTimeout(()=>{
+      const b = $("fin-tail-b");
+      if(b) b.classList.add("on");
+      snd(()=>SFX.soft(6));
+    }, tailDelay);
+    setTimeout(autoScrollLetter, 1400);
+  }
+
+  /* 自动滚动：按 18px/s 往下走（约每秒 17 个字），碰到就暂停 4 秒 */
+  function autoScrollLetter(){
+    if(currentView !== "final" || !view){ afterLetter(); return; }
+    const bottom = Math.max(0, view.scrollHeight - view.clientHeight);
+    let pos = view.scrollTop;
+    if(bottom - pos < 6){ afterLetter(); return; }
+    const SPEED = 18;
+    let lastT = 0, pausedUntil = 0;
+    const pause = () => { pausedUntil = performance.now() + 4000; };
+    const stop = () => {
+      view.removeEventListener("touchstart", pause);
+      view.removeEventListener("wheel", pause);
+      view.removeEventListener("mousedown", pause);
+      view.removeEventListener("keydown", pause);
+    };
+    view.addEventListener("touchstart", pause, { passive:true });
+    view.addEventListener("wheel", pause, { passive:true });
+    view.addEventListener("mousedown", pause, { passive:true });
+    view.addEventListener("keydown", pause);
+    const tick = (now) => {
+      if(currentView !== "final"){ stop(); return; }
+      if(!lastT) lastT = now;
+      const dt = Math.min(80, now - lastT);
+      lastT = now;
+      if(now > pausedUntil){
+        pos += SPEED * dt / 1000;
+        view.scrollTop = Math.min(bottom, pos);
+      } else {
+        pos = view.scrollTop;          // 让玩家自己翻，停手后从这里接着走
+      }
+      if(pos >= bottom - 2){ stop(); afterLetter(); return; }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  /* 读到底：落款 → 停一下盖章 → 再出两个按钮 */
+  function afterLetter(){
+    if(currentView !== "final") return;
+    show("fin-sign"); popSnd();
+    setTimeout(()=>{
+      if(currentView !== "final") return;
+      show("fin-seal", false);
+      snd(()=>SFX.stamp());
+    }, 1600);
+    setTimeout(()=>{
+      if(currentView !== "final") return;
+      show("fin-actions");
+      finScrollTo($("fin-actions"));
+    }, 3000);
+  }
 }
 
 /* 终页庆祝漂浮 emoji */
