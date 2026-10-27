@@ -81,7 +81,7 @@ const CONFIG = {
       likesDelay: 2000,   // 最后一句到点赞的间隔
       thoughtDelay: 2000, // 点赞完成到内心 OS 第一句
       thought2Delay: 2000,// 内心 OS 第一句到第二句
-      guideDelay: 3500,   // 「我穿越了」完全浮现后再等 1.5s 才出虚线框
+      guideDelay: 4000,   // 「我穿越了」完全浮现后再等 4s 才出虚线框（比原来慢 0.5s）
     },
   },
 
@@ -119,17 +119,25 @@ const CONFIG = {
     seal: "已离职",
   },
 
-  // 最终留言（逐行淡入，想加几行就加几行）
+  // 最终留言（逐段淡入；每段停多久由「渲染出来的行数」自动决定，见 runFinalSequence）
   finalMessage: [
-    "2023 年 10 月 5 日，你第一次推开这间办公室的门。",
-    "三年，一千一百二十二天，从「好的，收到」写到了「像你这样的朋友」。",
-    "谢谢你把最好的三年留在这里。",
-    "记得常回来看看，这间房间一直给你留着灯。",
-    "2023 年 10 月 5 日，你第一次推开这间办公室的门。",
-    "三年，一千一百二十二天，从「好的，收到」写到了「像你这样的朋友」。",
-    "谢谢你把最好的三年留在这里。",
-    "记得常回来看看，这间房间一直给你留着灯。",
+    "终于到了告别的时候。",
+    "总觉得这一天来得又快又慢。从起心动念到付诸行动，其实只差一个开口的勇气，也恰恰是最难的部分；一旦做了决定，心里反而轻快许多。",
+    "作为曾经的理科生，后又转型为文科生，独独不曾是医学生，我从来没想过会在医院工作。毕业的时候阴差阳错得到机会，便这样走进了这里。如今看来，这是一段不错的起点，我对此心怀感激。",
+    "这三年，承蒙指导与关照，渐渐了解职场的运作逻辑，熟悉工作的节奏和方法，学会如何与人共事。许多事情都是在这里慢慢领悟的，这些经历都会成为我的一部分。",
+    "当然，这份工作也有一些我始终无法忽略的矛盾之处。常言道，言为心声，但我时常觉得，自己出口的更像是「回声」，明明并非心中所想，却要说得妥帖；有些事即使不认同，也要做得周全。",
+    "我没有朋友圈，也不大关心他人的日常。某种程度上，我像《人生切割术》的人物一样，把工作与生活割开，让它们各自运行，互不打扰。于是，许多与我共事的人认识的是工作中的我，而生活中的我，则留在了工作之外。",
+    "说到底，我始终是个见猎心喜的人。",
+    "世界于我，有一种不会过时的诱惑力。遇见新鲜的事物，听闻遥远的故事，偶尔窥见生活的另一种可能，我还是忍不住心生向往。我们的社会正走在对世界不断祛魅的路上，习惯用理性和逻辑解读万物。年初读到李诞写南极：烂船，骸骨，炼油罐，破房子，鲸鱼跃出水面的巨响，蓝色的鬼火……科学当然能够解释，鬼火是白磷，鲸跃则是因为痒。可解释完了，这份浪漫感受并未随之消失。祛魅让世界变得容易理解，却没有让世界变得不再复杂。",
+    "所以，我不想总是走在所谓「正确」的路上。我想被陌生吸引，被未知牵引，想保留一点不合时宜的好奇。我想知道更多，却也不想因为知道得更多，就失去感受的能力。",
+    "我想对世界重新「入魅」，并带着敬畏甜蜜地拥入其怀中。这算不算一种新的罗曼·罗兰式的英雄主义？",
+    "感谢这三年里所有给予我帮助、支持与关照的人，也感谢单位和同事们对我这个决定的理解与成全。",
+    "祝各位幸福，也祝各位偶尔入魅。",
+    "下次见，在更广阔的天地。",
   ],
+
+  // 最后一句分两次出现：先「下次见」，停 1.5 秒，再落「在更广阔的天地。」
+  finalTail: { a: "下次见", b: "，在更广阔的天地。", gap: 1500 },
 
   // 四个关卡
   levels: [
@@ -350,6 +358,8 @@ function showView(name){
   // 音效开关只在非开场页出现（开场页右上角是群聊「…」）
   const sc = $("screen");
   if(sc) sc.classList.toggle("sfx-show", name !== "opening" && name !== "lock");
+  // 告别信的音乐只属于终页：离开就淡出，回来再从第一段重新起
+  if(name !== "final"){ try{ SFX.letterMusicStop(); }catch(e){} }
 }
 function backToHall(){
   SFX.tensionStop(); SFX.musicBoxStop();   // 离开关卡，停掉所有持续音源
@@ -391,11 +401,12 @@ function closeModal(){
   box.innerHTML = html;
 })();
 
-/* ==================== ⑦ 锁屏页（假面容解锁 —— 主要是为了拿到一次真手势来解锁音频） ==================== */
-/* 浏览器的自动播放策略：不经过一次真实的 touchend / click，Web Audio 永远不出声。
-   而且 iOS 只认「点按」这一下 —— 拖动滑块（touchmove 起）不算用户激活，
-   所以这一页做成「轻触任意位置 → 假的面容 ID 动画 → 解锁」，
-   那一下轻触既是仪式感，也是真正把音频叫醒的那次手势。 */
+/* ==================== ⑦ 锁屏页（滑动解锁 + 假面容 ID） ==================== */
+/* 解锁只有一条路：把滑块拖过 70%。轻触 / 长按都不再生效。
+   音频这边不受影响：`audioNet()` 的全局手势网一直挂在 document 上（touchend / click），
+   滑块松手那一下同样会走到它；万一某些机型（iOS Safari 对拖拽不给用户激活）
+   真没叫醒声音，开场 3.2 秒后会出现「轻触开启」的兜底按钮，点一下就通。
+   面容 ID 动画保留，它既是仪式感，也把「松手」和「第一声」之间撑开 1.46 秒。 */
 let phoneUnlocked = false;
 function lockDateText(){
   const d = (CONFIG.workDates.end || "").split(".");
@@ -534,7 +545,6 @@ function renderLock(){
       </div>
     </div>`;
   bindLock();
-  bindLockTap();
 }
 function bindLock(){
   const bar = $("lock-bar"), knob = $("lock-knob"), fill = $("lock-fill");
@@ -576,7 +586,7 @@ function bindLock(){
       unlockPhone();                       // 拖动解锁：仍走同一条「面容 ID」动画
       return;
     }
-    if(!moved) return;                     // 原地轻触交给 bindLockTap，不在这里抢
+    if(!moved) return;                     // 原地轻触不解锁，也不回弹（让滑块留在原地）
     knob.style.transition = "transform .3s cubic-bezier(.3,1.5,.5,1)";
     fill.style.transition = "width .3s ease";
     setX(0);
@@ -586,43 +596,6 @@ function bindLock(){
   ["touchend","touchcancel"].forEach(ev => bar.addEventListener(ev, finish));
 }
 
-/* ---------- 轻触解锁（核心修复） ----------
-   真机日志已经证明：滑动这一下即使 touchend 触发了，iOS 也不给「用户激活」，
-   play() 依旧 NotAllowedError。所以音频真正被叫醒，只能靠一次干净的「点按」。
-   于是整块锁屏都变成轻触区：点一下 → 弹假的「面容 ID」→ 识别 → 解锁。 */
-function bindLockTap(){
-  const host = document.querySelector("#view-lock .lock");
-  if(!host) return;
-  const pt = (e) => (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e;
-  let sx = 0, sy = 0, moved = 0, downAt = 0, tracking = false;
-
-  const start = (e) => {
-    const p = pt(e); if(!p || p.clientX == null) return;
-    sx = p.clientX; sy = p.clientY; moved = 0; downAt = Date.now(); tracking = true;
-  };
-  const move = (e) => {
-    if(!tracking) return;
-    const p = pt(e); if(!p || p.clientX == null) return;
-    const d = Math.hypot(p.clientX - sx, p.clientY - sy);
-    if(d > moved) moved = d;
-  };
-  const end = (e) => {
-    tracking = false;
-    if(phoneUnlocked || faceIdOn) return;
-    if(moved > 14) return;                       // 拖动 / 滑动，不是轻触
-    if(Date.now() - downAt > 900) return;        // 长按不算轻触
-    const t = e.target;
-    if(t && t.closest && (t.closest("#ba-diag") || t.closest(".lock-status"))) return;  // 状态栏留给诊断面板
-    unlockPhone();
-  };
-
-  host.addEventListener("touchstart", start, { passive:true });
-  host.addEventListener("touchmove",  move,  { passive:true });
-  host.addEventListener("touchend",   end,   { passive:true });
-  host.addEventListener("mousedown",  start, { passive:true });
-  host.addEventListener("mousemove",  move,  { passive:true });
-  host.addEventListener("click",      end,   { passive:true });
-}
 /* 解锁音效可能会在「上下文还没建好」时被调用。
    所以这里挂一个待播标记：等音频真正 running 的那一刻再补一声，绝不丢。 */
 let unlockChimePending = false;
@@ -678,8 +651,9 @@ function beginStory(){
 function unlockPhone(){
   if(phoneUnlocked) return;
   phoneUnlocked = true;
-  /* 这一下如果是点按，就是 iOS 认可的用户激活 —— 趁同一个事件栈全力解锁
-     （建上下文 / 重建 / resume / start 一个 1 采样 source / 播静音 wav）。 */
+  /* 这一下是「松手」的那个事件栈（pointerup → touchend），
+     仍然尽力解锁：建上下文 / 重建 / resume / start 一个 1 采样 source / 播静音 wav。
+     iOS 对拖拽可能不给用户激活，那就靠下面的温和续命 + 兜底按钮，不影响其它机型。 */
   try{ SFX.hardUnlock(); }catch(e){}
   /* 激活只在这一瞬间有效，之后靠温和的 resume 续命；不用重建，免得打断异步 resume。 */
   [80, 260, 620, 1100, 1800, 2600, 3600].forEach(ms => setTimeout(() => {
@@ -796,13 +770,13 @@ function runOpening(){
   // 7. 引导 + 按钮
   setTimeout(()=>{
     add(`
-    <div class="guide pop">
+    <div class="guide guide-in">
       <div class="guide-box">
         <div class="guide-text">${c.guide}</div>
-        <button class="btn btn-primary btn-block" id="btn-enter">${c.enterLabel}</button>
+        <button class="btn btn-primary btn-block no-tap" id="btn-enter">${c.enterLabel}</button>
       </div>
     </div>`);
-    SFX.flip();
+    SFX.announce();          // 隆重登场的提示框音效（低沉一记 + 铺开的光）
     const b = $("btn-enter");
     if(b) b.addEventListener("click", () => {
       SFX.hardUnlock();         // 这是真点击，允许重建，务必把音频叫醒
@@ -1654,7 +1628,7 @@ function judgeL1(lvl){
   } else {
     lv1.dialJudging = false;
     failCounts[1]++;
-    $("l1-hint").textContent = "📵 嘟——嘟—— 是空号";
+    $("l1-hint").textContent = "📵 嘟——嘟—— 打错了";
     vibrate(40);
     SFX.wrong();      // 忙音「响 0.4 停 0.35 再响 0.4」= 1.15 秒
     lv1.wrongTimer = setTimeout(()=>{
@@ -2443,7 +2417,13 @@ function renderFinal(){
         </div>
 
         <div class="fin-msg">
-          ${lines.map((l,i)=>`<p id="fin-line-${i}">${l}</p>`).join("")}
+          ${lines.map((l, i) => {
+            if(i === lines.length - 1 && CONFIG.finalTail){
+              const t = CONFIG.finalTail;
+              return `<p id="fin-line-${i}" class="fin-tail"><span>${t.a}</span><span class="ft-b" id="fin-tail-b">${t.b}</span></p>`;
+            }
+            return `<p id="fin-line-${i}">${l}</p>`;
+          }).join("")}
         </div>
         <div class="fin-sign" id="fin-sign">—— ${c.sign}</div>
         <div class="fin-seal" id="fin-seal"><b>${c.seal}</b><small>${CONFIG.workDates.end}</small></div>
@@ -2493,7 +2473,11 @@ function finScrollTo(el){
   view.scrollLeft = 0;
 }
 
-/* 终页出场时间轴：一个接一个，慢慢来 */
+/* 终页出场时间轴：一个接一个，慢慢来。
+   告别信不再「每段固定 1.4 秒」—— 那会让长段落一闪而过。
+   现在按这段文字实际渲染出来的行数算停留时间（每行约 1.3 秒 + 0.8 秒收尾），
+   所以短句不拖沓、长段落能读完；段落之间靠一条「下一步」队列串起来，
+   上一步的宽度/高度只有渲染完才量得准，所以用函数式等待而不是提前排死时间。 */
 function runFinalSequence(){
   const view = $("view-final");
   if(view) view.scrollLeft = 0;
@@ -2506,13 +2490,26 @@ function runFinalSequence(){
   const snd = (fn) => { try{ fn(); }catch(e){} };
   const popSnd = () => snd(()=>SFX.pop());
 
-  const plan = [];
-  let t = 0;
-  const step = (gap, fn) => { t += gap; plan.push([t, fn]); };
+  const LINE_MS = 1300;     // 每行停留（约等于每秒 15 个字的阅读速度）
+  const HOLD_MS = 800;      // 每段收尾
+  const linesOf = (el) => {
+    if(!el) return 1;
+    const lh = parseFloat(getComputedStyle(el).lineHeight) || 26;
+    return Math.max(1, Math.round(el.offsetHeight / lh));
+  };
+  /* 这一段该停多久：行数 × 每行时间 + 收尾，夹在 2.1s ~ 13s 之间 */
+  const holdOf = (i) => {
+    const n = linesOf($("fin-line-" + i));
+    return Math.min(13000, Math.max(2100, HOLD_MS + n * LINE_MS));
+  };
+
+  const steps = [];
+  const step = (wait, fn) => steps.push({ wait, fn });
 
   // 礼花先飘一会儿，「员工档案」和横线一起出来，再停一下才开始落字段
-  step(2600, () => { show("fin-head"); show("fin-rule"); popSnd(); });
-  step(1400, () => { show("fin-f-0"); popSnd(); });
+  step(2600, null);
+  step(1400, () => { show("fin-head"); show("fin-rule"); popSnd(); });
+  step(1300, () => { show("fin-f-0"); popSnd(); });
   step(1300, () => { show("fin-f-1"); popSnd(); });
   step(1300, () => { show("fin-f-2"); popSnd(); });
   // 部门之后才出现工牌照片
@@ -2521,17 +2518,43 @@ function runFinalSequence(){
   step(1600, () => { show("fin-cell-date"); show("fin-cell-days"); popSnd(); });
   step(1300, () => { show("fin-v-date"); popSnd(); });
   step(1300, () => { show("fin-v-days"); popSnd(); });
-  // 留言：再多等一秒才开始；第一行单独一记铃声，后面几行不出声
-  step(2200, () => { show("fin-line-0"); snd(()=>SFX.fragment()); });
-  CONFIG.finalMessage.slice(1).forEach((_, i) => {
-    step(1400, () => { show("fin-line-" + (i + 1)); });
+
+  // 告别信：第一段出来时起音乐（原创抒情小曲，淡入 3.2s）
+  step(2200, () => {
+    show("fin-line-0");
+    snd(()=>SFX.fragment());
+    snd(()=>SFX.letterMusicStart());
   });
-  // 落款：停 2 秒再出现（带音效），然后再盖章
+  const last = CONFIG.finalMessage.length - 1;
+  const tailGap = (CONFIG.finalTail && CONFIG.finalTail.gap) || 1500;
+  CONFIG.finalMessage.slice(1).forEach((_, i) => {
+    const idx = i + 1;
+    // 最后一段只等 1.5 秒就补后半句，不能按行数拖
+    step(() => (idx === last ? tailGap : holdOf(idx - 1)), () => show("fin-line-" + idx));
+  });
+
+  // 最后一句分两次落：先「下次见」，1.5 秒后补上「，在更广阔的天地。」
+  step(2600, () => {
+    const b = $("fin-tail-b");
+    if(b) b.classList.add("on");
+    const p = $("fin-line-" + last);
+    if(p) setTimeout(()=> finScrollTo(p), 300);
+    snd(()=>SFX.soft(6));               // 一声很轻的风铃，落在「天地」上
+  });
+  // 落款：停一下再出现（带音效），然后再盖章
   step(2000, () => { show("fin-sign"); popSnd(); });
   step(2000, () => { show("fin-seal", false); snd(()=>SFX.stamp()); });
   step(1100, () => { show("fin-actions"); });
 
-  plan.forEach(([ms, fn]) => setTimeout(fn, ms));
+  let i = 0;
+  const run = () => {
+    if(i >= steps.length) return;
+    const s = steps[i++];
+    if(s.fn) s.fn();
+    const w = typeof s.wait === "function" ? s.wait() : s.wait;
+    setTimeout(run, w);
+  };
+  run();
 }
 
 /* 终页庆祝漂浮 emoji */
@@ -2559,7 +2582,8 @@ setTimeout(()=>{ try{ const im = new Image(); im.src = "id-photo.svg?v=2"; }catc
 /* 全局按钮音：所有 .btn 点击都出一声轻响（各关自己的音效另外叠加） */
 document.addEventListener("click", (e) => {
   const b = e.target.closest && e.target.closest(".btn");
-  if(b && !b.disabled) SFX.tap();
+  // .no-tap：这一下自己带专属音效（比如进房间的「坠落」），不要再叠一记通用按键声
+  if(b && !b.disabled && !b.classList.contains("no-tap")) SFX.tap();
 });
 
 /* 音效开关 */

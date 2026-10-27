@@ -313,6 +313,13 @@ body{
 }
 .guide-text{ font-size:14.5px; color:#7B5A3A; font-weight:700; line-height:1.9; margin-bottom:14px; white-space:pre-line; }
 .guide #btn-enter{ background:linear-gradient(135deg,#A9743B 0%,#7E5428 100%); color:#fff; border:none; }
+/* 引导框「隆重登场」：比通用的 .pop(.5s) 整整慢一倍，先压住再浮上来 */
+.guide.guide-in{ animation:guideIn 1s cubic-bezier(.22,1,.36,1) both; }
+@keyframes guideIn{
+  0%{ opacity:0; transform:translateY(30px) scale(.9); }
+  55%{ opacity:1; }
+  100%{ opacity:1; transform:translateY(0) scale(1); }
+}
 
 /* =========================================================
    通用小动画（旧大厅删掉后，这两个仍在用）
@@ -882,12 +889,26 @@ body{
 
 /* 信 */
 .fin-msg{ margin-top:16px; }
+/* 每段默认 display:none —— 不占位置。
+   告别信有十几段，如果一开始就全部占位，进终页会先看到一张 1700px 高的大白纸；
+   现在纸是「写一段、长一段」，段落出现多少，卡片就多高。 */
 .fin-msg p{
   margin:0 0 11px; font-size:13.5px; line-height:1.95; color:#4A3320;
-  opacity:0; transform:translateY(12px);
-  transition:opacity 1.2s cubic-bezier(.22,.61,.36,1), transform 1.2s cubic-bezier(.22,.61,.36,1);
+  display:none;
 }
-.fin-msg p.on{ opacity:1; transform:none; }
+.fin-msg p.on{ display:block; animation:finLineIn 1.2s cubic-bezier(.22,.61,.36,1) both; }
+@keyframes finLineIn{
+  0%{ opacity:0; transform:translateY(12px); }
+  100%{ opacity:1; transform:translateY(0); }
+}
+/* 最后一句分两次落：段落先出来，后半句 1.5 秒后自己再淡上来 */
+.fin-tail .ft-b{
+  display:inline-block; opacity:0; transform:translateY(7px); filter:blur(3px);
+  transition:opacity 1.15s cubic-bezier(.22,.61,.36,1),
+             transform 1.15s cubic-bezier(.22,.61,.36,1),
+             filter 1.15s cubic-bezier(.22,.61,.36,1);
+}
+.fin-tail .ft-b.on{ opacity:1; transform:none; filter:none; }
 
 .fin-sign{
   text-align:right; font-size:15px; letter-spacing:3px; color:#6B4520;
@@ -1093,6 +1114,7 @@ body{
    轻柔的漂浮 / 上升 / 追光一律保留——否则整页会变成一张静止画面 */
 @media(prefers-reduced-motion: reduce){
   .phone-frame.glitch{ animation:none; }
+  .fin-msg p.on{ animation:none; }
   .glow-word, .red-flash, .showtime, .hl-word{ animation:none !important; }
   /* 关掉动画时，第四关三个物品要直接显示出来，别停在 opacity:0 */
   .result-line.stagger .p1, .result-line.stagger .p2, .result-line.stagger .p3{ opacity:1 !important; }

@@ -124,6 +124,8 @@ function resetBuses(){
   _beatBus = null;
   if(_box){ try{ clearTimeout(_box); }catch(e){} _box = null; }
   _boxBus = null;
+  if(_letter){ try{ clearTimeout(_letter); }catch(e){} _letter = null; }
+  _letterBus = null;
 }
 
 /* 播放静音 wav：iOS 上它能把音频会话切到 playback（顺带绕过静音拨杆的一部分限制）。
@@ -188,6 +190,7 @@ function registerRecovery(){
       try{
         if(document.hidden || dead || !ctx) return;
         if(_boxWanted && !_boxBus && ctx.state === "running"){ try{ musicBoxStart(); }catch(e){} }
+        if(_letterWanted && !_letterBus && ctx.state === "running"){ try{ letterMusicStart(); }catch(e){} }
         if(ctx.state === "running") return;
         nudge();
       }catch(e){}
@@ -256,6 +259,7 @@ function ensure(force, noCreate){
       _lastRebuild = Date.now();
       registerVisibility();
       if(_boxWanted) setTimeout(function(){ try{ musicBoxStart(); }catch(e){} }, 300);
+      if(_letterWanted) setTimeout(function(){ try{ letterMusicStart(); }catch(e){} }, 300);
     }
     if(ctx.state !== "running") playSilentWav("beforeResume");
     _lastResume = Date.now();
@@ -567,6 +571,82 @@ function musicBoxStop(){
     setTimeout(function(){ try{ b.disconnect(); }catch(e){} }, 2400);
   }catch(e){}
 }
+/* 终页告别信：一段原创的抒情小曲（C 大调 4/4 拍、约 67 BPM），
+   左手分解和弦 + 右手一条缓慢上行的旋律，钢琴/八音盒的混合音色；
+   走独立总线 0.16（比音效轻很多），淡入 3.2 秒，循环播放。
+   注意：这是原创旋律，不是任何现有歌曲的片段 —— 项目里没有音频素材，只能用合成。 */
+var _letter = null, _letterBus = null, _letterWanted = false;
+var LT_BEAT = 0.9;                   // 一拍 0.9s ≈ 67 BPM
+/* 8 小节的和声：C – G/B – Am – Em/G – F – C/E – Dm7 – G */
+var LT_BARS = [
+  { bass:130.81, chord:[261.63, 329.63, 392.00, 523.25] },  // C
+  { bass:123.47, chord:[293.66, 392.00, 493.88, 587.33] },  // G/B
+  { bass:110.00, chord:[261.63, 329.63, 440.00, 523.25] },  // Am
+  { bass: 98.00, chord:[246.94, 329.63, 392.00, 493.88] },  // Em/G
+  { bass: 87.31, chord:[220.00, 261.63, 349.23, 440.00] },  // F
+  { bass: 82.41, chord:[196.00, 261.63, 329.63, 392.00] },  // C/E
+  { bass:146.83, chord:[174.61, 220.00, 261.63, 293.66] },  // Dm7
+  { bass: 98.00, chord:[246.94, 293.66, 392.00, 493.88] }   // G
+];
+/* 右手旋律：[第几小节, 小节内第几拍, 频率, 余音秒数] */
+var LT_MELODY = [
+  [0, 0, 659.26, 1.6], [0, 2, 783.99, 1.3],
+  [1, 0, 587.33, 1.3], [1, 2, 493.88, 1.7],
+  [2, 0, 523.25, 1.4], [2, 2, 659.26, 1.2],
+  [3, 0, 493.88, 2.6],
+  [4, 0, 440.00, 1.2], [4, 1.5, 523.25, 1.0], [4, 2.5, 698.46, 1.5],
+  [5, 0, 659.26, 1.7], [5, 2, 523.25, 1.4],
+  [6, 0, 587.33, 1.3], [6, 1.5, 698.46, 1.0], [6, 2.5, 880.00, 1.7],
+  [7, 0, 783.99, 3.4]
+];
+function letterMusicStart(){
+  _letterWanted = true;
+  if(!can() || _letter || _letterBus) return;
+  try{
+    _letterBus = ctx.createGain();
+    _letterBus.gain.setValueAtTime(0.0001, ctx.currentTime);
+    _letterBus.gain.linearRampToValueAtTime(0.16, ctx.currentTime + 3.2);
+    _letterBus.connect(master);
+  }catch(e){ _letterBus = null; return; }
+  var bus = _letterBus;
+  function phrase(){
+    if(!_letterBus){ return; }
+    // 上下文被挂起时这一轮不排音符，但定时器要继续走，
+    // 否则「切后台一次 = 音乐永久停掉」（醒来后下一轮自动接上）
+    if(!live()){ _letter = setTimeout(phrase, LT_BARS.length * 4 * LT_BEAT * 1000); return; }
+    LT_BARS.forEach(function(bar, bi){
+      var base = bi * 4 * LT_BEAT;
+      // 低音：一小节一个长音，垫住整句
+      tone({ freq:bar.bass, type:"sine", dur:3.4, gain:0.055, attack:0.35, delay:0.05 + base, bus:bus });
+      // 分解和弦：每拍一个音，轻轻铺开
+      bar.chord.forEach(function(f, i){
+        tone({ freq:f,     type:"sine", dur:1.45, gain:0.038, attack:0.05, delay:0.05 + base + i * LT_BEAT,       bus:bus });
+        tone({ freq:f * 2, type:"sine", dur:0.5,  gain:0.009, attack:0.02, delay:0.05 + base + i * LT_BEAT + 0.01, bus:bus });
+      });
+    });
+    LT_MELODY.forEach(function(n){
+      var at = 0.05 + (n[0] * 4 + n[1]) * LT_BEAT;
+      tone({ freq:n[2],     type:"sine",     dur:n[3],       gain:0.105, attack:0.02,  delay:at,        bus:bus });
+      tone({ freq:n[2] * 2, type:"sine",     dur:n[3] * 0.5, gain:0.022, attack:0.015, delay:at + 0.01, bus:bus });
+      tone({ freq:n[2] * 3, type:"triangle", dur:0.14,       gain:0.008, attack:0.006, delay:at,        bus:bus });
+    });
+    _letter = setTimeout(phrase, LT_BARS.length * 4 * LT_BEAT * 1000);
+  }
+  phrase();
+}
+function letterMusicStop(){
+  _letterWanted = false;
+  if(_letter){ clearTimeout(_letter); _letter = null; }
+  if(!_letterBus) return;
+  var b = _letterBus; _letterBus = null;
+  try{
+    var t = ctx.currentTime;
+    b.gain.cancelScheduledValues(t);
+    b.gain.setValueAtTime(b.gain.value, t);
+    b.gain.linearRampToValueAtTime(0, t + 1.2);
+    setTimeout(function(){ try{ b.disconnect(); }catch(e){} }, 3600);
+  }catch(e){}
+}
 /* 选中物品：一声轻快的木琴「叮」，带一点木头味 */
 function pick(){
   if(!gate("pick", 55)) return;
@@ -669,13 +749,28 @@ function thought(){
   noise({ dur:0.45, filter:"lowpass", freq:1100, to:380, gain:0.07 });
   tone({ freq:493.9, type:"sine", dur:0.60, gain:0.09 });
 }
-/* 进入结界：whoosh + 上行扫频 + 三连高音（入场仪式感） */
+/* 进入房间：一路向下坠落，最后闷响落地（掉进时空结界的感觉）。
+   不做任何上行音阶 —— 那会显得像「往上飘」，和「掉进去」正好相反。
+   ①气流向下扫 ②音高坠落 ③0.55s 落地闷响 ④结界余震一点点散开 */
 function portal(){
-  noise({ dur:0.9, filter:"bandpass", freq:260, to:5200, gain:0.17 });
-  tone ({ freq:160, to:1500, type:"sine", dur:0.9, gain:0.17 });
-  [523.3, 784, 1046.5].forEach(function(f, i){
-    tone({ freq:f, type:"triangle", dur:0.55, gain:0.14, delay:0.52 + i * 0.09 });
+  noise({ dur:0.85, filter:"bandpass", freq:5200, to:220, gain:0.16 });
+  tone ({ freq:760, to:46,  type:"sine",     dur:0.95, gain:0.20 });
+  tone ({ freq:300, to:44,  type:"triangle", dur:0.80, gain:0.07, delay:0.04 });
+  tone ({ freq:92,  to:38,  type:"sine",     dur:0.90, gain:0.30, delay:0.55 });
+  noise({ dur:0.50, filter:"lowpass", freq:420, to:120, gain:0.14, delay:0.55 });
+  tone ({ freq:1180, to:170, type:"sine",    dur:0.65, gain:0.025, delay:0.92 });
+}
+/* 隆重地弹出一个提示框：一记低沉的「咚」+ 由下往上铺开的光 + 收尾一记上扬。
+   和 flip()（翻纸）、fragment()（四音铃）区分开：这个更「重」，像关卡开始的宣告。 */
+function announce(){
+  tone ({ freq:150,  to:48, type:"sine", dur:0.55, gain:0.34 });
+  tone ({ freq:72,          type:"sine", dur:0.55, gain:0.18, delay:0.02 });
+  noise({ dur:0.50, filter:"lowpass", freq:620, to:160, gain:0.11 });
+  [523.25, 659.26, 783.99, 1046.5].forEach(function(f, i){
+    tone({ freq:f, type:"triangle", dur:0.95 - i * 0.12, gain:0.085 - i * 0.013, attack:0.02, delay:0.10 + i * 0.075 });
   });
+  noise({ dur:0.55, filter:"highpass", freq:5200, gain:0.045, delay:0.12 });
+  tone ({ freq:196, to:392, type:"sine", dur:0.70, gain:0.055, delay:0.44 });
 }
 
 /* 点中房间里的关键物品：温暖的「就是它」双音 + 一点气流 */
@@ -739,8 +834,9 @@ return {
   fragment: fragment, fragmentDrop: fragmentDrop, flip: flip,
   tensionStart: tensionStart, tensionStop: tensionStop,
   musicBoxStart: musicBoxStart, musicBoxStop: musicBoxStop,
+  letterMusicStart: letterMusicStart, letterMusicStop: letterMusicStop,
   unlock: unlock, confetti: confetti, stamp: stamp, pick: pick, soft: soft, pop: pop,
-  bubble: bubble, sysalert: sysalert, glitch: glitch,
+  bubble: bubble, sysalert: sysalert, glitch: glitch, announce: announce,
   like: like, thought: thought, portal: portal,
   reveal: reveal, turn: turn, winPop: winPop, failPop: failPop
 };
