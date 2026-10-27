@@ -939,13 +939,14 @@ body{
 }
 
 /* 按钮组 */
-/* 还没出现时不能占位：否则「员工档案」那张卡会短一截，屏幕底下空一条 */
+/* 按钮的位置从进场就留好（透明不可点），出现时只淡入 —— 否则盖章后画面会先缩一下、
+   再冒按钮，跳两下。留白的高度稳定，档案卡自动把剩下的空间占满。 */
 .fin-actions{
-  display:flex; gap:10px; margin-top:0; height:0; overflow:hidden;
+  display:flex; gap:10px; margin-top:14px;
   opacity:0; transform:translateY(8px); pointer-events:none;
   transition:opacity .8s ease, transform .8s ease;
 }
-.fin-actions.on{ height:auto; margin-top:14px; opacity:1; transform:none; pointer-events:auto; }
+.fin-actions.on{ opacity:1; transform:none; pointer-events:auto; }
 .fin-actions .btn{ flex:1; }
 #view-final .btn-ghost{ border-color:#6B4520; color:#6B4520; }
 
@@ -1318,6 +1319,15 @@ body{
 .lc-weather{ flex:2; align-items:flex-start; }
 .lc-row1{ display:flex; align-items:baseline; gap:9px; white-space:nowrap; }
 .lc-ico{ width:27px; height:27px; flex:none; align-self:baseline; margin-bottom:-11px; }
+/* 天气图标改成 emoji：外框宽高、基线、-11px 的下移全部沿用 .lc-ico，
+   所以「21°」「晚霞满天」的位置不会跟着动；emoji 本身绝对定位在框里，
+   单独调 translateY 的第二个数值就能上下挪，行高完全不受影响。 */
+.lc-emoji{ position:relative; }
+.lc-emoji > span{
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%) translateY(2px);
+  font-size:26px; line-height:1;
+}
 .lc-weather b{
   font-family:"Playfair Sub","Didot",Georgia,serif;
   font-size:32px; font-weight:700; line-height:1; letter-spacing:.02em;
@@ -1497,6 +1507,7 @@ body{
   .lock-sub{ margin-top:4px; font-size:12.5px; }
   .lc-weather b{ font-size:28px; }
   .lc-ico{ width:24px; height:24px; }
+  .lc-emoji > span{ font-size:23px; }
 }
 
 /* 真机音频诊断面板（锁屏连点状态栏 5 次打开） */
