@@ -244,8 +244,8 @@ body{
   0%,100%{ text-shadow:0 0 4px rgba(179,35,28,.40); }
   50%{ text-shadow:0 0 13px rgba(214,46,36,.85), 0 0 24px rgba(179,35,28,.45); }
 }
-/* 彩蛋文案里的加重字（「爽朗」的爽） */
-.egg-strong{ font-weight:900; font-size:1.06em; color:#B3231C; letter-spacing:.5px; }
+/* 彩蛋文案里的「爽」：只做一点倾斜，字号/颜色/字重都和旁边一样 */
+.egg-strong{ font-style:italic; }
 @keyframes orangeFlash{
   0%,100%{ text-shadow:0 0 4px rgba(255,122,24,.45); }
   50%{ text-shadow:0 0 14px rgba(255,150,40,.95), 0 0 26px rgba(255,110,0,.55); }
@@ -902,6 +902,11 @@ body{
 .fin-msg p{
   margin:0 0 11px; font-size:13.5px; line-height:1.95; color:#4A3320;
   display:none;
+  text-indent:2em;                 /* 段首空两格，像一封真的信 */
+  text-align:justify;              /* 两端对齐 */
+  text-justify:inter-ideograph;    /* 中文按字距拉开，不把字拆到两边 */
+  line-break:strict;               /* 行首禁则：标点不落在行首 */
+  hanging-punctuation:allow-end;
 }
 .fin-msg p.on{ display:block; animation:finLineIn 1.2s cubic-bezier(.22,.61,.36,1) both; }
 @keyframes finLineIn{
