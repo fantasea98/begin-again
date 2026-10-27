@@ -125,7 +125,7 @@ const CONFIG = {
     "总觉得这一天来得又快又慢。从起心动念到付诸行动，其实只差一个开口的勇气，也恰恰是最难的部分；一旦做了决定，心里反而轻快许多。",
     "作为曾经的理科生，后又转型为文科生，独独不曾是医学生，我从来没想过会在医院工作。毕业的时候阴差阳错得到机会，便这样走进了这里。如今看来，这是一段不错的起点，我对此心怀感激。",
     "这三年，承蒙指导与关照，渐渐了解职场的运作逻辑，熟悉工作的节奏和方法，学会如何与人共事。许多事情都是在这里慢慢领悟的，这些经历都会成为我的一部分。",
-    "当然，这份工作也有一些我始终无法忽略的矛盾之处。常言道，言为心声，但我时常觉得，自己出口的更像是「回声」，明明并非心中所想，却要说得妥帖；有些事即使不认同，也要做得周全。",
+    "当然，这份工作也有一些我始终无法忽略的矛盾之处。常言道，言为心声，但我时常觉得，自己说出口的更像是「回声」，明明并非心中所想，却要说得妥帖；有些事即使不认同，也要做得周全。",
     "我没有朋友圈，也不大关心他人的日常。某种程度上，我像《人生切割术》的人物一样，把工作与生活割开，让它们各自运行，互不打扰。于是，许多与我共事的人认识的是工作中的我，而生活中的我，则留在了工作之外。",
     "说到底，我始终是个见猎心喜的人。",
     "世界于我，有一种不会过时的诱惑力。遇见新鲜的事物，听闻遥远的故事，偶尔窥见生活的另一种可能，我还是忍不住心生向往。我们的社会正走在对世界不断祛魅的路上，习惯用理性和逻辑解读万物。年初读到李诞写南极：烂船，骸骨，炼油罐，破房子，鲸鱼跃出水面的巨响，蓝色的鬼火……科学当然能够解释，鬼火是白磷，鲸跃则是因为痒。可解释完了，这份浪漫感受并未随之消失。祛魅让世界变得容易理解，却没有让世界变得不再复杂。",
@@ -135,9 +135,6 @@ const CONFIG = {
     "祝各位幸福，也祝各位偶尔入魅。",
     "下次见，在更广阔的天地。",
   ],
-
-  // 最后一句分两次出现：先「下次见」，停 1.5 秒，再落「在更广阔的天地。」
-  finalTail: { a: "下次见", b: "，在更广阔的天地。", gap: 1500 },
 
   // 四个关卡
   levels: [
@@ -2248,7 +2245,7 @@ let lv4 = {};
 function renderLevel4(lvl){
   setLevelAccent("level4", lvl);
   lv4 = { chosen:[], phase:"intro" };
-  SFX.musicBoxStart();   // 回忆氛围：音乐盒单音
+  // 背景音乐等玩家点「开始」再进（见下面的 l4-start 回调）
   $("view-level4").innerHTML = `
     ${bgLevel4()}
     <div class="view-scroll">
@@ -2259,7 +2256,13 @@ function renderLevel4(lvl){
     </div>`;
 
   const back = $("btn-back"); back.addEventListener("click", backToHall);
-  $("l4-start").addEventListener("click", ()=>{ lv4.phase = "play"; $("l4-game").style.display = "block"; $("l4-start").closest("div").style.display = "none"; buildLv4Game(lvl); });
+  $("l4-start").addEventListener("click", ()=>{
+    lv4.phase = "play";
+    $("l4-game").style.display = "block";
+    $("l4-start").closest("div").style.display = "none";
+    SFX.musicBoxStart();   // 音乐跟着「开始」一起进来，前面读文案时是安静的
+    buildLv4Game(lvl);
+  });
 }
 function buildLv4Game(lvl){
   // 三排：4 + 3 + 3，错落自由；十种不同底色（配色在 THEME.optionPalette）
@@ -2515,13 +2518,7 @@ function renderFinal(){
         </div>
 
         <div class="fin-msg">
-          ${lines.map((l, i) => {
-            if(i === lines.length - 1 && CONFIG.finalTail){
-              const t = CONFIG.finalTail;
-              return `<p id="fin-line-${i}" class="fin-tail"><span>${t.a}</span><span class="ft-b" id="fin-tail-b">${t.b}</span></p>`;
-            }
-            return `<p id="fin-line-${i}">${l}</p>`;
-          }).join("")}
+          ${lines.map((l, i) => `<p id="fin-line-${i}">${l}</p>`).join("")}
         </div>
         <div class="fin-sign" id="fin-sign">—— ${c.sign}</div>
         <div class="fin-seal" id="fin-seal"><b>${c.seal}</b><small>${CONFIG.workDates.end}</small></div>
@@ -2619,28 +2616,21 @@ function runFinalSequence(){
     const box = document.querySelector(".fin-msg");
     const ps = box ? Array.prototype.slice.call(box.querySelectorAll("p")) : [];
     ps.forEach((p, n) => {
-      p.style.animationDelay = (n * 80) + "ms";
+      p.style.animationDelay = (n * 200) + "ms";
       p.classList.add("on");
     });
     snd(()=>SFX.fragment());          // 四音铃声：信开始了
     snd(()=>SFX.letterMusicStart());  // 配乐同时起来
-    // 最后一句的后半段：等它那一段淡入完，再停 1.5 秒才补上
-    const tailDelay = (ps.length ? (ps.length - 1) * 80 : 0) + ((CONFIG.finalTail && CONFIG.finalTail.gap) || 1500);
-    setTimeout(()=>{
-      const b = $("fin-tail-b");
-      if(b) b.classList.add("on");
-      snd(()=>SFX.soft(6));
-    }, tailDelay);
     setTimeout(autoScrollLetter, 1400);
   }
 
-  /* 自动滚动：按 18px/s 往下走（约每秒 17 个字），碰到就暂停 4 秒 */
+  /* 自动滚动：按 16px/s 往下走（约每秒 15 个字），碰到就暂停 4 秒 */
   function autoScrollLetter(){
     if(currentView !== "final" || !view){ afterLetter(); return; }
     const bottom = Math.max(0, view.scrollHeight - view.clientHeight);
     let pos = view.scrollTop;
     if(bottom - pos < 6){ afterLetter(); return; }
-    const SPEED = 18;
+    const SPEED = 16;
     let lastT = 0, pausedUntil = 0;
     const pause = () => { pausedUntil = performance.now() + 4000; };
     const stop = () => {

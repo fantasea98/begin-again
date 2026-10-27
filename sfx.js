@@ -509,50 +509,78 @@ function tensionStop(){
    整段用 ctx 时钟一次性排完，再来一遍时整体后移一个循环长度。
    _boxWanted 记住「这一关想要有背景音乐」，ctx 被重建后由看门狗自动续上。 */
 var _box = null, _boxBus = null, _boxWanted = false;
-var BOX_BEAT = 0.78;                 // 一拍 0.78s ≈ 77 BPM
-var BOX_LEN  = 9;                    // 每循环 9 拍
-/* [第几拍, 频率, 余音秒数] */
-var BOX_MELODY = [
-  [0.00, 659.26, 1.70],   // E5
-  [0.75, 880.00, 1.40],   // A5
-  [1.50, 783.99, 1.20],   // G5
-  [2.25, 659.26, 1.90],   // E5
-  [3.00, 587.33, 1.00],   // D5
-  [3.75, 523.25, 2.10],   // C5
-  [4.75, 587.33, 0.95],   // D5
-  [5.25, 659.26, 1.60],   // E5
-  [6.00, 783.99, 1.10],   // G5
-  [6.75, 880.00, 2.00],   // A5
-  [7.75, 783.99, 2.30]    // G5
+var BOX_BEAT = 1.07;                 // 一拍 1.07s ≈ 56 BPM（比原来的 77 BPM 慢下来）
+var BOX_LEN  = 32;                   // 每循环 8 小节 × 4 拍
+/* 和声：Am – F – C – G – Am – Em – F – G，每小节一组分解和弦（钢琴左手那种走法） */
+var BOX_CHORDS = [
+  [261.63, 329.63, 440.00, 523.25],  // Am
+  [174.61, 261.63, 349.23, 440.00],  // F
+  [261.63, 329.63, 392.00, 523.25],  // C
+  [196.00, 246.94, 293.66, 392.00],  // G
+  [261.63, 329.63, 440.00, 523.25],  // Am
+  [164.81, 246.94, 329.63, 493.88],  // Em
+  [174.61, 261.63, 349.23, 440.00],  // F
+  [196.00, 246.94, 293.66, 392.00]   // G
 ];
-/* 低音只做一点暖底，音量极小，长音铺开 */
+/* 旋律：[第几拍, 频率, 余音秒数] —— 音更长、空隙更多，尽量让它「唱」得慢一些 */
+var BOX_MELODY = [
+  [0.00, 659.26, 2.20],   // E5
+  [2.50, 523.25, 1.80],   // C5
+  [4.00, 587.33, 2.20],   // D5
+  [6.50, 440.00, 1.80],   // A4
+  [8.00, 659.26, 2.40],   // E5
+  [10.50, 783.99, 2.00],  // G5
+  [12.00, 587.33, 3.40],  // D5
+  [16.00, 523.25, 1.80],  // C5
+  [18.00, 659.26, 2.20],  // E5
+  [20.00, 493.88, 2.00],  // B4
+  [22.00, 392.00, 1.80],  // G4
+  [24.00, 440.00, 1.40],  // A4
+  [25.50, 523.25, 1.40],  // C5
+  [26.50, 698.46, 2.20],  // F5
+  [28.00, 493.88, 1.60],  // B4
+  [30.00, 587.33, 2.60]   // D5
+];
+/* 低音：一小节一个长音，垫住整句 */
 var BOX_BASS = [
-  [0.00, 130.81, 3.10],   // C3
-  [3.75, 110.00, 2.60],   // A2
-  [5.25,  87.31, 2.40],   // F2
-  [6.75,  98.00, 2.60]    // G2
+  [0.00, 110.00, 4.10],   // A2
+  [4.00,  87.31, 4.10],   // F2
+  [8.00, 130.81, 4.10],   // C3
+  [12.00, 98.00, 4.10],   // G2
+  [16.00, 110.00, 4.10],  // A2
+  [20.00, 82.41, 4.10],   // E2
+  [24.00, 87.31, 4.10],   // F2
+  [28.00, 98.00, 4.10]    // G2
 ];
 function musicBoxStart(){
   _boxWanted = true;
   if(!can() || _box || _boxBus) return;
   try{
     _boxBus = ctx.createGain();
-    // 第 4 关 BGM 单独压到两成半，并且缓缓淡入（3.6 秒）
+    // 第 4 关 BGM 单独压到两成半，并且缓缓淡入
     _boxBus.gain.setValueAtTime(0.0001, ctx.currentTime);
-    _boxBus.gain.linearRampToValueAtTime(0.13, ctx.currentTime + 3.6);
+    _boxBus.gain.linearRampToValueAtTime(0.13, ctx.currentTime + 3.0);
     _boxBus.connect(master);
   }catch(e){ _boxBus = null; return; }
   var bus = _boxBus;
   function phrase(){
     if(!_boxBus || !live()){ return; }
+    // 分解和弦：每拍一个音，铺在旋律下面
+    BOX_CHORDS.forEach(function(chord, bi){
+      chord.forEach(function(f, i){
+        var at = 0.06 + (bi * 4 + i) * BOX_BEAT;
+        tone({ freq:f,     type:"sine", dur:1.55, gain:0.030, attack:0.05, delay:at,        bus:bus });
+        tone({ freq:f * 2, type:"sine", dur:0.60, gain:0.007, attack:0.02, delay:at + 0.01, bus:bus });
+      });
+    });
     BOX_MELODY.forEach(function(n){
       var at = 0.06 + n[0] * BOX_BEAT;
-      tone({ freq:n[1],     type:"sine",     dur:n[2],      gain:0.115, attack:0.016, delay:at,        bus:bus });
-      tone({ freq:n[1] * 2, type:"sine",     dur:n[2] * 0.5, gain:0.028, attack:0.012, delay:at + 0.012, bus:bus });
-      tone({ freq:n[1] * 3, type:"triangle", dur:0.13,      gain:0.010, attack:0.006, delay:at,        bus:bus });
+      tone({ freq:n[1],     type:"sine",     dur:n[2],       gain:0.100, attack:0.024, delay:at,         bus:bus });
+      tone({ freq:n[1] * 2, type:"sine",     dur:n[2] * 0.5, gain:0.024, attack:0.016, delay:at + 0.012, bus:bus });
+      tone({ freq:n[1] * 3, type:"triangle", dur:0.13,       gain:0.008, attack:0.006, delay:at,         bus:bus });
     });
     BOX_BASS.forEach(function(n){
-      tone({ freq:n[1], type:"sine", dur:n[2], gain:0.030, attack:0.42, delay:0.06 + n[0] * BOX_BEAT, bus:bus });
+      tone({ freq:n[1], type:"sine", dur:n[2], gain:0.042, attack:0.45, delay:0.06 + n[0] * BOX_BEAT, bus:bus });
     });
     _box = setTimeout(phrase, BOX_LEN * BOX_BEAT * 1000);
   }

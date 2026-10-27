@@ -908,14 +908,6 @@ body{
   0%{ opacity:0; transform:translateY(12px); }
   100%{ opacity:1; transform:translateY(0); }
 }
-/* 最后一句分两次落：段落先出来，后半句 1.5 秒后自己再淡上来 */
-.fin-tail .ft-b{
-  display:inline-block; opacity:0; transform:translateY(7px); filter:blur(3px);
-  transition:opacity 1.15s cubic-bezier(.22,.61,.36,1),
-             transform 1.15s cubic-bezier(.22,.61,.36,1),
-             filter 1.15s cubic-bezier(.22,.61,.36,1);
-}
-.fin-tail .ft-b.on{ opacity:1; transform:none; filter:none; }
 
 .fin-sign{
   text-align:right; font-size:15px; letter-spacing:3px; color:#6B4520;
