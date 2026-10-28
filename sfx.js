@@ -788,17 +788,12 @@ function portal(){
   noise({ dur:0.50, filter:"lowpass", freq:420, to:120, gain:0.14, delay:0.55 });
   tone ({ freq:1180, to:170, type:"sine",    dur:0.65, gain:0.025, delay:0.92 });
 }
-/* 隆重地弹出一个提示框：一记低沉的「咚」+ 由下往上铺开的光 + 收尾一记上扬。
-   和 flip()（翻纸）、fragment()（四音铃）区分开：这个更「重」，像关卡开始的宣告。 */
+/* 隆重地弹出一个提示框：只留一串上扬的四连音（C-E-G-C），干净、不砸鼓。
+   和 flip()（翻纸）、fragment()（四音铃）区分开：这个更亮，像关卡开始的宣告。 */
 function announce(){
-  tone ({ freq:150,  to:48, type:"sine", dur:0.55, gain:0.34 });
-  tone ({ freq:72,          type:"sine", dur:0.55, gain:0.18, delay:0.02 });
-  noise({ dur:0.50, filter:"lowpass", freq:620, to:160, gain:0.11 });
   [523.25, 659.26, 783.99, 1046.5].forEach(function(f, i){
-    tone({ freq:f, type:"triangle", dur:0.95 - i * 0.12, gain:0.085 - i * 0.013, attack:0.02, delay:0.10 + i * 0.075 });
+    tone({ freq:f, type:"triangle", dur:0.92 - i * 0.10, gain:0.115 - i * 0.012, attack:0.015, delay:0.02 + i * 0.075 });
   });
-  noise({ dur:0.55, filter:"highpass", freq:5200, gain:0.045, delay:0.12 });
-  tone ({ freq:196, to:392, type:"sine", dur:0.70, gain:0.055, delay:0.44 });
 }
 
 /* 点中房间里的关键物品：温暖的「就是它」双音 + 一点气流 */

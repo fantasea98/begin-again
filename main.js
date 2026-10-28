@@ -2595,7 +2595,7 @@ function runFinalSequence(){
   step(1600, () => { show("fin-cell-date"); show("fin-cell-days"); popSnd(); });
   step(1300, () => { show("fin-v-date"); popSnd(); });
   step(1300, () => { show("fin-v-days"); popSnd(); });
-  step(2200, null);          // 空一拍，再开始读信
+  step(1700, null);          // 空一拍，再开始读信
 
   let i = 0;
   const run = () => {
