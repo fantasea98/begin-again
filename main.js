@@ -815,7 +815,7 @@ function runOpening(){
         <button class="btn btn-primary btn-block no-tap" id="btn-enter">${c.enterLabel}</button>
       </div>
     </div>`);
-    SFX.announce();          // 隆重登场的提示框音效（低沉一记 + 铺开的光）
+    SFX.announce();          // 隆重登场的提示框音效（只留一串上扬四连音）
     const b = $("btn-enter");
     if(b) b.addEventListener("click", () => {
       SFX.hardUnlock();         // 这是真点击，允许重建，务必把音频叫醒
